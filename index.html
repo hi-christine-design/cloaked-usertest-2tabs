@@ -148,19 +148,10 @@
   <div class="controls">
     <div class="ctl"><span class="t2">Build</span>
       <div class="seg" id="segDay"><button data-v="DayOne">Day 01</button><button data-v="Day30">Day 30</button></div></div>
-    <!-- 2 Tabs only (Christine, 21 Oct): no Tabs control; segCards kept hidden for the script -->
-    <div class="ctl" hidden><span class="t2">Tabs</span>
-      <div class="seg" id="segCards"><button data-v="tab">2 Tabs</button></div></div>
     <!-- Christine, 21 Oct: Day 01 starts from the onboarding; this skips it (home at once) -->
     <div class="rule" id="ruleSkip"></div>
     <div class="ctl" id="ctlSkip"><span class="t2">Skip onboarding</span>
       <div class="seg" id="segSkip"><button data-v="off">Off</button><button data-v="on">On</button></div></div>
-    <div class="rule" id="ruleFold"></div>
-    <div class="ctl" id="ctlFold"><span class="t2">Folders</span>
-      <div class="seg" id="segFold"><button data-v="cards">ID cards</button><button data-v="list">Folder list</button></div></div>
-    <div class="rule" id="ruleIdName"></div>
-    <div class="ctl" id="ctlIdName"><span class="t2">Tab name</span>
-      <div class="seg" id="segIdName"><button data-v="identity">Identity</button><button data-v="aliasid">Alias ID</button></div></div>
   </div>
 </aside>
 
@@ -321,9 +312,12 @@ var SLIDES = [
     detail: ['David wants to retest the same cohort once it is live.'] }
 ];
 var NAMES = { identity: 'Identity', folder: 'Folder', aliasid: 'Alias ID', idcard: 'ID card' };
-var S = { i: 0, day: 'Day30', mode: 'after', name: 'identity', cards: 'tab', intro: 'inside', fold: 'cards', idname: 'identity', skip: 'off' };
-try { var saved = JSON.parse(localStorage.getItem('ut2-launcher-2tabs') || 'null'); if (saved) Object.assign(S, saved); } catch (e) {}
-if (!NAMES[S.name]) S.name = 'identity';
+/* 2 Tabs only: name, cards, intro and fold are fixed in the URL below.
+   v2 drops the old blob (ut2-launcher-2tabs), which still stored those
+   controls and a skip value that could hide Day 01's welcome. */
+var STORE = 'ut2-launcher-2tabs-v2';
+var S = { i: 0, day: 'Day30', mode: 'after', skip: 'off' };
+try { var saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved) Object.assign(S, saved); } catch (e) {}
 /* Christine, 19 Oct: always open with nothing picked, on the plain prototype;
    picking a row plays its flow, picking it again unpicks it (S.i = -1) */
 S.i = -1;
@@ -357,29 +351,17 @@ SLIDES.forEach(function (s, i) {
 
 function seg(id, key) {
   $(id).addEventListener('click', function (e) {
-    var c = curS();
     var b = e.target.closest('button');
-    if (!b || (S[key] === b.dataset.v && !(key === 'cards' && !S.cardsPicked && c && c.cards))) return;
-    if (key === 'cards') S.cardsPicked = true;   /* a pick beats slide 19's default */
+    if (!b || S[key] === b.dataset.v) return;
     S[key] = b.dataset.v; paint(); load();
   });
 }
-seg('segDay', 'day'); seg('segCards', 'cards'); seg('segFold', 'fold'); seg('segIdName', 'idname'); seg('segSkip', 'skip');
-/* Day 01 opens on its onboarding (the build's welcome flow) unless Skip onboarding is on; Day 30 has none */
+seg('segDay', 'day'); seg('segSkip', 'skip');
+/* Day 01 opens on its onboarding (the build's welcome flow) unless Skip onboarding is on; Day 30 has none.
+   intro=0 is what hides the welcome. skip=1 is only the entry flag and is not read. */
 function introQ(day) { return day === 'DayOne' && S.skip === 'on' ? '&intro=0' : ''; }
-
-function cardsOf(s) { return 'tab'; }   /* 2 Tabs only */
-/* Christine, 20 Oct: the Vault intro is the banner in both versions (no Page
-   option), and the name comes with Tabs — 1 Tab (Toggle) says Folder, 2 Tabs
-   Identity — so neither has a control of its own any more. */
-/* Christine, 20 Oct: two onboarding options — inside (Home's alias card moves
-   into the Vault and opens the intro) / outside (Home as it is, the Vault only
-   has its one-line description) */
-function introOf(s) { return 'outside'; }   /* Christine, 21 Oct: onboarding stays outside the Vault — no option */
-/* 1 Tab has two versions (20 Oct): Folders = the ID card wallet, or a folder list where ID cards are Vault items — then they are identities again */
-/* Christine, 21 Oct: 2 Tabs only — the second tab can be called “Alias ID” instead of Identity (row “Tab name”) */
-function nameOf(s) { return 'identity'; }   /* 2 Tabs version: always Identity (21 Oct) */   /* 21 Oct: 1 Tab has one version — ID cards top right, real folders in the toggle */
-function foldOf(s) { return ''; }   /* 21 Oct: the Folder list version is retired (code stays behind ut2fold=list) */
+/* 2 Tabs, always Identity, Vault intro outside. ut2.js still honours other values by URL. */
+var UT2_NAME = 'identity', UT2_CARDS = 'tab', UT2_INTRO = 'outside';
 
 function block(k, body) { return '<div class="blk"><div class="k">' + k + '</div>' + body + '</div><div class="rule"></div>'; }
 var det = document.createElement('div'); det.className = 'det';
@@ -387,20 +369,18 @@ var AGAIN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 
 function paint() {
   var s = curS();
-  var cur = { day: (s && s.day) || S.day, name: nameOf(s), cards: cardsOf(s), intro: introOf(s), fold: S.fold === 'list' ? 'list' : 'cards', idname: S.idname === 'aliasid' ? 'aliasid' : 'identity', skip: S.skip === 'on' ? 'on' : 'off' };   /* show the build actually loaded */
+  var cur = { day: (s && s.day) || S.day, skip: S.skip === 'on' ? 'on' : 'off' };
   $('ctlSkip').hidden = $('ruleSkip').hidden = cur.day !== 'DayOne';   /* only Day 01 has an onboarding */
-  $('ctlFold').hidden = $('ruleFold').hidden = true;   /* 21 Oct: one 1 Tab version, no Folders control */
-  $('ctlIdName').hidden = $('ruleIdName').hidden = true;   /* no Tab name control in this version */
-  [['segDay', 'day'], ['segCards', 'cards'], ['segFold', 'fold'], ['segIdName', 'idname'], ['segSkip', 'skip']].forEach(function (p) {
+  [['segDay', 'day'], ['segSkip', 'skip']].forEach(function (p) {
     $(p[0]).querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === cur[p[1]]); });
   });
   check.querySelectorAll('.row').forEach(function (b) { b.classList.toggle('on', +b.dataset.i === S.i); });
   if (!s) {
     if (det.parentNode) det.parentNode.removeChild(det);
-    try { localStorage.setItem('ut2-launcher-2tabs', JSON.stringify(S)); } catch (e) {}
+    try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {}
     return;
   }
-  var fill = function (t) { return esc(t).replace(/\[Name\]/g, NAMES[nameOf(s)]); };
+  var fill = function (t) { return esc(t).replace(/\[Name\]/g, NAMES[UT2_NAME]); };
   var html = '<div class="rule"></div>';
   if (s.done) {
     var modeSeg = '<div class="seg" id="segMode"><button data-v="before"' + (S.mode === 'before' ? ' class="on"' : '') + '>Before</button><button data-v="after"' + (S.mode === 'after' ? ' class="on"' : '') + '>After</button></div>';
@@ -430,7 +410,7 @@ function paint() {
     if (top < check.scrollTop + 40) check.scrollTop = Math.max(0, top - 40);
     else if (bottom > check.scrollTop + check.clientHeight) check.scrollTop = Math.min(top - 40, bottom - check.clientHeight + 24);
   }
-  try { localStorage.setItem('ut2-launcher-2tabs', JSON.stringify(S)); } catch (e) {}
+  try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {}
 }
 
 var TABS = { a1: 'activity', c1: 'idcard', c2: 'vaults', c3: 'vaults', c4: 'vaults', c6: 'vaults', c7: 'vaults', v07: 'vaults', v08: 'vaults', v09: 'idcard', v10: 'vaults', v14: 'home', t11: 'home', t13: 'vaults', v20: 'idcard', v21: 'vaults', t19: 'vaults', v22: 'vaults' };
@@ -439,7 +419,7 @@ function load() {
   var s = curS();
   if (!s) {   /* nothing picked: the plain prototype, home, no ring */
     frame.src = 'V2/' + S.day + '/app.html?skip=1&tab=home' + introQ(S.day) +
-      '&ut2=after&ut2name=' + nameOf(null) + '&ut2cards=' + cardsOf(null) + foldOf(null) + '&ut2intro=' + introOf(null) + '&v=20261021-ut97';
+      '&ut2=after&ut2name=' + UT2_NAME + '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO + '&v=20261021-ut97';
     loading.textContent = 'Opening the prototype…';
     loading.classList.add('on');
     clearTimeout(hideT); hideT = setTimeout(function () { loading.classList.remove('on'); }, 2500);
@@ -448,8 +428,8 @@ function load() {
   var day = s.day || S.day;   /* some changes only exist on one day */
   frame.src = 'V2/' + day + '/app.html?skip=1&tab=' + (TABS[s.id] || s.tab || 'home') +
     introQ(day) +
-    '&ut2=' + (s.done ? S.mode : 'after') + '&ut2name=' + nameOf(s) +
-    '&ut2cards=' + cardsOf(s) + foldOf(s) + '&ut2intro=' + introOf(s) +
+    '&ut2=' + (s.done ? S.mode : 'after') + '&ut2name=' + UT2_NAME +
+    '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO +
     (s.done ? '&ut2go=' + s.id : '') + '&v=20261021-ut97';
   loading.textContent = (s.id === 'c7' || (s.id === 'v09' && (s.day || S.day) === 'DayOne')) ? 'Playing the flow…' : 'Opening the screen…';
   loading.classList.add('on');

@@ -37,6 +37,10 @@
 <script>
 (function () {
   var V = '20261021-ut97';
+  /* Same entry as the desktop launcher with Skip onboarding Off.
+     skip=1 is that launcher's entry flag; it is not read by the build and
+     does not hide Day 01's welcome. intro=0 is what skips it, and this page
+     never sends it. ut2m=1 is only the phone's two-finger menu. */
   var Q = '?skip=1&tab=home&ut2=after&ut2name=identity&ut2cards=tab&ut2intro=outside&ut2m=1&v=' + V;
   var URL = { DayOne: 'V2/DayOne/app.html' + Q, Day30: 'V2/Day30/app.html' + Q };
   function fit() {

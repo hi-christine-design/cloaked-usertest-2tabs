@@ -30290,9 +30290,9 @@ body.cards #vtL2Body { padding: 20px 0 12px; }
     + 'some any lucky number numbers use using want wants would could should').split(' ');
 
   var S = { photo:'', kind:'email', alias:false, title:'', value:'', words:'', remember:false,
-            /* on by default — Yuan, 25 Aug: "email和phone creation，forward的
-               toggle都需要auto on" */
-            fwd:true, mid:'', dom:DOMAINS[0], area:'415', ex:'236', last:'4325', art:null,
+            /* Off until a sheet sets it. openForm overwrites this on every
+               open; cnaOpen turns the generate-alias sheet On. */
+            fwd:false, mid:'', dom:DOMAINS[0], area:'415', ex:'236', last:'4325', art:null,
             user:'', site:'', pass:'', shown:false, card:'', acct:'', note:'', passwordCtx:null };
   /* Thirty days in, so there are already aliases to choose from. The three the
      reference names, plus anything minted in this session. Figma 6934-193404. */
@@ -30895,12 +30895,12 @@ body.cards #vtL2Body { padding: 20px 0 12px; }
   function openForm(alias, opts) {
     opts = opts || {};
     S.alias = !!alias;
-    /* Forward defaults ON — Yuan, 25 Aug: "email和phone creation，forward的
-       toggle都需要auto on". This is the line that decides it: the S reset's own
-       `fwd` is overwritten here on every open, so changing that alone did
-       nothing. An explicit false is still honoured. */
+    /* Forward defaults Off, matching Day 01's New email alias form. This is
+       the line that decides it: the S reset's own `fwd` is overwritten here
+       on every open, so changing that alone did nothing. Pass opts.forward
+       to override. cnaOpen sets the generate-alias sheet On itself. */
     S.title = opts.title || ''; S.value = ''; S.photo = ''; S.photoLoading = null;
-    S.fwd = (opts.forward === undefined) ? true : !!opts.forward;
+    S.fwd = (opts.forward === undefined) ? false : !!opts.forward;
     S.note = opts.note || ''; S.passwordCtx = opts.passwordCtx || null;
     if (!S.remember) S.words = '';
     reroll();

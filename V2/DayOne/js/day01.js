@@ -1350,10 +1350,18 @@ function cycleActView() {
     }, 1800);
   }
 
+  function createFromWelcome() {
+    skipToHome();
+    if (typeof window.goTab === 'function') window.goTab('idcard');
+    var btn = document.querySelector('#icIntro .ici-btn:not(.ghost)');
+    if (btn) btn.click();
+    else if (typeof window.icOpenCreate === 'function') window.icOpenCreate();
+  }
+
   function dismissWelcome() {
     var wf = document.getElementById('welcomeFlow');
     var card = document.getElementById('wfFoundCard');
-    var laterBtn = document.getElementById('wfLaterBtn');
+    var laterBtn = document.querySelector('.wf-found-actions') || document.getElementById('wfLaterBtn');
     var bgGlow = document.getElementById('wfBgGlow');
     var dashboard = document.querySelector('.dashboard');
 
@@ -1365,7 +1373,7 @@ function cycleActView() {
        does not interpolate — it snaps. Christine 8/20. */
     card.style.width = card.offsetWidth + 'px';
 
-    // Slide Later button down off-screen
+    // Slide the Create / Later stack down off-screen
     laterBtn.style.transform = 'translateY(120px)';
     laterBtn.style.opacity = '0';
     laterBtn.style.pointerEvents = 'none';
