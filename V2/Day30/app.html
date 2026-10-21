@@ -9569,7 +9569,7 @@ window.selectableRow = function (html, guarded) {
       <div class="mk-d-name" id="mkDName">&nbsp;</div>
     </div>
     <button class="mk-d-row" onclick="mkToast('Email copied')">
-      <span class="mk-d-k">Generated email</span>
+      <span class="mk-d-k">Email</span>
       <span class="mk-d-v" id="mkDAddr"></span>
       <span class="mk-d-copy">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5H6a2 2 0 0 0-2 2v9"/></svg>
@@ -20820,14 +20820,13 @@ window.vtSearchToggle = function (btn) {
   }, true);
 
   var VALUE_LABEL = {
-    email: 'Cloaked email', phone: 'Cloaked number', card: 'Virtual card',
+    email: 'Email', phone: 'Phone', card: 'Virtual card',
     login: 'Signs in with', bank: 'Account', address: 'Address'
   };
   /* On a detail page the header already says which item this is, so the value
-     row names the field rather than repeating the kind: "Address", not
-     "Cloaked email". */
+     row names the field: "Email" or "Phone", not "Cloaked email" or "Address". */
   var ROW_LABEL = function (g) {
-    return ({ email: 'Address', phone: 'Number', bank: 'Account number' })[g] ||
+    return ({ email: 'Email', phone: 'Phone', bank: 'Account number' })[g] ||
            VALUE_LABEL[g] || 'Value';
   };
 
@@ -22873,7 +22872,7 @@ window.vtSearchToggle = function (btn) {
     if (storedOnly) {
       $('vtL3Scroll').innerHTML =
         '<div class="vt-hero logo-only"><div class="vt-hero-av">' + avatarHTML(it.icon, it, { dark: avDecideItem(it).alias }) + '</div></div>' +
-        valueRowHTML(ROW_LABEL(g), it.desc || '', 'Address copied') +
+        valueRowHTML(ROW_LABEL(g), it.desc || '', 'Email copied') +
         '<div class="vt-tail"></div>';
       $('vtL3Scroll').scrollTop = 0;
       $('vtL3').classList.add('open');
@@ -30598,7 +30597,7 @@ body.cards #vtL2Body { padding: 20px 0 12px; }
     '</div>',
     '<div id="nqAliasDim"></div>',
     '<div class="nq-alias" id="nqAlias">',
-      '<div class="nq-alias-t">Email alias</div>',
+      '<div class="nq-alias-t">Email</div>',
       '<div class="nq-alias-in" id="nqAliasIn"></div></div>',
     '<div class="vt-sheet" id="nqPick" role="dialog" aria-modal="true" aria-label="Add">',
       '<div class="vt-sheet-grab"></div>',
@@ -31293,8 +31292,8 @@ body.cards #vtL2Body { padding: 20px 0 12px; }
       S.kind === 'password' ? 'Username'
       : S.kind === 'card' ? 'Card'
       : S.kind === 'bank' ? 'Account'
-      : S.kind === 'phone' ? (S.alias ? 'Phone alias' : 'Phone number')
-      : (S.alias ? 'Email alias' : 'Email');
+      : S.kind === 'phone' ? 'Phone'
+      : 'Email';
     $('nqDFwd').textContent = S.kind === 'phone' ? MAIN_PHONE : MAIN_EMAIL;
     $('nqDPause').textContent = S.kind === 'phone' ? 'Lock the number' : 'Lock the email';
     /* Reset only the LABEL here; whether the list starts open is decided below,

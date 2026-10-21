@@ -377,7 +377,7 @@
      the build's own callers do (goTab('idcard') then icOpenCreate()). */
   var ALIAS = { on: false };
   var ALIAS_SEC = { phone: 'Phone', email: 'Email', card: 'Payment card' };
-  var ALIAS_LAB = { phone: 'Generated number', email: 'Cloaked email', card: 'Card number' };
+  var ALIAS_LAB = { phone: 'Phone', email: 'Email', card: 'Card number' };
   var ALIAS_EMPTY = { phone: 'No call & message yet', email: 'No email yet', card: 'No transactions yet' };
   var ALIAS_CTA = { phone: 'Add contact', email: 'Copy email', card: 'Copy number' };
   function openAliasFlow() {
@@ -565,7 +565,7 @@
       return '<div class="li"><span class="av">' + icon + '</span><div class="tx"><b>' + t + '</b><span>' + sub + '</span></div></div>';
     }
     howDim = el('<div class="ut2-shdim ut2-howdim"></div>');
-    how = el('<div class="ut2-sheet ut2-how ut2-noren" role="dialog" aria-label="How it works">' +
+    how = el('<div class="ut2-sheet ut2-how ut2-noren" role="dialog" aria-label="How your ' + N.one + ' works">' +
       '<h3>How your ' + N.one + ' works</h3>' +
       li(HOW_OUT, 'Messages come to you', 'Emails forward to ' + REAL_EMAIL) +
       li(HOW_HIDE, 'Sites only see the alias', 'Your real email and number stay hidden.') +
@@ -1363,9 +1363,9 @@
   var AF = { phone: { h: 'New phone number', lab: 'Phone', ph: '000-000-0000', mine: REAL_PHONE, hide: 'Hide my phone', tp: 'Work' },
              email: { h: 'New email', lab: 'Email', ph: 'example.com', mine: REAL_EMAIL, hide: 'Hide my email', tp: 'example.com' },
              card:  { h: 'Add a payment card', lab: 'Card number', ph: '1234 1234 1234 1234', mine: '', hide: 'Hide my card', tp: 'Free trials, Online shopping…' } };
-  var AF_HOW = { phone: ['Your new number', 'Give it out instead of your real one. Calls and texts still reach your phone, and you can mute the number any time.'],
-                 email: ['Your new email alias', 'Sign up with it anywhere. Mail forwards to ' + REAL_EMAIL + ' — turn forwarding off when it gets noisy.'],
-                 card:  ['Your new virtual card', 'Pay with it online like any card. Charges go to your real card; the merchant never sees your number.'] };
+  var AF_HOW = { phone: ['How your phone works', 'Give it out instead of your real one. Calls and texts still reach your phone, and you can mute the number any time.'],
+                 email: ['How your identity works', 'Sign up with it anywhere. Mail forwards to ' + REAL_EMAIL + ' — turn forwarding off when it gets noisy.'],
+                 card:  ['How your card works', 'Pay with it online like any card. Charges go to your real card; the merchant never sees your number.'] };
   var AF_ROLL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 4.2v4.6h-4.6"/></svg>';
   function afCardNum() { var d = function (n) { var o = ''; for (var i = 0; i < n; i++) o += Math.floor(Math.random() * 10); return o; }; return '4111 2098 ' + d(4) + ' ' + d(4); }
   function openAddForm(k) {
@@ -1477,7 +1477,7 @@
   };
   var HOW2 = {
     email: ['How your identity works', [['out', 'Messages come to you', 'Emails forward to ' + REAL_EMAIL], ['hide', 'Sites only see the alias', 'Your real email and number stay hidden.'], ['twofa', 'Login codes still arrive', '2FA codes forward like any other messages.']]],
-    phone: ['How your number works', [['out', 'Calls and texts come to you', 'They forward to ' + REAL_PHONE], ['hide', 'People only see the alias', 'Your real number stays hidden.'], ['twofa', 'Login codes still arrive', '2FA texts forward like any other messages.']]],
+    phone: ['How your phone works', [['out', 'Calls and texts come to you', 'They forward to ' + REAL_PHONE], ['hide', 'People only see the alias', 'Your real number stays hidden.'], ['twofa', 'Login codes still arrive', '2FA texts forward like any other messages.']]],
     card:  ['How your card works', [['out', 'Pay like any card', 'Charges go to your real card.'], ['hide', 'Merchants only see the alias', 'Your real card number stays hidden.'], ['lock', 'Lock or limit any time', 'Set a spending limit or pause the card.']]]
   };
   function howTray2(k, fwdOn) {
@@ -1964,7 +1964,7 @@
   function foldEmpty() {
     var head = q('#icL1 .blank-head'), scr = q('#icL1Scroll');
     if (head && !head.querySelector(':scope > .ut2-fq')) {
-      var b = el('<button type="button" class="ut2-fq ut2-noren" aria-label="How folders work">' + Q_SVG + '</button>');
+      var b = el('<button type="button" class="ut2-fq ut2-noren" aria-label="What is an identity?">' + Q_SVG + '</button>');
       b.addEventListener('click', function () { if (typeof window.ichOpen === 'function') window.ichOpen(); });
       head.appendChild(b);
     }
@@ -2402,7 +2402,7 @@
         '<img class="im" src="' + ONB_IC.replace('icons/', 'img/') + 'onb-idcard.png" alt=""></div>' +
       '</div>' +
       row('r1', at, 'Margaret611@gmail.com') + row('r2', pyAv('#96D3E9', '#1A4459'), '•••• 4821') + row('r3', phAv('#83244F', '#D5A2B9'), '281-380-9123') +
-      '<button type="button" class="add" tabindex="-1">' + ADD_SVG + '<span>Add to ID card</span></button>' +
+      '<button type="button" class="add" tabindex="-1">' + ADD_SVG + '<span>Add to identity</span></button>' +
       '</div>';
   }
   var ONB_CARDS = [
@@ -2416,7 +2416,7 @@
       p: 'Pay with an alias card. The shop never sees your real card number, and the charge still comes from your own account.',
       v: onbPay() },
     { h: 'Group them by situation',
-      p: 'A folder keeps the aliases for one part of your life together, like a trip, dating or free trials',
+      p: 'An identity keeps the aliases for one part of your life together, like a trip, dating or free trials',
       v: onbFolder() }
   ];
   /* Christine, 19 Oct (Figma 9558:64871): a second version. The Vault opens
@@ -2458,7 +2458,7 @@
      level at the top, the grey pattern (the wallet card's art, not the dark
      engraved one) in the middle, the rows on the colour, then Activities. */
   /* Figma 9706:64459 (Christine, 21 Oct): rows in bands on the colour —
-     Phone · Email + Email forwarding · Card (name + last four, card art) and,
+     Phone · Email + Forward to · Card (name + last four, card art) and,
      under Show all, Bank Account · Address · URL and the other kinds picked in
      the create flow. The build's rows stay (their tap opens the row's tray);
      ours are added beside them. Identities made before this session get the
@@ -2506,7 +2506,7 @@
       [].forEach.call(es, function (r) { var v = ((r.querySelector('.ic-card-v') || {}).textContent || '').trim();
         vault.forEach(function (x) { if (x.g === 'email' && String(x.it.desc || '').trim() === v && x.it.ut2fwd) fwdOn = true; }); });
       es[es.length - 1].insertAdjacentHTML('afterend',
-        '<div class="ut2-idrow" data-g="e"><span class="ic-card-k">Email forwarding</span><span class="ic-card-v">' + (fwdOn ? 'On' : 'Off') + '</span></div>');
+        '<div class="ut2-idrow" data-g="e"><span class="ic-card-k">Forward to</span><span class="ic-card-v">' + (fwdOn ? 'On' : 'Off') + '</span></div>');
     }
     var ex = idExtraOf(title);
     ex.forEach(function (r) {

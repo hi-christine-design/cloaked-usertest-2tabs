@@ -3706,14 +3706,13 @@ function cycleActView() {
   }, true);
 
   var VALUE_LABEL = {
-    email: 'Cloaked email', phone: 'Cloaked number', card: 'Virtual card',
+    email: 'Email', phone: 'Phone', card: 'Virtual card',
     login: 'Signs in with', bank: 'Account', address: 'Address'
   };
   /* On a detail page the header already says which item this is, so the value
-     row names the field rather than repeating the kind: "Address", not
-     "Cloaked email". */
+     row names the field: "Email" or "Phone", not "Cloaked email" or "Address". */
   var ROW_LABEL = function (g) {
-    return ({ email: 'Address', phone: 'Number', bank: 'Account number' })[g] ||
+    return ({ email: 'Email', phone: 'Phone', bank: 'Account number' })[g] ||
            VALUE_LABEL[g] || 'Value';
   };
 
@@ -5748,7 +5747,7 @@ function cycleActView() {
     if (storedOnly) {
       $('vtL3Scroll').innerHTML =
         '<div class="vt-hero logo-only"><div class="vt-hero-av">' + avatarHTML(it.icon, it, { dark: avDecideItem(it).alias }) + '</div></div>' +
-        valueRowHTML(ROW_LABEL(g), it.desc || '', 'Address copied') +
+        valueRowHTML(ROW_LABEL(g), it.desc || '', 'Email copied') +
         '<div class="vt-tail"></div>';
       $('vtL3Scroll').scrollTop = 0;
     /* the controls are a fact about the list, so they are settled once it exists */
@@ -12212,7 +12211,7 @@ window.ACTIONS = (function () {
     }
 
     /* ── detail page (Figma 6595:336588) ─────────────────────── */
-    var DET_LAB = { email: 'Cloaked email', phone: 'Generated number' };
+    var DET_LAB = { email: 'Email', phone: 'Phone' };
     function openDetail(item, row) {
       var p = $('d1jDetail');
       if (!p) {
@@ -12368,7 +12367,7 @@ window.ACTIONS = (function () {
         t2: 'Customize your number', g2: 'EX:area code, last 4 number', tall2: false,
         c2: ['415-Your area', '212-New York', '305-Miami'],
         gen: 'Generating phone number now...', made: 'Your phone number is created!',
-        section: 'Phone', vlab: 'Generated number', glyph: G.brief,
+        section: 'Phone', vlab: 'Phone', glyph: G.brief,
         empty: 'No call & message yet', cta: 'Add contact'
       },
       email: {
@@ -12380,7 +12379,7 @@ window.ACTIONS = (function () {
         t2: 'Any favorite words you’d like me to use?',
         g2: 'EX: A spiderman lover living in new york', tall2: true, c2: [],
         gen: 'Generating your email now...', made: 'Your email is created!',
-        section: 'Email', vlab: 'Generated email', glyph: G.at,
+        section: 'Email', vlab: 'Email', glyph: G.at,
         empty: 'No email yet', cta: 'Copy email'
       }
     };
