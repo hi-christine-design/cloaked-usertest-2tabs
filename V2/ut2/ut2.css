@@ -1278,6 +1278,13 @@ html.ut2-ivc #icL1 .blank-head .ut2-icback svg { width: 24px; height: 24px; }
 .ut2-vtray .vtc { position: absolute; left: 20px; right: 20px; bottom: 34px; margin: 0; cursor: default;
   transform: translateY(calc(100% + 60px)); transition: transform .42s cubic-bezier(.32, .72, 0, 1); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; }
 .ut2-vtray.on .vtc { transform: none; }
+/* Day 01 What's vault: a short card in the list. No banner art, so the
+   placeholder address in that image stays hidden, and the Vault stays visible. */
+.ut2-wv { position: relative; margin: 8px 20px 12px; padding: 20px 48px 16px 16px; border-radius: 16px; background: #141410; color: #F3F1ED; }
+.ut2-wv h3 { margin: 0; font: 400 24px/1.1 ui-serif, "New York", Simula, Georgia, serif; }
+.ut2-wv p { margin: 8px 0 0; font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: rgba(255, 255, 255, .6); }
+.ut2-wv .x { position: absolute; right: 12px; top: 16px; width: 24px; height: 24px; padding: 0; border: 0; background: none; color: #F3F1ED; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.ut2-wv .x svg { width: 24px; height: 24px; }
 
 /* 21 Oct, Figma 9659:87447 — the Items | Folders toggle, icons only: 93×47
    r300 glass (white 50%, 0 0 8 black 8%), two 40 circles at 4 / 49, the one
@@ -1506,12 +1513,12 @@ html.ut2-vtrayon .ut2-mark { visibility: hidden; }   /* 21 Oct: the Day 01 Vault
 .ut2-how2 .vtc::before { display: none; }
 .ut2-how2 .vtc h3 { margin: 0; padding: 32px 20px 16px; background: #fff; font: 400 24px/1.1 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: 0; color: #141410; }
 .ut2-how2 .vtc .x { display: none; }
-.ut2-how2 .hrow { display: flex; align-items: center; gap: 12px; height: 80px; padding: 20px; box-sizing: border-box; background: #fff; }
+.ut2-how2 .hrow { display: flex; align-items: flex-start; gap: 12px; height: auto; min-height: 80px; padding: 20px; box-sizing: border-box; background: #fff; }
 .ut2-how2 .hrow .av { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 12px; background: #141410; color: #F3F1ED; display: flex; align-items: center; justify-content: center; }
 .ut2-how2 .hrow .av svg { width: 24px; height: 24px; display: block; }
 .ut2-how2 .hrow .av .b2 { font: 600 10.5px/1 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; padding: 3px 4px; border: 1.5px solid #F3F1ED; border-radius: 2px; letter-spacing: 0; }
 .ut2-how2 .hrow .tx { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0; }
 .ut2-how2 .hrow b { font-weight: 400; font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ut2-how2 .hrow i { font-style: normal; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #84827E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-how2 .hrow i { font-style: normal; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #84827E; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 .ut2-how2 .foot { background: #fff; padding: 10px 10px 22px; }
 .ut2-how2 .ok { display: block; width: 100%; height: 56px; border: 0; border-radius: 240px; background: #0B0B0A; color: #fff; font: inherit; font-size: 16px; letter-spacing: -0.32px; cursor: pointer; }

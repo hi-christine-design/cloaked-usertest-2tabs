@@ -1380,7 +1380,7 @@
       rowIn(A.lab, 'value', A.ph, k === 'phone' ? 'tel' : 'text').replace('</label>', '<button type="button" class="rr" aria-label="Try another">' + AF_ROLL + '</button></label>') +
       (k === 'card' ? rowIn('Expiration date', 'exp', 'MM/YY') + rowIn('Security code', 'cvc', '123') : '') +
       '<div class="band"></div>' +
-      '<div class="row fwd" hidden><span class="col"><span class="fk">Forward to</span><span class="fv">' + esc(REAL_EMAIL) + '</span></span><button type="button" class="ut2-tgl on" role="switch" aria-checked="true" aria-label="Forward to ' + esc(REAL_EMAIL) + '"><i></i></button></div>' +
+      '<div class="row fwd" hidden><span class="col"><span class="fk">Forward to</span><span class="fv">' + esc(REAL_EMAIL) + '</span></span><button type="button" class="ut2-tgl" role="switch" aria-checked="false" aria-label="Forward to ' + esc(REAL_EMAIL) + '"><i></i></button></div>' +
       '<button type="button" class="row tap" data-t="Select a folder or tag"><span>+ Add folder or tag</span></button>' +
       rowIn('Notes', 'note', '') +
       '<button type="button" class="ut2-con-save" disabled>Create</button>' +
@@ -1390,7 +1390,7 @@
     var save = p.querySelector('.ut2-con-save'), bar = p.querySelector('.ut2-hbar'), fwd = p.querySelector('.row.fwd');
     /* the bar rides the keyboard, so it lives beside the page, not inside the scroller */
     (document.querySelector('.phone-frame') || document.body).appendChild(bar);
-    var st = { alias: false, fwd: true };
+    var st = { alias: false, fwd: false };
     var check = function () { save.disabled = !(f('title').value.trim() && f('value').value.trim()); };
     p.addEventListener('input', check);
     var tick = setInterval(function () { if (!p.isConnected) return clearInterval(tick); check(); }, 250);
@@ -2770,18 +2770,18 @@
     /* …but only over the Vault LIST: a tour that has already opened a flow or a page waits until you are back on it */
     if (q('.ut2-nid, .ut2-con.on, .ut2-bp, .ut2-oth.on, #nqForm.open, #nqPick.open, #vtL3.open, #d1jForm.on, .d1j-flow.on, .d1j-trayw.on')) return;
     if (q('#vtAdd.open, #d1jAdd.on')) return;
+    var scr = q('#vtL2Scroll');
+    if (!scr || scr.querySelector(':scope > .ut2-wv')) return;
     VTRAY.done = true;
-    var host = document.querySelector('.phone-frame') || document.body;
-    var t = el('<div class="ut2-vtray ut2-noren"><div class="dim"></div>' +
-      '<div class="ut2-onb-banner vtc" role="dialog" aria-label="What’s vault">' +
+    /* In the list, not a full-screen sheet: the old tray reused the 400px
+       banner art (it paints a placeholder address and covered the Vault). */
+    var t = el('<div class="ut2-wv ut2-noren" role="dialog" aria-label="What’s vault">' +
       '<button type="button" class="x" aria-label="Close">' + X_SVG + '</button>' +
-      '<h3>What’s vault</h3><p>Your saved logins, emails, phones and cards. Real ones and aliases.</p></div></div>');
-    host.appendChild(t);
-    document.documentElement.classList.add('ut2-vtrayon');   /* a tour's marks wait under it */
-    requestAnimationFrame(function () { requestAnimationFrame(function () { t.classList.add('on'); }); });
-    var close = function () { t.classList.remove('on'); document.documentElement.classList.remove('ut2-vtrayon'); setTimeout(function () { t.remove(); }, 400); };
-    t.querySelector('.x').addEventListener('click', function (e) { e.stopPropagation(); close(); });
-    t.querySelector('.dim').addEventListener('click', close);
+      '<h3>What’s vault</h3><p>Your saved logins, emails, phones and cards. Real ones and aliases.</p></div>');
+    var stick = q('#vtL2Stick');
+    if (stick && stick.parentNode === scr) scr.insertBefore(t, stick);
+    else scr.insertBefore(t, scr.firstChild);
+    t.querySelector('.x').addEventListener('click', function (e) { e.stopPropagation(); t.remove(); });
   }
   function mountOnb() {
     if (!AFTER || !DAY1) return;     /* 19 Oct (later): both versions get the intro — the launcher pairs Toggle with the page and Tab with the banner */

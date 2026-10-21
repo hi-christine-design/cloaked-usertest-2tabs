@@ -7968,7 +7968,7 @@ html.day1 #vtL2Stick { padding-bottom: 0; }
   .vt-row-desc {
     display: block; margin-top: 2px;
     font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: var(--vt-ink-2);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere;
   }
   /* Sits at the end of the row, after the Guard pill when there is one. 44px of
      target for a 24px mark — the icon is the smallest thing on this screen and
