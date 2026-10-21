@@ -1,0 +1,1844 @@
+/* Cloaked Pay — shared styles. */
+:root{
+  --text-primary:#141410;
+  --text-secondary:#84827e;
+  --text-tertiary:#a8a5a0;
+  --bkgd-01:#141410;
+  --bkgd-02:#ffffff;
+  --graph-bg:#f3f1ed;
+  --divider:#e0ddd6;
+  --divider-dark:#ffffff1a;
+  --btn-bg:#0b0b0a;
+  --btn-text:#ffffff;
+  /* the accent is the Cloaked brand orange. It was gold, then briefly the
+     verified ramp's green; the variable keeps its old name so every call
+     site stays put. --gold-deep is the same hue at 55% for pressed/edges. */
+  --gold:#FF550C;
+  --gold-deep:#8C2F07;
+  --disabled-bg:#c9c7c4;
+  --disabled-text:#f0efec;
+  --page:#efeeea;
+
+  --radius-field:100px;
+  --radius-card:12px;
+  --btn-shadow:0 0 8px rgba(0,0,0,.08), 0 8px 16px rgba(0,0,0,.10);
+
+  --serif:ui-serif,"New York","Iowan Old Style",Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro","Helvetica Neue",Inter,system-ui,sans-serif;
+
+  /* ---- MOTION TOKENS (live-tunable) ---- */
+  --dur-push:420ms;        --ease-push:cubic-bezier(.32,.72,0,1);
+  --dur-welcome:1400ms;    --ease-welcome:cubic-bezier(.4,0,.2,1);
+  --dur-flood:900ms;       --ease-flood:cubic-bezier(.22,1,.36,1);
+  --dur-cardrise:760ms;    --ease-cardrise:cubic-bezier(.34,1.4,.64,1);
+  --dur-select:200ms;      --ease-select:cubic-bezier(.2,0,0,1);
+  --dur-merchant:360ms;    --ease-merchant:cubic-bezier(.32,.72,0,1);
+  --dur-progress:520ms;    --ease-progress:cubic-bezier(.65,0,.35,1);
+  --dur-disc:640ms;        --ease-disc:cubic-bezier(.34,1.56,.64,1);
+  --dur-stagger:70ms;
+
+  /* exact backdrop of bkgd-1, measured from the photo's top edge across the
+     visible crop — this is what the header must match, seamlessly */
+  --cover-bg:#141410;   /* every cover is dark now, matching the board */
+
+  /* cover load cascade — each element waits its turn, top to bottom */
+  --del-cover:900ms;
+  --del-card1:1300ms;
+  --del-card2:1450ms;
+
+  /* verified screen: art lands, then colour rises through it */
+  --dur-artin:520ms;   --ease-artin:cubic-bezier(.34,1.4,.64,1);
+  /* verify identity v1: the fill colour sweeps across the rings, left → right */
+  --dur-ringsweep:1700ms; --del-ringsweep:260ms;
+  --ease-ringsweep:cubic-bezier(.45,0,.25,1);
+  --ring-ink:#84827e;  --ring-fill:#ff550c;
+  /* heavy ID card (verify identity v1). Gold is Figma Category/Gold-Pay-01;
+     the beige is a raw hex in the file, matched to the storybar's idle tone */
+  --idcard-beige:#e0ddd6; --idcard-gold:#be9703; --dur-idh:4200ms;
+  /* the fingerprint print (verify identity v2) */
+  --print-ridge:#d7d7d7; --print-fill:#ff550c; --print-weight:2.6;
+  /* 0.75× the first pass (279×329), strokes held at 3px by non-scaling-stroke */
+  --ring-w:209.25px;   --ring-h:246.75px;  --ring-weight:3;
+  --dur-fillup:2100ms; --ease-fillup:cubic-bezier(.55,0,.45,1);
+  --dur-reveal:1500ms; --del-reveal:140ms;
+  --dur-btnrise:620ms;
+  --dur-float:7s; --dur-anchor:620ms;
+  /* camera: glide to the next card, then dwell on it */
+  --dur-cam:1000ms; --hold-cam:850ms;
+  --ease-cam:cubic-bezier(.16,1,.3,1);   /* leaves fast, settles slow */
+  --mb-max:6;                             /* motion-blur ceiling, px */
+  --tilt-max:9;                           /* how far the cards lean, deg */
+  --dur-sheet:560ms; --ease-sheet:cubic-bezier(.22,1,.28,1);
+  --expressive:cubic-bezier(.22,.61,.36,1);
+  --dur-cardsin:1500ms; --del-cardsin:420ms;
+  --ease-cardsin:cubic-bezier(.18,.72,.24,1);
+  /* v3 ring: how long a mark stays lit, and how fast the ring turns */
+  --hold-r3:2600ms; --dur-r3swap:1500ms; --spin-r3:0.055;
+  --ease-r3swap:cubic-bezier(.38,.02,.24,1);   /* eases in and out of the rise */
+  --r3sweep:linear-gradient(180deg,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,0) 28%, rgba(0,0,0,.08) 36%,
+      rgba(0,0,0,.28) 44%, rgba(0,0,0,.58) 52%, rgba(0,0,0,.85) 60%,
+      #000 68%, #000 100%);                       /* longer, softer edge */
+  --dur-wave:900ms;  --del-wave:200ms; --ease-wave:cubic-bezier(.24,.9,.28,1);
+  --cream:#E8DCB5;
+  /* v4 recursive zoom: grow from nothing, hold, then expand past the frame */
+  /* whole cycle scaled x0.8 — cards change a touch faster (was 760/1200/420/1500/520) */
+  --dur-grow:608ms; --hold-v4:960ms; --hold-v4-first:336ms; --dur-expand:1200ms;
+  --dur-c4fade:416ms;   /* the card's own details leave as it opens out */
+  /* ...and the next card's details only arrive once the old ones are gone, so a
+     departing title never sits under an incoming logo. Both live at nearly the
+     same offset from the card centre, so any overlap in time is an overlap in
+     space. 40ms of clearance, then a short fade in. */
+  --del-c4in:456ms; --dur-c4in:240ms;
+  --ease-grow:cubic-bezier(.18,.9,.28,1); --ease-expand:linear;   /* the steps carry their own easing */
+  --tilt4-y:-13deg; --tilt4-x:6deg;
+  /* The card swings in as it grows. Signed opposite to --tilt4-y so the whole
+     life of a card is one continuous turn: in from +10, flat at full size, then
+     on through -13 as it opens out — rather than turning back on itself. */
+  --flip4:10deg;
+  --del-fill:620ms;
+
+  /* keyboard show / dismiss — iOS uses a slightly slower dismiss */
+  --dur-kbslide:420ms; --ease-kbslide:cubic-bezier(.32,.72,0,1);
+
+  /* title hand-off: lines leave upward, next screen's lines rise in,
+     each line on its own delay rather than the block moving as one */
+  /* accordion expand — deliberately slow and smooth */
+  --dur-acc:1200ms; --ease-acc:cubic-bezier(.32,.72,0,1);
+  --dur-rowin:560ms; --del-row:70ms;
+  --dur-bounce:1050ms;
+
+  --dur-lineout:440ms; --ease-lineout:cubic-bezier(.6,0,.9,.3);
+  --dur-linein:560ms;  --ease-linein:cubic-bezier(.22,1,.36,1);
+  --del-line:90ms;
+  --del-settle:300ms;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+/* ===== bottom sheet ===== */
+.scrim{
+  position:absolute;inset:0;z-index:90;display:none;align-items:flex-end;
+  background:rgba(0,0,0,.55)
+}
+.scrim.open{display:flex;animation:fadeIn .2s ease}
+.sheet{
+  width:100%;background:var(--bkgd-02);border-radius:24px 24px 0 0;
+  padding:32px 24px 34px;max-height:78%;overflow-y:auto;
+  animation-name:sheetUp;animation-duration:var(--dur-push);
+  animation-timing-function:var(--ease-push)
+}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+.scrim.closing{
+  animation-name:fadeOut;
+  animation-duration:var(--dur-push);
+  animation-timing-function:var(--ease-push);
+  animation-fill-mode:forwards
+}
+.scrim.closing .sheet{
+  animation-name:sheetDown;
+  animation-duration:var(--dur-push);
+  animation-timing-function:var(--ease-push);
+  animation-fill-mode:forwards
+}
+@keyframes sheetDown{from{transform:none}to{transform:translateY(100%)}}
+.sheet h2{font-family:var(--sans);font-size:22px;font-weight:400;letter-spacing:-.02em;margin:0 0 16px}
+.sheet p{font-size:16px;line-height:1.32;color:var(--text-secondary);margin:0 0 16px;letter-spacing:-.01em}
+.sheet .link{margin:8px 0 24px}
+/* 24px SF Pro regular, not serif */
+.sheet h2.serif{font-family:var(--sans);font-size:24px;font-weight:400;letter-spacing:-.01em;margin:0 0 8px}
+.sheetlist{margin:0 -24px 22px}
+.sheetlist .radiorow{padding:18px 24px}
+.sheetlist .radiorow:first-of-type{border-top:1px solid var(--divider)}
+.link.muted{color:var(--text-secondary);margin-top:12px}
+/* sits on the text baseline rather than floating above it */
+.info-i{
+  display:inline-grid;place-items:center;width:1em;height:1em;border-radius:50%;
+  border:1px solid currentColor;font-size:.85em;line-height:1;cursor:pointer;
+  vertical-align:-.06em;margin:0 .12em;font-family:var(--sans);font-style:normal
+}
+.bodytext{font-size:14px;line-height:1.45;color:var(--text-secondary);letter-spacing:-.01em;margin:16px 0 0}
+/* phone field: flag + dial code + number */
+.namefield{position:relative;overflow:hidden}
+/* the invisible input that still receives focus and physical typing.
+   Not scoped to .namefield — the SSN field uses it too, and without these
+   rules it rendered as a default bordered input. */
+.nameghost{
+  position:absolute;inset:0;width:100%;padding:0 24px;
+  border:0;background:transparent;color:transparent;caret-color:transparent;
+  font-family:inherit;font-size:inherit;outline:0;
+  -webkit-appearance:none;appearance:none;box-shadow:none
+}
+.nametext{white-space:pre}
+/* the cursor only exists while the keyboard is up */
+.typecaret{
+  display:inline-block;width:2px;height:22px;background:#d8722f;
+  margin-left:2px;vertical-align:-4px;
+  animation-name:blink;animation-duration:1.1s;
+  animation-timing-function:step-end;animation-iteration-count:infinite
+}
+.cf-down .typecaret{display:none}
+.ssnfield{gap:0}
+.ssnfield .ssnph{color:var(--text-tertiary);letter-spacing:.12em}
+.ssnfield .ssntext{letter-spacing:.12em}
+.ssnfield .nameghost{pointer-events:none}
+.phonefield{gap:10px}
+.phonefield .flag{font-size:19px;line-height:1}
+.phonefield .cc{color:var(--text-primary)}
+
+/* ===== control tray — per controller-tray-style.md ===== */
+:root{
+  --panel-bg:#F3F1ED; --stage-bg:#F3F1ED;
+  --tray-text:#141410; --tray-mute:#8B8980;
+  --divider-bg:#E7E3DB;
+  --rule:#DCD8CF; --pill-on:#141410; --pill-on-tx:#F3F1ED; --tray-border:#141410;
+}
+body{
+  margin:0;min-height:100vh;display:flex;
+  font-family:'SF Pro Rounded',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  font-size:13px;color:var(--tray-text);background:var(--stage-bg);
+  font-feature-settings:'tnum' 1
+}
+.panel{
+  flex:4;min-width:240px;max-width:380px;
+  background:var(--panel-bg);
+  border-right-width:1px;border-right-style:solid;border-right-color:var(--rule);
+  padding:32px 20px;display:flex;flex-direction:column;gap:32px;
+  overflow-y:auto;max-height:100vh
+}
+.stage{flex:12;display:grid;place-items:center;background:var(--stage-bg);overflow:hidden}
+.brand{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--tray-mute)}
+.controls{display:flex;flex-direction:column;gap:22px;width:100%}
+.group{display:flex;flex-direction:column;gap:10px;width:100%}
+.group-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--tray-mute)}
+/* Three of these are section headers, not field labels — Flow, Intro Options and
+   Verify Identity Options. They read as bands: full-bleed back out through the
+   panel's 20px side padding, 32px tall, on a grey a step down from the panel so
+   they separate the tray into parts without needing rules. */
+.group-label.divider{
+  display:flex;align-items:center;
+  height:32px;margin:0 -20px;padding:0 20px;
+  background:var(--divider-bg);color:var(--tray-text)}
+.pills{display:flex;gap:4px;width:100%}
+/* two controls sharing a row. Each keeps its label above its own pills, so the
+   labels line up across the row on their own — no separate header row needed. */
+.grouprow{display:flex;gap:14px;width:100%;align-items:flex-start}
+.grouprow>.group{flex:1 1 0;min-width:0;width:auto}
+.pills.stack{flex-direction:column}
+.pill{
+  flex:1;background:transparent;color:var(--tray-mute);
+  border-width:1px;border-style:solid;border-color:var(--rule);
+  padding:7px 8px;border-radius:2px;
+  font-family:inherit;font-size:11px;line-height:1.35;
+  cursor:pointer;text-align:center;white-space:nowrap;
+  transition:background 140ms ease,color 140ms ease,border-color 140ms ease
+}
+.pills.stack .pill{text-align:left}
+.pill:hover{color:var(--tray-text);border-color:var(--tray-border)}
+.pill:disabled{opacity:.38;cursor:not-allowed;pointer-events:none}
+.pill[aria-pressed="true"]{background:var(--pill-on);color:var(--pill-on-tx);border-color:var(--pill-on)}
+
+/* ================= PROTOTYPE CHROME ================= */
+
+
+/* ================= PHONE ================= */
+.phone{
+  width:393px;height:852px;flex:0 0 auto;background:var(--bkgd-02);
+  border-radius:44px;position:relative;overflow:hidden;
+  box-shadow:0 0 0 10px #16161a,0 0 0 12px #34343a,0 30px 70px rgba(0,0,0,.32);
+  overscroll-behavior:none;touch-action:pan-y;
+  /* the tray can go dark; the phone keeps its own ink so nothing inside
+     inherits body colour and vanishes */
+  color:var(--text-primary);
+  font-family:var(--sans)
+}
+
+.screen{position:absolute;inset:0;display:none;flex-direction:column;background:var(--bkgd-02);padding-top:22px;overflow:hidden}
+/* cover runs edge to edge — no inset strip, and it owns the photo's backdrop colour */
+.screen.notop{padding-top:0;background:var(--cover-bg)}
+.screen.active{display:flex}
+.screen.dark{background:var(--bkgd-01);color:#f3f1ed}
+/* every screen cross-fades — the motion is carried by the titles, which
+   rise out and rise in, so a horizontal slide would fight it */
+.screen.active{z-index:1}
+.screen.fade{animation:fadeIn var(--dur-fade) var(--ease-fade)}
+.screen.exiting{
+  z-index:0;pointer-events:none;
+  animation-name:fadeOut;
+  animation-duration:var(--dur-fade);
+  animation-timing-function:var(--ease-fade);
+  animation-fill-mode:forwards
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+
+/* nav — toolbar block is 120px tall in Figma, icons centred at y=84 */
+.nav{display:flex;align-items:center;gap:14px;padding:40px 20px 0;flex:0 0 auto}
+.iconbtn{width:44px;height:44px;flex:0 0 auto;border:0;border-radius:50%;background:var(--graph-bg);display:grid;place-items:center;cursor:pointer;transition:transform .15s}
+.iconbtn:active{transform:scale(.93)}
+.iconbtn svg{width:20px;height:20px}
+.iconbtn.onbrand{background:rgba(255,255,255,.16)}
+.iconbtn.onbrand svg{stroke:#f3f1ed}
+.iconbtn.ondark{background:rgba(255,255,255,.1)}
+.iconbtn.ondark svg{stroke:#f3f1ed}
+.navspace{width:44px;height:44px;flex:0 0 auto}
+.progress{flex:1;display:flex;gap:6px;align-items:center}
+.progress i{flex:1;height:2px;border-radius:2px;background:#eceae5;position:relative;overflow:hidden}
+.progress i::after{
+  content:"";position:absolute;inset:0;background:var(--text-primary);
+  transform:scaleX(0);transform-origin:left;
+  transition:transform var(--dur-progress) var(--ease-progress)
+}
+.progress i.done::after{transform:scaleX(1)}
+.screen.dark .progress i{background:rgba(255,255,255,.16)}
+.screen.dark .progress i::after{background:#f3f1ed}
+
+/* body + type */
+.body{
+  flex:1;overflow-y:auto;overflow-x:hidden;padding:0 20px;
+  /* x locked, y must stay 'auto' so reaching the end chains to the page */
+  overscroll-behavior-x:none;overscroll-behavior-y:auto
+}
+.body.flush{padding:0}
+/* review screen: content settles to the bottom of the page */
+.body.flexcol{display:flex;flex-direction:column}
+.rows.bottom{margin-top:auto}
+/* each row fades in while rising, on a short stagger */
+.rows.stagger .row{
+  opacity:0;
+  animation-name:rowIn;
+  animation-duration:var(--dur-rowin);
+  animation-timing-function:var(--ease-push);
+  animation-fill-mode:both
+}
+.rows.stagger .row:nth-child(1){animation-delay:calc(var(--del-row)*0)}
+.rows.stagger .row:nth-child(2){animation-delay:calc(var(--del-row)*1)}
+.rows.stagger .row:nth-child(3){animation-delay:calc(var(--del-row)*2)}
+.rows.stagger .row:nth-child(4){animation-delay:calc(var(--del-row)*3)}
+.rows.stagger .row:nth-child(5){animation-delay:calc(var(--del-row)*4)}
+.rows.stagger .row:nth-child(6){animation-delay:calc(var(--del-row)*5)}
+@keyframes rowIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.body::-webkit-scrollbar{width:0}
+.head{padding:38px 0 0}
+h1{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.1;margin:0}
+h1.big{letter-spacing:-.01em}   /* size now matches the base 32px */
+h1.tight{max-width:15ch}
+/* narrow measure so titles break to ~2 lines (Review your / profile) */
+.head h1{max-width:15ch}
+.head.center{text-align:center}
+.head.center h1,.head.center .sub{margin-left:auto;margin-right:auto}
+/* narrower measure for body copy — matches the 296–310px text frames in Figma */
+.sub{font-size:16px;line-height:1.3;color:var(--text-secondary);margin:12px 0 0;letter-spacing:-.01em;max-width:300px}
+.sub.center{text-align:center;margin-left:auto;margin-right:auto}
+.screen.dark .sub{color:rgba(243,241,237,.6)}
+.link{font-size:16px;text-decoration:underline;text-underline-offset:3px;display:inline-block;margin-top:20px;cursor:pointer}
+
+/* fields */
+/* more air under the header so the form sits balanced in the page */
+.fields{margin-top:84px;display:flex;flex-direction:column;gap:24px}
+.fieldgroup{display:flex;flex-direction:column;gap:8px}
+.fieldrow{display:flex;gap:12px}
+.fieldrow>*{flex:1}
+label{font-size:14px;letter-spacing:-.01em}
+/* field labels: 14px, sentence case (was 12px all-caps) */
+label.caps{font-size:14px;letter-spacing:-.01em;text-transform:none}
+.field{
+  background:var(--graph-bg);border:0;border-radius:var(--radius-field);height:56px;padding:0 24px;width:100%;
+  font-family:var(--sans);font-size:16px;letter-spacing:-.01em;color:var(--text-primary);outline:0;
+  display:flex;align-items:center
+}
+input.field::placeholder{color:var(--text-tertiary)}
+.field.withicon{padding-right:56px}
+.field-wrap{position:relative}
+.field-icon{position:absolute;right:22px;top:50%;transform:translateY(-50%);cursor:pointer;display:grid;place-items:center}
+.field-icon svg{width:20px;height:20px;display:block}
+.field.select{justify-content:space-between;cursor:pointer}
+.caret{width:16px;height:16px}
+.hint{font-size:14px;color:var(--text-secondary);margin-top:16px}
+
+/* rows */
+.rows{margin:0}
+/* full-bleed rows: dividers run edge to edge, text keeps its 20px inset */
+.rows.full{margin:0 -20px}
+.rows.full .row{padding:24px 20px}
+.row{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:18px 0;border-bottom:1px solid var(--divider);font-size:16px;letter-spacing:-.01em}
+.row:first-child{border-top:1px solid var(--divider)}
+.row.tap{cursor:pointer}
+.row .v{text-align:right}
+.row .v.withlogo{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+
+/* accordion — div-based so the open/close height is animatable.
+   <details> can't be transitioned, which is why the auto-expand snapped. */
+/* the list runs edge to edge — dividers and grey bands are full-bleed,
+   only the text is inset */
+.accgroup{margin:0 -20px}
+.acc2{border-bottom:1px solid var(--divider)}
+.acc2:first-of-type{border-top:1px solid var(--divider)}
+.acc2.open .acc2-sum{border-bottom:1px solid var(--divider)}
+.acc2-sum{
+  width:100%;background:none;border:0;font-family:var(--sans);font-size:16px;
+  color:var(--text-primary);text-align:left;letter-spacing:-.01em;
+  padding:22px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer
+}
+.acc2-sum svg{width:18px;height:18px;flex:0 0 auto;transition:transform var(--dur-acc) var(--ease-acc)}
+.acc2.open .acc2-sum svg{transform:rotate(180deg)}
+.acc2-body{
+  height:0;overflow:hidden;
+  transition-property:height;
+  transition-duration:var(--dur-acc);
+  transition-timing-function:var(--ease-acc)
+}
+.acc2-inner{padding:0 0 4px}
+
+/* fee groups: labels on white, full-bleed grey bands between groups */
+.fee-head{font-size:16px;font-weight:500;letter-spacing:-.01em;padding:26px 20px 4px}
+.fee-row{
+  display:flex;justify-content:space-between;gap:16px;
+  padding:18px 20px;font-size:16px;letter-spacing:-.01em
+}
+.fee-row + .fee-row{
+  border-top:1px solid var(--divider);
+  background-clip:padding-box;
+  margin:0 20px;padding-left:0;padding-right:0     /* divider stays inset */
+}
+.fee-row.strong{font-weight:500}
+.fee-gap{height:12px;background:var(--graph-bg)}
+.legal{font-size:11px;line-height:1.45;color:var(--text-secondary);margin:14px 20px 0}
+.fee-row + .legal{border-top:1px solid var(--divider);padding-top:16px}
+
+/* funding list */
+.listrow{display:flex;align-items:center;gap:16px;padding:18px 20px;cursor:pointer;border-bottom:1px solid var(--divider);transition:background .15s}
+/* explicit wrapper: :first-of-type counted the head/spacer divs, so the
+   top hairline was never being drawn */
+.listgroup{border-top:1px solid var(--divider)}
+.listrow:active{background:#faf9f7}
+.badge{width:40px;height:40px;border-radius:50%;background:var(--gold);display:grid;place-items:center;flex:0 0 auto}
+.badge svg{width:20px;height:20px}
+.listrow .t{flex:1;min-width:0}
+.listrow .t b{display:block;font-weight:400;font-size:16px}
+.listrow .t span{display:block;font-size:14px;color:var(--text-secondary);margin-top:2px}
+.listrow .arrow{width:18px;height:18px;flex:0 0 auto}
+
+/* radio list (frequency) */
+.radiorow{display:flex;align-items:center;gap:16px;padding:18px 20px;cursor:pointer;border-bottom:1px solid var(--divider)}
+.radiorow:first-of-type{border-top:1px solid var(--divider)}
+.radiorow svg.ic{width:22px;height:22px;flex:0 0 auto}
+.radiorow .t{flex:1}
+.radiorow .t b{display:block;font-weight:400;font-size:16px}
+.radiorow .t span{display:block;font-size:14px;color:var(--text-secondary);margin-top:1px}
+.radio{width:26px;height:26px;border-radius:50%;background:#e0ddd6;flex:0 0 auto;display:grid;place-items:center;transition:background var(--dur-select) var(--ease-select)}
+.radio i{width:8px;height:8px;border-radius:50%;background:#fff;transform:scale(0);transition:transform var(--dur-select) var(--ease-select)}
+.radiorow.on .radio{background:var(--btn-bg)}
+.radiorow.on .radio i{transform:scale(1)}
+
+/* option cards (purpose) */
+.optcards{display:flex;flex-direction:column;gap:12px;margin-top:44px}
+.optcard{
+  border:1px solid var(--divider);border-radius:var(--radius-card);padding:26px 18px 28px;cursor:pointer;
+  transition:background var(--dur-select) var(--ease-select),color var(--dur-select) var(--ease-select),
+             border-color var(--dur-select) var(--ease-select),transform var(--dur-select) var(--ease-select)
+}
+.optcard:active{transform:scale(.985)}
+.optcard b{display:block;font-weight:400;font-size:16px;letter-spacing:-.01em}
+.optcard span{display:block;font-size:14px;color:var(--text-secondary);margin-top:5px}
+.optcard.on{background:#1c1b18;border-color:#1c1b18;color:#f3f1ed}
+.optcard.on span{color:rgba(243,241,237,.72)}
+
+/* tile grid (use case) */
+/* 172 x 160 — two columns exactly fill the 353px content width */
+.tiles{display:grid;grid-template-columns:repeat(2,172px);gap:9px;margin-top:34px;justify-content:space-between}
+.tile{
+  border:1px solid var(--divider);border-radius:14px;padding:16px;height:160px;
+  display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;
+  transition:background var(--dur-select) var(--ease-select),color var(--dur-select) var(--ease-select),
+             border-color var(--dur-select) var(--ease-select),transform var(--dur-select) var(--ease-select)
+}
+.tile:active{transform:scale(.97)}
+.tile svg{width:22px;height:22px}
+.tile b{font-weight:400;font-size:16px;line-height:1.25;letter-spacing:-.01em}
+.tile.on{background:#1c1b18;border-color:#1c1b18;color:#f3f1ed}
+.tile.on svg{stroke:#f3f1ed}
+
+/* merchant detect */
+/* 20px between the field and the detected band (measured off the design) */
+.mdetect{margin:20px -20px 0;animation:mIn var(--dur-merchant) var(--ease-merchant)}
+@keyframes mIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.mdetect .cap{background:var(--graph-bg);padding:9px 20px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-secondary)}
+.mdetect .hit{display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid var(--divider);cursor:pointer}
+.mmark{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:var(--sans);font-weight:700;font-size:19px;flex:0 0 auto;overflow:hidden}
+.mmark svg{width:31px;height:31px;display:block}
+.mmark img{width:100%;height:100%;display:block;border-radius:50%}
+
+/* amount */
+.amount{display:flex;align-items:flex-start;justify-content:center;gap:4px;padding:56px 0 0;user-select:none}
+.amount .cur{font-size:34px;font-weight:300;letter-spacing:-.02em;margin-top:14px;color:var(--text-secondary)}
+.amount .val{font-size:110px;font-weight:500;line-height:1;letter-spacing:-.05em}
+.amount.mid .val{color:#b3b1ac}
+.amtcaret{width:2px;align-self:stretch;margin:14px 0 18px 2px;background:var(--text-primary);opacity:.55;animation:blink 1.1s step-end infinite}
+.maxpill{display:block;margin:22px auto 0;border:1px solid var(--divider);border-radius:100px;background:#fff;padding:9px 18px;font-size:14px;cursor:pointer}
+.numpad{padding:18px 20px 4px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px 44px;justify-items:center}
+.key{width:62px;height:62px;border-radius:50%;border:1px solid #eceae5;background:#fff;font-size:28px;font-family:var(--sans);cursor:pointer;display:grid;place-items:center;transition:transform .1s,background .1s}
+.key:active{background:var(--graph-bg);transform:scale(.94)}
+.key svg{width:22px;height:22px}
+
+/* footer */
+.foot{flex:0 0 auto;padding:16px 20px 34px}
+.btn{
+  width:100%;height:56px;border:0;border-radius:100px;background:var(--btn-bg);color:var(--btn-text);
+  font-family:var(--sans);font-size:16px;cursor:pointer;box-shadow:none;
+  display:grid;place-items:center;transition:transform .14s,opacity .14s,background .2s
+}
+.btn:active{transform:scale(.985);opacity:.92}
+.btn[disabled]{background:var(--disabled-bg);color:var(--disabled-text);box-shadow:none;cursor:not-allowed}
+.btn.secondary{background:#fff;color:var(--text-primary);border:1px solid var(--divider);box-shadow:none}
+.btn.onbrand{background:#fff;color:var(--text-primary)}
+/* frosted like the card pills, and the same width as Done */
+.btn.onbrand-ghost{
+  background:rgba(0,0,0,.22);color:#f3f1ed;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.35);box-shadow:none
+}
+.btn.ondark-ghost{background:transparent;color:rgba(243,241,237,.4);border:1px solid rgba(255,255,255,.14);box-shadow:none}
+.btnrow{display:flex;gap:12px}
+.btnrow .btn{flex:1}
+.btnrow .btn.narrow{flex:.78}
+.footnote{text-align:center;font-size:14px;line-height:1.3;color:var(--text-secondary);margin:0 0 18px}
+.footlink{display:block;text-align:center;font-size:16px;margin:0 0 18px;cursor:pointer}
+
+/* states */
+.state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.disc{width:290px;height:290px;border-radius:50%;background:var(--gold);display:grid;place-items:center;animation:pop var(--dur-disc) var(--ease-disc)}
+.disc svg{width:150px;height:150px}
+@keyframes pop{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
+.statelabel{font-size:16px;padding-bottom:56px;text-align:center}
+/* gravity only — accelerate down, decelerate up. No squash or stretch. */
+.dot{
+  width:18px;height:18px;border-radius:50%;background:var(--gold);
+  animation-name:ballBounce;
+  animation-duration:var(--dur-bounce);
+  animation-iteration-count:infinite
+}
+@keyframes ballBounce{
+  0%   {transform:translateY(-56px); animation-timing-function:cubic-bezier(.33,0,.66,.33)}
+  48%  {transform:translateY(0);     animation-timing-function:cubic-bezier(.33,.66,1,1)}
+  100% {transform:translateY(-56px)}
+}
+
+/* account card */
+.acct{display:flex;align-items:center;gap:14px;border:1px solid var(--divider);border-radius:var(--radius-card);padding:16px}
+.acct .logo{width:32px;height:32px;flex:0 0 auto}
+.acct .t{flex:1}
+.acct .t b{display:block;font-weight:400;font-size:15px}
+.acct .t span{display:block;font-size:13px;color:var(--text-secondary)}
+.acct .bal{font-size:15px;white-space:nowrap}
+
+/* ===== v2: light cover -> dark card collection (6307:9790) ===== */
+.v2wrap{background:var(--cover-bg)}
+/* the frame itself darkens as the collection arrives */
+.screen.notop.v2host{background:var(--cover-bg)}
+/* pinned above the nav rather than sitting at the end of the scroll, where the
+   photo's own height pushed it behind the bar */
+.ourcards{position:absolute;left:0;right:0;bottom:37px;z-index:6;
+  display:grid;place-items:center;padding:0;opacity:0;pointer-events:none;
+  transition-property:opacity;transition-duration:.9s;transition-delay:1.1s}
+.v2wrap.in ~ .ourcards{opacity:1;pointer-events:auto}
+/* .ourcards sits outside .introwrap, so the scoped dark override never reached
+   it and the label went dark-on-dark — only the chevron badge stayed visible */
+.cuepill{
+  display:inline-flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.12);border:0;border-radius:100px;
+  padding:11px 8px 11px 20px;font-family:var(--sans);font-size:14px;
+  letter-spacing:-.01em;color:#f3f1ed;cursor:pointer
+}
+.cuepill svg{
+  width:24px;height:24px;padding:5px;border-radius:50%;
+  background:#f3f1ed;stroke:#141410;box-sizing:border-box
+}
+
+/* ===== INTRO v2 — one continuous surface =====
+   A transparent scroller with a tall spacer sits over the screen; its scroll
+   position is the single progress value. Both directions work, so scrolling
+   back returns to the cover. Title geometry and motion follow
+   intro-v2-expressive-long.html exactly; only the backdrop goes light to dark. */
+.v2root{position:absolute;inset:0;overflow:hidden;background:var(--bkgd-01)}
+/* ===== CSS-built card fan (alternative to the photo) =====
+   Measured off the render, not estimated: the card is 109x174 at r12 and is
+   tilted only -6deg — it is the *fan* that runs diagonally (pitch 75,-37), not
+   the cards. I previously had every card at -30deg, which is why the layout
+   read so differently.
+   On a real metal card the face is nearly flat; almost all of the light lives
+   on the rim. So the face gets one soft gradient and the reflection is a
+   gradient-stroked border, varied per card so no two catch the light alike. */
+/* the whole deck fades up once, then the cards slide out from under the hero —
+   fading each card in separately made them look like they popped into being */
+.cardfan{position:relative;height:452px;pointer-events:none;
+  perspective:1150px;perspective-origin:52% 46%;transform-style:preserve-3d;
+  opacity:0;animation:fanDeck .45s var(--ease-cardsin) var(--del-cardsin) both}
+@keyframes fanDeck{from{opacity:0}to{opacity:1}}
+.fcard{position:absolute;width:109px;height:174px;border-radius:12px;
+  /* the card carries both geometries; this picks the upright one */
+  left:var(--vx);top:var(--vy);
+  --rot:var(--vrot);--dx:var(--vdx);--dy:var(--vdy);
+  transform:translate(var(--dx),var(--dy)) rotate(var(--rot));
+  animation-name:fanOut;animation-duration:1.05s;
+  animation-timing-function:var(--ease-cardsin);animation-fill-mode:both}
+/* every card starts stacked on the Cloaked card and opens out from it */
+@keyframes fanOut{
+  from{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) translateZ(0)}
+  to  {transform:translate(0,0) rotate(var(--rot)) translateZ(var(--z))}
+}
+/* Coming back to the cover the cards do not re-fan from the centre — they just
+   drop the short distance back into place, each a beat behind the last. */
+@keyframes fanBack{
+  from{transform:translate(0,-42px) rotate(var(--rot)) translateZ(var(--z));opacity:0}
+  to  {transform:translate(0,0) rotate(var(--rot)) translateZ(var(--z));opacity:1}
+}
+.fcard.back{
+  animation-name:fanBack;
+  animation-duration:.6s;
+  animation-timing-function:var(--ease-cardsin);
+  animation-delay:var(--bdel,0ms);
+  animation-fill-mode:both
+}
+/* the rim: a gradient stroke, bright on two edges and nearly out on the others */
+/* the highlight creeps around the rim — registered so the angle can tween */
+@property --ca{syntax:'<angle>';inherits:false;initial-value:150deg}
+@keyframes rimSweep{from{--ca:0deg}to{--ca:360deg}}
+.fcard::before{content:'';position:absolute;inset:0;border-radius:inherit;
+  padding:1.4px;pointer-events:none;
+  animation-name:rimSweep;animation-duration:16s;
+  animation-timing-function:linear;animation-iteration-count:infinite;
+  animation-delay:var(--rimph,0s);
+  background:linear-gradient(var(--ca),
+    rgba(255,255,255,calc(var(--si) * 2.6)) 0%,
+    rgba(255,255,255,calc(var(--si) * .8))  17%,
+    rgba(255,255,255,.05) 41%,
+    rgba(255,255,255,calc(var(--si) * .5))  59%,
+    rgba(255,255,255,calc(var(--si) * 2.1)) 83%,
+    rgba(255,255,255,calc(var(--si) * .6))  100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+          mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+          mask-composite:exclude}
+.fmark{position:absolute;left:12px;top:12px;width:22px;height:22px;z-index:2;
+  object-fit:contain;opacity:.5;mix-blend-mode:luminosity;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.4))
+         drop-shadow(0 -1px 0 rgba(0,0,0,.28))}
+.fcloaked{position:absolute;left:12px;top:12px;width:22px;z-index:2;opacity:.92}
+/* Apple-Card style: two outlined rings, not filled discs. The stroke runs a
+   dark-light-dark gradient so it catches light like the etched mark does. */
+.fmc{position:absolute;right:11px;bottom:11px;z-index:2;width:42px;height:26px;
+  opacity:.85;filter:drop-shadow(0 .5px 0 rgba(255,255,255,.30))}
+.fmc circle{fill:none;stroke-width:1.25}
+.cardfan{display:none}
+body.fanart .cardfan{display:block}
+body.fanart .coverbleed{display:none}
+
+/* ---- turned: the same card, on its side ----
+   109x174 becomes 174x110, and the fan swaps to bkgd-3's descending diagonal.
+   Everything on the face is corner-anchored, so the mark, the Mastercard rings
+   and the rim stroke follow the new shape without any of their own rules. */
+body.cardh .fcard{
+  width:174px;height:110px;
+  left:var(--hx);top:var(--hy);
+  --rot:var(--hrot);--dx:var(--hdx);--dy:var(--hdy)}
+/* The turned fan runs to 495px, matching the 501px the photo occupies, so the
+   two art modes take the same room in the layout.
+   The artwork renders at 1.625x the frame — see COVERS in the script. Same idea
+   as the rule above it: bleed evenly, so -(1.625-1)/2 either side. */
+body.cardh .cardfan{height:501px}
+/* the turned wall tile; its grid, pitch and loop period come from F5_GRIDS */
+body.cardh .f5{width:146px;height:92px}
+body.cardh .coverbleed{width:162.5%;margin-left:-31.25%}
+/* The turned fan is 501px deep against the upright one's 452, which ran its last
+   card into the "Our solution" pill. The pill sits 37px off the bottom and is
+   48px tall, so its top edge is at 767; the last card's bottom was at 825. Lift
+   the artwork 92px and that becomes 733 — a 34px gap. Applied to the fan and the
+   photo together, so the two art modes stay registered to each other. */
+body.cardh .cardfan,
+body.cardh .coverbleed{margin-top:-92px}
+
+/* ===== INTRO v3 — merchant ring, Cloaked card at the centre =====
+   Same surface as v2 (one continuous scroll, light to dark). The board of
+   cards is replaced by a slowly turning ring of merchant marks; whichever mark
+   is lit hands its colour, number and usage to the card in the middle. */
+
+/* ===== INTRO v5 — a wall of blank frames that flip into cards =====
+   Each tile is a two-sided plane: the blank frame faces you, the merchant card
+   is on the back. Flipping is a real rotateY on a preserve-3d parent, and each
+   tile carries its own delay and duration so the wall turns unevenly. The last
+   few keyframes overshoot and rock back, so a tile settles rather than stops. */
+.f5stage{position:absolute;inset:0;z-index:2;opacity:0;pointer-events:none;
+  perspective:1400px}
+/* Each course drifts sideways, alternating direction row to row. It runs from
+   mount, independent of the flip (which lives on .f5in), so the wall is always
+   breathing. 12px over 52s is slow enough that the turnaround is invisible. */
+.f5{position:absolute;width:92px;height:146px;
+  /* Endless one-way travel, not a there-and-back. Each row carries a duplicate
+     set exactly one period (600px) along, so translating by that period lands
+     the copy where the original was and the loop is seamless. A twin is always
+     600px from its original and the frame is 393px, so the same card can never
+     be on screen twice. Linear, or the ends would crawl. */
+  animation-name:f5DriftL;animation-duration:var(--dd,357s);
+  animation-timing-function:linear;
+  animation-iteration-count:infinite;
+  animation-delay:var(--ddel,0s)}
+.f5.rt{animation-name:f5DriftR}
+@keyframes f5DriftL{
+  from{transform:translateX(0)}
+  to  {transform:translateX(calc(var(--period,600px) * -1))}
+}
+@keyframes f5DriftR{
+  from{transform:translateX(calc(var(--period,600px) * -1))}
+  to  {transform:translateX(0)}
+}
+.f5in{position:absolute;inset:0;transform-style:preserve-3d;
+  transform:rotateY(180deg);
+  animation-name:f5Flip;
+  animation-duration:var(--fd);
+  animation-timing-function:cubic-bezier(.3,.7,.28,1);
+  animation-delay:var(--fdel);
+  animation-fill-mode:both}
+/* One shared set of overshoot values made every card settle identically, which
+   is what read as mechanical. Amplitude and a small cross-axis roll are now
+   per-card, and the decay is geometric rather than evenly stepped. */
+@keyframes f5Flip{
+  0%  {transform:rotateY(180deg) rotateX(0deg)}
+  57% {transform:rotateY(calc(var(--amp,14deg) * -1))    rotateX(var(--axw,3deg))}
+  73% {transform:rotateY(calc(var(--amp,14deg) * .40))   rotateX(calc(var(--axw,3deg) * -.45))}
+  85% {transform:rotateY(calc(var(--amp,14deg) * -.16))  rotateX(calc(var(--axw,3deg) * .18))}
+  93% {transform:rotateY(calc(var(--amp,14deg) * .055))  rotateX(0deg)}
+  100%{transform:rotateY(0deg) rotateX(0deg)}
+}
+.f5face{position:absolute;inset:0;border-radius:8px;overflow:hidden;
+  -webkit-backface-visibility:hidden;backface-visibility:hidden}
+/* the blank frame you see first */
+.f5back{background:#17171a;border:1px solid rgba(255,255,255,.07);
+  transform:rotateY(180deg)}
+/* the merchant card underneath */
+/* This has to exclude .f5art: a bare `img` selector outweighs the .f5art class,
+   so the photo cards were being drawn at 21x21 and inverted to white — that was
+   the little white square, not a failed image. */
+.f5front img:not(.f5art){position:absolute;left:8px;top:8px;width:21px;height:21px;
+  object-fit:contain;filter:brightness(0) invert(1)}
+.f5front.big img:not(.f5art){width:34px;height:34px;left:7px;top:7px}
+/* Disney is a wide wordmark inside its plate, so even at 34px the lettering is
+   tiny — it gets its own size and sits closer to the top edge. */
+.f5front.xl img:not(.f5art){width:48px;height:48px;left:4px;top:1px}
+.f5front.ink-dark img:not(.f5art){filter:brightness(0)}
+.f5front.logo-keep img:not(.f5art){filter:none}
+.f5front.logo-lite img:not(.f5art){filter:brightness(0) invert(1)}
+img.f5art,video.f5art{position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;filter:none}
+/* the flower fills the frame from the top, which buried the name — push the
+   crop down and zoom so only the lower part shows */
+video.f5art{object-position:50% 100%;transform:scale(1.45);transform-origin:50% 100%}
+.f5use{position:absolute;left:8px;bottom:8px;z-index:2;font-size:10px;
+  line-height:1.2;letter-spacing:0;color:#f3f1ed}
+.f5front.ink-dark .f5use{color:#141410}
+.f5name{position:absolute;left:8px;top:8px;z-index:2;font-size:11px;
+  line-height:1.2;color:#fff}
+.r3stage{position:absolute;inset:0;z-index:2;opacity:0;pointer-events:none}
+/* Reference treatment: a 22px mark clipped to a circle with no chip fill, and
+   a 1px ring at r=19 when it is lit — not a big coloured disc. Logos that ship
+   their own background plate keep it, which is why some read as filled. */
+.r3chip{position:absolute;left:0;top:0;width:30px;height:30px;margin:-15px 0 0 -15px;
+  border-radius:50%;display:grid;place-items:center;overflow:hidden;
+  opacity:.88;transition:opacity .4s ease,outline-color .4s ease;
+  will-change:transform}
+.r3chip img,.r3chip video{width:30px;height:30px;object-fit:contain}
+/* A photo has to fill the circle. object-fit:contain letterboxed it, which is
+   why Hobbes and Travel looked like a rectangle inside the disc, and why Maya's
+   night shot read as empty. Scaled in a touch and lifted, since a dark frame at
+   30px is otherwise unreadable. */
+.r3chip.photo img,.r3chip.photo video{
+  width:100%;height:100%;object-fit:cover;object-position:50% 45%;
+  transform:scale(1.18);
+  filter:brightness(1.18) saturate(1.12)}
+.r3chip.inv img{filter:brightness(0) invert(1)}   /* near-black marks on a dark field */
+/* box-shadow spread fills a disc; the transparent inner shadow does not punch
+   it out, so this used to render as a white circle behind the mark. An outline
+   with an offset is an actual hairline at r=19, matching the reference. */
+.r3chip.on{opacity:1;outline:1px solid rgba(255,255,255,.85);outline-offset:5px}
+/* imagery cards fill the face, cropped from the lower edge, with a 20% wash so
+   the name and usage stay readable over the picture */
+.r3face .r3art{position:absolute;inset:0;left:0;top:0;width:100%;height:100%;
+  object-fit:cover;object-position:50% 100%;filter:none}
+.r3face.art::after{content:'';position:absolute;inset:0;z-index:2;
+  pointer-events:none;background:rgba(0,0,0,.20)}
+.r3name{position:absolute;left:14px;top:13px;right:56px;z-index:3;
+  font-size:14px;line-height:1.2;color:#fff}
+
+/* the card in the middle takes the lit merchant's identity */
+.r3card{position:absolute;left:50%;top:var(--r3cy);width:150px;height:238px;
+  margin-left:-75px;margin-top:-119px;border-radius:16px;overflow:hidden;
+}
+/* Turned: 150x238 becomes 238x150. The marks ride an ellipse 163px out at the
+   waist, so a card 119px half-wide still clears them by 44px. */
+body.cardh .r3card{width:238px;height:150px;margin-left:-119px;margin-top:-75px}
+/* two faces: the one showing, and the next one revealed by a rising gradient */
+.r3face{position:absolute;inset:0;border-radius:inherit;overflow:hidden}
+.r3face img{position:absolute;left:14px;top:14px;width:26px;height:26px;
+  object-fit:contain;filter:brightness(0) invert(1)}
+.r3face.ink-dark img{filter:brightness(0)}
+.r3face.logo-keep img{filter:none}
+.r3face.logo-lite img{filter:brightness(0) invert(1)}
+.r3face.r3in{z-index:2;
+  -webkit-mask-image:var(--r3sweep);   mask-image:var(--r3sweep);
+  -webkit-mask-size:100% 300%;         mask-size:100% 300%;
+  -webkit-mask-repeat:no-repeat;       mask-repeat:no-repeat;
+  -webkit-mask-position:0% 0%;         mask-position:0% 0%}
+.r3card.swap .r3face.r3in{
+  animation-name:fillRise;
+  animation-duration:var(--dur-r3swap);
+  animation-timing-function:var(--ease-r3swap);
+  animation-fill-mode:both}
+/* Only ever one identity mark on the card. The logo sits at (14,14) and an art
+   card's title at (14,13) — the same place — so while the mask is soft-edged the
+   incoming title bleeds over the outgoing logo. So the incoming face carries no
+   mark at all during the rise: the light wipes the old one away, and the new one
+   arrives afterwards, when the face is handed to the base layer. */
+.r3card.swap .r3face.r3in img,
+.r3card.swap .r3face.r3in .r3name{opacity:0}
+.r3card.markin .r3face:not(.r3in) img,
+.r3card.markin .r3face:not(.r3in) .r3name{
+  animation-name:r3MarkIn;animation-duration:260ms;
+  animation-timing-function:ease-out;animation-fill-mode:both}
+@keyframes r3MarkIn{from{opacity:0}to{opacity:1}}
+/* the same rising edge, made visible as a soft band of light */
+.r3glow{position:absolute;left:-20%;right:-20%;bottom:0;height:150%;z-index:3;
+  pointer-events:none;opacity:0;transform:translateY(100%);
+  background:linear-gradient(180deg,
+    rgba(255,255,255,0) 0%, rgba(255,255,255,.08) 38%,
+    rgba(255,255,255,.26) 52%, rgba(255,255,255,.10) 62%,
+    rgba(255,255,255,0) 74%)}
+.r3card.swap .r3glow{
+  animation-name:r3Glow;
+  animation-duration:var(--dur-r3swap);
+  animation-timing-function:var(--ease-r3swap);
+  animation-fill-mode:both}
+@keyframes r3Glow{
+  from{transform:translateY(100%);opacity:1}
+  88% {opacity:1}
+  to  {transform:translateY(-62%);opacity:0}
+}
+.r3num{position:absolute;right:14px;top:13px;z-index:4;font-size:11px;
+  font-variant-numeric:tabular-nums;color:#f3f1ed}
+.r3use{position:absolute;left:14px;bottom:14px;right:14px;font-size:12px;
+  line-height:1.3;color:#f3f1ed;z-index:4}
+.r3card.ink-dark .r3use{color:#141410}
+.r3card.ink-dark .r3num{color:#141410}
+
+.v2scroll{position:absolute;inset:0;z-index:5;overflow-y:scroll;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.v2scroll::-webkit-scrollbar{display:none}
+/* the whole sequence lands by p≈0.6, so 300% left a third of the travel dead
+   and the CTA (p>0.72) was never reached before the scroll felt finished */
+.v2spacer{height:200%}
+/* the copy runs to ~308px (141 + three 32/1.1 lines + 20 + two 16/1.3 lines);
+   the artwork starts below it so type never sits on the cards */
+.v2coverwrap{position:absolute;left:0;right:0;top:330px;z-index:1;will-change:opacity,transform}
+.v2coverwrap .coverbleed{
+  -webkit-mask-image:linear-gradient(105deg,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,0) 16%, #000 44%, #000 100%);
+          mask-image:linear-gradient(105deg,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,0) 16%, #000 44%, #000 100%);
+  -webkit-mask-size:300% 100%;   mask-size:300% 100%;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  animation-name:cardsIn;
+  animation-duration:var(--dur-cardsin);
+  animation-timing-function:var(--ease-cardsin);
+  animation-delay:var(--del-cardsin);
+  animation-fill-mode:both
+}
+.scrollpad{height:180px;flex:0 0 180px}
+
+/* title block — reference geometry to the pixel */
+.v2scrim{position:absolute;left:0;right:0;top:0;height:300px;z-index:3;
+  pointer-events:none;opacity:0}
+/* The wall needs far more shade than the ring does. The ring's marks start at
+   y=327 so its scrim has to be gone by then; the wall's cards start at y=262
+   and run bright, so the copy sits directly on them. Selecting on the stage
+   inside the root keeps this to the wall without touching the shared gradient,
+   which the scroll code writes inline. */
+/* The wall sits on true black, so a lifted card never has to compete with a
+   warm-dark page to read as an object. (--bkgd-01 elsewhere is #141410.)
+   A plain class, not :has() — the background is worth asserting in a test, and
+   :has() is not resolvable outside a real browser. */
+.v2root.wallroot{background:#000}
+.v2root:has(.f5stage) .v2scrim{height:480px}
+.v2root:has(.f5stage) .v2scrim::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,
+    rgba(20,20,16,.55) 0%, rgba(20,20,16,.46) 42%,
+    rgba(20,20,16,.24) 72%, rgba(20,20,16,0) 100%)}
+
+.v2copy{position:absolute;left:20px;top:141px;width:353px;z-index:4;
+  text-align:center;pointer-events:none}
+.v2copy .swap{position:absolute;left:0;right:0;top:0;
+  transition:transform .6s var(--expressive),opacity .45s ease,filter .45s ease}
+.v2copy .swap.up  {transform:translateY(-30px);opacity:0;filter:blur(7px);pointer-events:none}
+.v2copy .swap.down{transform:translateY(30px); opacity:0;filter:blur(7px);pointer-events:none}
+.v2copy h1{margin:0;font-family:var(--serif);font-weight:400;font-size:32px;
+  line-height:1.1;letter-spacing:-.64px;color:inherit}
+.v2copy p{margin:20px auto 0;width:321px;font-family:var(--sans);font-size:16px;
+  line-height:1.3;letter-spacing:-.32px;color:inherit;opacity:0;filter:blur(7px);
+  transition:opacity .5s ease .35s,filter .5s ease .35s}
+.v2copy .swap.on p{opacity:.62;filter:blur(0)}
+.v2copy .nobr{white-space:nowrap}
+.v2copy .w{display:inline-block;overflow:hidden;vertical-align:top;
+  line-height:1.16;padding-bottom:.12em;margin-bottom:-.12em}
+.v2copy .wi{display:inline-block;transform:translateY(118%);opacity:0;filter:blur(8px);
+  will-change:transform,opacity,filter}
+.v2copy .swap.on .wi{transform:translateY(0);opacity:1;filter:blur(0);
+  transition:transform .6s cubic-bezier(.2,0,0,1),opacity .55s ease,filter .55s ease}
+
+.v2top{position:absolute;left:0;right:0;top:0;z-index:8;
+  display:flex;align-items:center;gap:16px;padding:64px 20px 16px}
+/* v1 puts its header outside .introwrap, so the scoped dark ink never reached
+   it and "Cloaked Pay" sat dark-on-dark. v2/v3/v5 keep inheriting from .v2root,
+   which the scroll code already colours, so scope this to the v1 case only. */
+.screen > .v2top{color:#f3f1ed}
+body.lightcover .screen > .v2top{color:var(--text-primary)}
+body.lightcover .screen > .v2top .v2skip{background:rgba(20,20,16,.07)}
+.v2brand{flex:1;font-family:var(--sans);font-weight:510;font-size:16px;
+  line-height:1.2;letter-spacing:-.32px;color:inherit}
+.v2skip{flex:none;border:0;cursor:pointer;font-family:var(--sans);font-size:14px;
+  color:inherit;background:rgba(128,128,128,.20);border-radius:999px;padding:10px 18px;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.v2cue{position:absolute;left:0;right:0;bottom:37px;z-index:6;display:grid;place-items:center;
+  transition:transform .55s var(--expressive),opacity .45s ease}
+.v2cue.gone{transform:translateY(-34px);opacity:0;pointer-events:none}
+.v2cta{position:absolute;left:0;right:0;bottom:32px;z-index:7;padding:0 21px;
+  opacity:0;transform:translateY(34px);pointer-events:none;
+  transition:opacity .5s ease,transform .6s var(--expressive)}
+.v2cta.in{opacity:1;transform:none;pointer-events:auto}
+
+/* ---- the board of cards, and the camera that tours it ----
+   The board is one big plane; the "camera" is a transform on .ccfield that
+   centres the card being visited. Cards never move relative to each other. */
+.ccstage{position:absolute;inset:0;z-index:2;overflow:hidden;opacity:0}
+/* --tx/--ty are set per hop on .ccplane and inherit down to every card, so the
+   whole board leans the way the camera is travelling. The lean is on the cards
+   themselves rather than the plane — a rotated plane reads as a camera roll. */
+.ccplane{position:absolute;inset:0}
+.ccfield.moving .ccard:not(.focus){
+  animation-name:cardLean;
+  animation-duration:var(--dur-cam);
+  animation-timing-function:linear;
+  animation-fill-mode:both
+}
+@keyframes cardLean{
+  0%  {transform:perspective(1000px) rotateX(0deg) rotateY(0deg)}
+  22% {transform:perspective(1000px) rotateX(var(--tx,0deg)) rotateY(var(--ty,0deg))}
+  100%{transform:perspective(1000px) rotateX(0deg) rotateY(0deg)}
+}
+.ccfield{
+  --mb:0px;
+  position:absolute;left:0;top:0;width:393px;height:1870px;
+  transform:translate3d(var(--cx,0px),var(--cy,0px),0);
+  transition-property:transform;
+  transition-duration:var(--dur-cam);
+  transition-timing-function:var(--ease-cam)
+}
+/* Motion blur. --mb is set per hop from the distance travelled, so a long
+   diagonal smears more than a short step. It peaks almost immediately because
+   --ease-cam leaves fast, then trails off as the camera settles. */
+.ccfield.moving{
+  animation-name:camBlur;
+  animation-duration:var(--dur-cam);
+  animation-timing-function:linear;
+  animation-fill-mode:both
+}
+@keyframes camBlur{
+  0%  {filter:blur(0px)}
+  12% {filter:blur(var(--mb))}
+  100%{filter:blur(0px)}
+}
+/* base state reads clearly: all 40 cards show their type and number */
+.ccard{
+  position:absolute;width:183px;height:291px;border-radius:16px;overflow:hidden;
+  padding:16px;display:flex;flex-direction:column;justify-content:space-between;
+  opacity:.55;
+  transform:translateZ(0);
+  transition-property:opacity,box-shadow;
+  transition-duration:var(--dur-anchor);
+  transition-timing-function:var(--ease-cardrise)
+}
+/* The base size above is the upright card, 183x291; horizontal turns it back to
+   the 291x183 the board used to be fixed at. Positions come from boardGeom() at
+   mount, and the footer already sits at the bottom of a column layout, so nothing
+   inside the face needs its own rule. */
+body.cardh .ccard{width:291px;height:183px}
+/* cards are flat brand colour, straight from Card collection.svg — no shade.
+   Legibility for the headline comes from .v2scrim instead. */
+/* visited cards stay legible; the card under the camera is fully lit */
+.ccard.anchored{opacity:.82}
+.ccard.focus{opacity:1;
+  animation-name:cardWave;
+  animation-duration:var(--dur-wave);
+  animation-timing-function:var(--ease-wave);
+  animation-delay:var(--del-wave);
+  animation-fill-mode:both}
+/* on arrival the card flexes in depth, then settles flat */
+@keyframes cardWave{
+  0%  {transform:perspective(900px) rotateY(-11deg) rotateX(4deg)}
+  38% {transform:perspective(900px) rotateY(5.5deg) rotateX(-2.2deg)}
+  68% {transform:perspective(900px) rotateY(-2deg) rotateX(.8deg)}
+  86% {transform:perspective(900px) rotateY(.7deg) rotateX(-.3deg)}
+  100%{transform:perspective(900px) rotateY(0deg) rotateX(0deg)}
+}
+/* Most merchant marks are drawn in their own brand colour, which is also the
+   card colour — so they render as white by default. Only logos whose multi-
+   colour identity carries the brand keep their own fills. */
+.cc-logo{width:40px;height:40px;object-fit:contain;position:relative;z-index:2;
+  filter:brightness(0) invert(1)}
+.ccard.ink-dark .cc-logo{filter:brightness(0)}
+.ccard.logo-keep .cc-logo{filter:none}
+/* light card, but the mark itself must stay white — last so it wins */
+.ccard.logo-lite .cc-logo{filter:brightness(0) invert(1)}
+.cc-name{position:relative;z-index:2;font-size:15px;color:#fff;letter-spacing:0}
+.cc-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.cc-foot{
+  position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;
+  font-size:13px;letter-spacing:0;color:#f3f1ed
+}
+/* dark ink for light-coloured cards (the white Hinge card) */
+.ccard.ink-dark .cc-foot,.ccard.ink-dark .cc-name{color:#141410}
+.ccard.ink-dark .cc-num{color:#141410}
+/* only the card under the camera shows its details; the rest stay bare */
+.cc-use:empty,.cc-num:empty{visibility:hidden}
+.cc-foot{opacity:0;transition:opacity 200ms ease}
+.ccard.focus .cc-foot{opacity:1}
+/* the number sits top right on the board card too, matching the ring and the zoom.
+   It used to share the footer row with the usage line. */
+.ccard>.cc-num{position:absolute;right:16px;top:16px;
+  opacity:0;transition:opacity 200ms ease}
+.ccard.focus>.cc-num{opacity:1}
+/* No pill behind the number on any card — just the digits, and the ink follows the
+   card. `ink-dark` is already the flag for a light background, so the same class
+   that darkens the logo darkens the number. */
+.cc-num{font-size:12px;font-variant-numeric:tabular-nums;color:#f3f1ed}
+
+/* ===== SHARED HEADER — label left, action right (v2 cover, v2 board, v4) ===== */
+.v3top{position:absolute;left:0;right:0;top:59px;z-index:5;height:37px;
+  display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+.v3brand{font-family:var(--sans);font-size:17px;font-weight:400;letter-spacing:0}
+.skippill{border:0;font-family:var(--sans);font-weight:400;font-size:15px;
+  height:37px;padding:0 16px;border-radius:100px;cursor:pointer;
+  background:rgba(255,255,255,.12);color:#f3f1ed;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+/* the light cover carries the same header in dark ink */
+.introwrap .v3top{position:relative;top:0;margin:59px 0 0}
+.introwrap .v3brand{color:#f3f1ed}
+.introwrap .skippill{background:rgba(255,255,255,.12);color:#f3f1ed}
+/* ===== INTRO v4 — recursive card zoom =====
+   Cards are portrait (183:291, the collection card turned upright). Each one
+   scales up from nothing at the centre, holds while its name and number are
+   generated, then expands past the frame to become the backdrop — and the next
+   card starts growing inside it while that expansion is still running. */
+.darksec4{
+  position:absolute;left:0;top:0;width:100%;height:100%;z-index:20;overflow:hidden;
+  color:#f3f1ed;background:#141410;
+  transform:translateY(100%);
+  transition-property:transform;
+  transition-duration:var(--dur-sheet);
+  transition-timing-function:var(--ease-sheet)
+}
+.darksec4.up{transform:none}
+.c4stage{position:absolute;inset:0;z-index:1;overflow:hidden;perspective:1200px}
+.c4card{
+  position:absolute;left:50%;top:var(--c4cy,486px);width:212px;height:337px;
+  margin-left:-106px;margin-top:-168.5px;
+  border-radius:18px;overflow:hidden;transform-origin:50% 50%;
+  transform:scale(0)
+}
+/* Turned: 212x337 becomes 337x212. --c4cy and --cs are recomputed at mount by
+   c4Geom(), since a shorter card centres higher and must grow further to clear
+   the frame. */
+body.cardh .c4card{width:337px;height:212px;margin-left:-168.5px;margin-top:-106px}
+.c4card.grow{
+  animation-name:c4Grow;
+  animation-duration:var(--dur-grow);
+  animation-timing-function:var(--ease-grow);
+  animation-fill-mode:both
+}
+/* Once a card is opening out it becomes the backdrop, so its own logo, number
+   and usage have to go — otherwise they sit there magnified behind the next
+   card, which is what the stray LinkedIn mark and .9684 were. */
+.c4card.expand .c4-logo,
+.c4card.expand .c4-num,
+.c4card.expand .c4-title,
+.c4card.expand .c4-use{
+  animation-name:c4Fade;
+  animation-duration:var(--dur-c4fade);
+  animation-timing-function:ease-out;
+  animation-fill-mode:both
+}
+@keyframes c4Fade{from{opacity:1}to{opacity:0}}
+/* A growing card arrives blank and resolves its identity a beat later. Reads as
+   the card being issued, and guarantees no two chrome layers coexist. */
+.c4card.grow .c4-logo,
+.c4card.grow .c4-num,
+.c4card.grow .c4-title,
+.c4card.grow .c4-use{
+  animation-name:c4In;
+  animation-duration:var(--dur-c4in);
+  animation-delay:var(--del-c4in);
+  animation-timing-function:ease-out;
+  animation-fill-mode:both}
+/* separate rule: a ::before in the list above would risk voiding it */
+.c4card.grow.has-title::before{
+  animation-name:c4In;animation-duration:var(--dur-c4in);
+  animation-delay:var(--del-c4in);
+  animation-timing-function:ease-out;animation-fill-mode:both}
+@keyframes c4In{from{opacity:0}to{opacity:1}}
+.c4card.expand{
+  animation-name:c4Expand;
+  animation-duration:var(--dur-expand);
+  animation-timing-function:var(--ease-expand);
+  animation-fill-mode:both
+}
+@keyframes c4Grow{
+  from{transform:rotateY(var(--flip4)) rotateX(0deg) scale(0)}
+  to  {transform:rotateY(0deg) rotateX(0deg) scale(1)}
+}
+/* Two moves, not three: the card swings into its angle, then keeps opening
+   straight out past the frame. The old 75% step levelled it off mid-flight,
+   which read as a pause before the last push. Per-step easing does the rest —
+   settle into the tilt, then accelerate away instead of decelerating. */
+@keyframes c4Expand{
+  0%  {transform:rotateY(0deg) rotateX(0deg) scale(1);
+       animation-timing-function:cubic-bezier(.24,.6,.3,1)}
+  45% {transform:rotateY(var(--tilt4-y)) rotateX(var(--tilt4-x)) scale(1.75);
+       animation-timing-function:cubic-bezier(.55,0,.22,1)}  /* glide into the backdrop instead of slamming */
+  100%{transform:rotateY(0deg) rotateX(0deg) scale(var(--cs,2.7))}
+}
+.c4-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.c4-logo{position:absolute;left:18px;top:18px;width:32px;height:32px;
+  object-fit:contain;z-index:2;filter:brightness(0) invert(1)}
+.c4card.ink-dark .c4-logo{filter:brightness(0)}
+.c4card.logo-keep .c4-logo{filter:none}
+.c4-num{position:absolute;right:16px;top:16px;z-index:2;
+  font-size:12px;font-variant-numeric:tabular-nums;color:#f3f1ed}
+.c4-use{position:absolute;left:16px;bottom:20px;z-index:2;font-size:14px;color:#f3f1ed}
+/* art cards: written title top-left; the use line stays the same size
+   as every other card */
+.c4-title{position:absolute;left:16px;top:12px;z-index:2;max-width:75%;
+  font-size:18px;line-height:1.12;color:#fff;letter-spacing:-.01em}
+/* legibility scrim between the photo and the text: 30% black at the
+   top fading to nothing, so titles survive busy art */
+.c4card.has-title::before{content:'';position:absolute;left:0;right:0;top:0;
+  height:55%;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.30),rgba(0,0,0,0))}
+.c4card.has-title.expand::before{
+  animation-name:c4Fade;animation-duration:var(--dur-c4fade);
+  animation-timing-function:ease-out;animation-fill-mode:both}
+.c4card.ink-dark .c4-use{color:#141410}
+.c4card.ink-dark .c4-num{color:#141410}
+/* chrome sits above the zoom */
+.c4head{position:absolute;left:0;right:0;top:132px;z-index:4;text-align:center;
+  padding:0 20px;pointer-events:none}
+.c4head h1{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.12;
+  margin:0;color:#f3f1ed}
+.c4head p{font-size:16px;line-height:1.45;margin:14px auto 0;max-width:300px;
+  color:rgba(255,255,255,.62)}
+.c4scrim{position:absolute;left:0;right:0;top:0;height:390px;z-index:2;pointer-events:none;
+  background:linear-gradient(180deg,
+    rgba(20,20,16,.92) 0%, rgba(20,20,16,.70) 46%, rgba(20,20,16,0) 100%)}
+.darkcta4{position:absolute;left:0;right:0;bottom:32px;z-index:5;padding:0 20px}
+
+/* ===== INTRO (marketing) ===== */
+/* background is sampled from the cover photo's own backdrop at runtime,
+   so the image never shows a seam against the page at any zoom */
+.introwrap{background:var(--cover-bg);overflow-anchor:none;scroll-padding-top:40px;
+  color:#f3f1ed}
+/* light theme: put the cream cover and dark ink back */
+body.lightcover{--cover-bg:#f4ece9}
+body.lightcover .introwrap{color:var(--text-primary)}
+body.lightcover .introwrap .introhead h1{color:var(--text-primary)}
+body.lightcover .introwrap .introhead p{color:var(--text-secondary)}
+body.lightcover .introwrap .v3brand{color:var(--text-primary)}
+body.lightcover .introwrap .skippill{background:rgba(20,20,16,.07);color:var(--text-primary)}
+body.lightcover .introwrap .introcta .btn{background:var(--btn-bg);color:var(--btn-text)}
+body.lightcover .cuepill{background:rgba(20,20,16,.06);color:var(--text-primary)}
+body.lightcover .cuepill svg{background:var(--btn-bg);stroke:#fff}
+body.lightcover .v2root{background:#f4ece9}
+body.lightcover .f5back{background:#e7e1dc;border-color:rgba(20,20,16,.10)}
+/* the v1 and v4 covers were built for cream, so their ink has to flip */
+.introwrap .introhead h1{color:#f3f1ed}
+.introwrap .introhead p{color:rgba(255,255,255,.62)}
+.introwrap .introcta .btn{background:#f3f1ed;color:#141410}
+/* more air above the title — matches the Figma cover spacing */
+.brandline{text-align:center;font-size:13px;font-weight:500;padding:64px 0 44px;letter-spacing:-.01em}
+/* the shared header ends at ~100px; drop the title clear of it */
+.introwrap .mgroup{padding-top:38px}
+/* v1 has no in-flow header, so the title takes the space the brandline held */
+.introwrap:not(.v2wrap) .mgroup{padding-top:124px}
+/* narrower measure so the title breaks after "phone" as in the design;
+   300px matches the 296px text frames used elsewhere in the file */
+.introhead{text-align:center;padding:0 22px}
+.introhead h1{font-size:32px;line-height:1.16;max-width:340px;margin:0 auto}
+.introhead p{font-size:14px;line-height:1.4;color:var(--text-secondary);max-width:296px;margin:14px auto 0}
+
+/* 1 — cover bleeds past both edges, fixed at 170% (measured to match Figma) */
+/* 153% not 170%: the trimmed art has no empty margin, so the cards would
+   otherwise render ~11% larger than before */
+/* The fan is one 3D render, so the cards cannot be separated into layers.
+   Sweeping a soft mask along the fan's own axis reveals them one after another,
+   which gives the staggered read without faking the artwork. */
+.coverbleed{width:153%;margin-left:-26.5%;padding:2px 0 0}
+@keyframes cardsIn{
+  from{opacity:0;transform:translateY(48px);filter:blur(16px);
+       -webkit-mask-position:0% 0%;   mask-position:0% 0%}
+  60% {opacity:1}
+  to  {opacity:1;transform:none;filter:blur(0);
+       -webkit-mask-position:100% 0%; mask-position:100% 0%}
+}
+
+/* aspect-ratio is set inline so the box never reflows when the image
+   decodes — that reflow is what let the title get clipped */
+.coverbleed img{width:100%;display:block}
+
+/* 2 — the cover pins instead of scrolling fully away: it rides up until
+   COVER_KEEP px are left, then holds while the cards stack over it */
+.coverstick{position:sticky;top:var(--cover-pin,-286px);z-index:0}
+
+/* 2 — title / subtitle load-in (per identity-intro.html) */
+.word{display:inline-block;white-space:nowrap}
+.ch{
+  display:inline-block;opacity:0;transform:translateY(12px);filter:blur(8px);
+  transition:opacity var(--dur-titlein) var(--ease-titlein),
+             transform var(--dur-titlein) var(--ease-titlein),
+             filter var(--dur-titlein) var(--ease-titlein)
+}
+.mgroup{
+  opacity:0;transform:translateY(34px);filter:blur(12px);
+  transition:transform 1.2s cubic-bezier(.55,0,.12,1),
+             opacity 1s var(--ease-titlein), filter 1s var(--ease-titlein)
+}
+.msub{
+  opacity:0;transform:translateY(20px);filter:blur(10px);
+  transition-property:opacity,transform,filter;
+  transition-duration:1s;
+  transition-timing-function:var(--ease-titlein);
+  transition-delay:var(--dur-subdelay)
+}
+.introwrap.in .mgroup{opacity:1;transform:none;filter:blur(0)}
+.introwrap.in .ch{opacity:1;transform:none;filter:blur(0)}
+.introwrap.in .msub{opacity:1;transform:none;filter:blur(0)}
+/* the load cascades strictly top → bottom:
+   title chars (0–1.1s) → subtitle (.55s) → cover (.9s) → card 1 (1.3s) → card 2 (1.45s)
+   nothing below the title exists on screen until its turn comes           */
+.introwrap .coverbleed{
+  opacity:0;
+  /* v2/v3 animate on mount; v1 and v4 wait for the .in gate, same motion */
+  -webkit-mask-image:linear-gradient(105deg,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,0) 16%, #000 44%, #000 100%);
+          mask-image:linear-gradient(105deg,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,0) 16%, #000 44%, #000 100%);
+  -webkit-mask-size:300% 100%;   mask-size:300% 100%;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat
+}
+.introwrap.in .coverbleed{
+  animation-name:cardsIn;
+  animation-duration:var(--dur-cardsin);
+  animation-timing-function:var(--ease-cardsin);
+  animation-delay:var(--del-cardsin);
+  animation-fill-mode:both
+}
+
+.introwrap .scard{
+  opacity:0;transform:translateY(30px);
+  transition:opacity .75s var(--ease-titlein), transform .75s var(--ease-titlein)
+}
+.introwrap .s1{transition-delay:var(--del-card1)}
+.introwrap .s2{transition-delay:var(--del-card2)}
+.introwrap.in .scard{opacity:1;transform:none}
+
+/* 3 — sticky stacking cards (geometry measured from test.mov) */
+.stack{position:relative;padding:6px 0 0}   /* 20px less lead-in so the card peeks higher above the fold */
+.scard{
+  position:sticky;width:281px;min-height:358px;border-radius:18px;padding:22px;
+  color:#f3f1ed;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:none
+}
+.s1{top:124px;margin-left:19px;z-index:1;   /* clears the header, which ends at ~117 */
+  background:radial-gradient(118% 88% at 3% 1%,#4f4860 0%,#2c2733 34%,rgba(18,18,16,0) 64%),
+             radial-gradient(94% 74% at 104% 106%,#6b5a3c 0%,#2a2318 42%,rgba(18,18,16,0) 74%),
+             #121210}
+.s2{top:254px;margin-left:92px;margin-top:20px;z-index:2;   /* same 130px step as before */
+  background:radial-gradient(112% 84% at 6% 4%,#2c3531 0%,#1a201f 40%,rgba(15,18,14,0) 68%),
+             radial-gradient(104% 82% at 98% 94%,#24301f 0%,rgba(15,18,14,0) 64%),
+             #0f120e}
+/* Figma H3 — SF Pro Regular 24 / 1.1 / 0 */
+.scard h3{font-family:var(--sans);font-size:24px;font-weight:400;line-height:1.1;margin:0;letter-spacing:0}
+.scard p{font-size:14px;line-height:1.35;color:rgba(243,241,237,.5);margin:7px 0 0;max-width:18ch}
+.featlist{margin-top:auto;padding-top:44px}
+.featlist div{display:flex;gap:18px;padding:12px 0;border-bottom:1px solid var(--divider-dark);font-size:13px;letter-spacing:-.01em}
+/* bottom inset now equals the 22px left inset */
+.featlist div:last-child{border-bottom:0;padding-bottom:0}
+.featlist span{color:rgba(243,241,237,.42);font-variant-numeric:tabular-nums}
+
+.closer{text-align:center;padding:52px 22px 0}
+.closer h2{font-family:var(--serif);font-weight:400;font-size:24px;line-height:1.18;margin:0}
+.closer p{font-size:13px;color:var(--text-secondary);margin:10px 0 0}
+
+/* 4 — CTA scrolls with the content (clears the nav bar) */
+.introcta{padding:34px 20px 32px}
+
+/* ===== ID CARD ART — 6253:60151 =====
+   panel 353×444 · art 279×181 centred. Rebuilt from stroked geometry
+   rather than Figma's flattened Union, so each part animates on its own. */
+.artpanel{
+  margin-top:36px;height:444px;display:grid;place-items:center
+}
+/* ---- verifying becomes verified in place ----
+   Held, not absent: visibility keeps the box in the layout so revealing these
+   cannot move the print above them. */
+/* they rise into place rather than just appearing; visibility still holds their
+   boxes in the layout so the print above never moves */
+.vfhold{visibility:hidden;opacity:0;transform:translateY(16px);
+  transition:opacity .5s var(--ease-titlein), transform .6s var(--ease-cardsin)}
+.foot .vfhold{transform:translateY(72px)}   /* the button comes up off the edge */
+.vfhold.vfin{visibility:visible;opacity:1;transform:none}
+/* A fixed two-line box (.ln is 35.2px a line), so whatever either title wraps
+   to, the head's height — and the print's position below it — never changes. */
+.vftitle{height:71px;transition:opacity .26s ease}
+.vftitle.vfout{opacity:0}
+/* filled shapes, exactly as authored in the asset — not strokes */
+.idcard{width:279px;height:181px;display:block}
+.idcard path{fill:var(--idc-ink,#574702)}
+/* per-part reveal hook: add .stagger to bring the pieces in one by one */
+.idcard.stagger path{
+  opacity:0;
+  animation-name:idcPop;
+  animation-duration:var(--dur-artin);
+  animation-timing-function:var(--ease-artin);
+  animation-fill-mode:both
+}
+.idcard.stagger .idc-body  {animation-delay:calc(var(--del-line)*1)}
+.idcard.stagger .idc-head  {animation-delay:calc(var(--del-line)*2)}
+.idcard.stagger .idc-line-1{animation-delay:calc(var(--del-line)*3)}
+.idcard.stagger .idc-line-2{animation-delay:calc(var(--del-line)*4)}
+.idcard.stagger .idc-line-3{animation-delay:calc(var(--del-line)*5)}
+@keyframes idcPop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ===== RING AVATAR ART — 6488:11715 (verify identity v1) =====
+   279×329 keeps the same width as the ID card so the two variations sit on
+   the same optical centre. Strokes are non-scaling, so the 1px weight of the
+   source survives the 240→279 viewBox scale.
+   The fill copy is masked by a feathered rect that translates in from the
+   left; the base copy underneath never moves, so the colour reads as
+   arriving along the line rather than the line being drawn.                */
+.ringart{width:var(--ring-w);height:var(--ring-h);display:block;overflow:visible}
+.ringart use{fill:none;stroke-width:var(--ring-weight)}
+.ringart .ring-base{stroke:var(--ring-ink)}
+.ringart .ring-fill{stroke:var(--ring-fill)}
+.ringart .ring-wipe{
+  transform:translateX(-400px);
+  animation:ringSweep var(--dur-ringsweep) var(--ease-ringsweep)
+            var(--del-ringsweep) both;
+}
+@keyframes ringSweep{to{transform:translateX(0)}}
+/* v2: the art has not been chosen yet — an explicit empty slot, so the
+   screen still reads as a variation rather than a broken layout */
+.artslot{
+  width:var(--ring-w);height:var(--ring-h);
+  border:1px dashed rgba(87,71,2,.28);border-radius:12px;
+  display:grid;place-items:center;
+  font:500 13px/1 var(--sans,inherit);letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(87,71,2,.42)
+}
+
+/* ===== HEAVY ID CARD — 6258:64056 → 64012 (verify identity v1) =====
+   20px strokes throughout, exactly as authored. The checkmark overhangs
+   the card's top-right, so the svg is allowed to spill rather than being
+   widened — that keeps the card on the same centre as the other slots. */
+/* ===== FINGERPRINT PRINT — 6462:11584 (verify identity v2) =====
+   234×279 at 1:1 with its viewBox, so --print-weight is in real pixels.
+   The ridges rest grey; .pr-fill is the same ridges again, dashed shut, and
+   the draw-in is animated per segment from JS (printRun) — the orange is
+   drawn ALONG each ridge, never faded onto it. */
+.printart{width:234px;height:279px;display:block;overflow:visible}
+.printart .pr-ridge path{
+  fill:none;stroke:var(--print-ridge);stroke-width:var(--print-weight);stroke-linecap:round
+}
+.printart .pr-fill path{
+  fill:none;stroke:var(--print-fill);stroke-width:var(--print-weight);stroke-linecap:round;
+  stroke-dasharray:1;stroke-dashoffset:1;opacity:0
+}
+/* the verified screen shows the fill already complete rather than replaying it */
+.printart.done .pr-fill path{stroke-dashoffset:0;opacity:1}
+
+.idcard-heavy{width:279px;height:181px;display:block;overflow:visible}
+.idcard-heavy .idh-frame{fill:none;stroke:var(--idcard-beige);stroke-width:20}
+.idcard-heavy .idh-bar{fill:var(--idcard-beige)}
+/* head and body are filled rings, not stroked circles — see the note in
+   cloaked-app.js: Figma insets the body's stroke and shows only its top half */
+.idcard-heavy .idh-head,
+.idcard-heavy .idh-body{fill:var(--idcard-beige);fill-rule:evenodd}
+.idcard-heavy .idh-check{
+  fill:none;stroke:var(--idcard-gold);stroke-width:20;
+  stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10
+}
+/* Before verification the card is just a card — no colour change, no check.
+   The intro screens use this copy; the verified screen uses the one below. */
+.idcard-heavy.still .idh-head,
+.idcard-heavy.still .idh-body{animation:none;fill:var(--idcard-beige)}
+
+/* the verified beat: the person warms to gold, then the check strikes in.
+   Both run off one cycle so they stay in step. */
+.idcard-heavy .idh-head,
+.idcard-heavy .idh-body{
+  animation:idhGold var(--dur-idh) linear infinite
+}
+.idcard-heavy .idh-check{
+  stroke-dasharray:100;
+  animation:idhCheck var(--dur-idh) linear infinite
+}
+@keyframes idhGold{
+  0%,26%   {fill:var(--idcard-beige)}
+  38%,88%  {fill:var(--idcard-gold)}
+  96%,100% {fill:var(--idcard-beige)}
+}
+@keyframes idhCheck{
+  0%,28%   {stroke-dashoffset:100;opacity:0}
+  29%      {stroke-dashoffset:100;opacity:1}
+  48%,88%  {stroke-dashoffset:0;  opacity:1}
+  95%,100% {stroke-dashoffset:0;  opacity:0}
+}
+
+/* v3 art: the name-lines card. Same 279×181 footprint as the ID card so
+   every variation sits on one optical centre. */
+.linecard{width:353px;height:229px;display:block}   /* 393 frame less 20px each side */
+/* v3 sits in the same 444px art panel; a square so the circle has room */
+.printlines{width:353px;height:353px;display:block}   /* 393 frame less 20px each side */
+
+/* ---- v2 controls in the tray. .group is display:flex, so the hidden
+   attribute needs help to win. ---- */
+.group[hidden]{display:none}
+.nlinput{
+  width:100%;padding:7px 8px;border:1px solid var(--rule);border-radius:2px;
+  background:transparent;color:var(--tray-text);
+  font-family:inherit;font-size:12px;line-height:1.35;outline:none
+}
+.nlinput:focus{border-color:var(--tray-border)}
+.nlrow{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:baseline}
+.nlkey{font-size:11px;color:var(--tray-mute)}
+.nlval{font-size:11px;color:var(--tray-text);font-weight:400;font-variant-numeric:tabular-nums}
+.nlrow input[type=range]{
+  grid-column:1/-1;width:100%;height:14px;margin:0;
+  -webkit-appearance:none;appearance:none;background:none;cursor:pointer
+}
+.nlrow input[type=range]::-webkit-slider-runnable-track{height:1px;background:var(--rule)}
+.nlrow input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:9px;height:9px;border-radius:50%;
+  background:var(--tray-text);margin-top:-4px
+}
+.nlrow input[type=range]::-moz-range-track{height:1px;background:var(--rule)}
+.nlrow input[type=range]::-moz-range-thumb{
+  width:9px;height:9px;border:0;border-radius:50%;background:var(--tray-text)
+}
+
+
+/* the whole screen flips, not just the card: the screen is rendered twice
+   and the gold copy is swept in behind a soft gradient mask, so every
+   element inverts exactly as the edge passes over it */
+.screen.layers{padding-top:0;background:var(--bkgd-02)}
+.vlayer{position:absolute;inset:0;padding-top:22px;display:flex;flex-direction:column;overflow:hidden}
+/* the placeholder state carries no button — the footer stays in the layout so
+   the two layers align exactly, but it is not shown */
+.vlayer.base .foot{opacity:0}
+/* once the colour has finished filling, the button rises in from off-screen */
+.vlayer.gold .foot{
+  animation-name:btnRise;
+  animation-duration:var(--dur-btnrise);
+  animation-timing-function:var(--ease-cardrise);
+  animation-delay:calc(var(--del-fill) + var(--dur-fillup));
+  animation-fill-mode:both
+}
+@keyframes btnRise{from{transform:translateY(150%);opacity:0}to{transform:none;opacity:1}}
+.vlayer.gold{
+  /* the verified ramp: darkest #141410 -> lightest #2C1C13, the brand orange
+     pulled all the way down to a near-black warm. The four stops in between
+     sit on the same curve the gold ramp used, so the sweep keeps its pacing. */
+  background:linear-gradient(180deg,#141410 0%,#141410 46%,#181412 58%,#1F1714 72%,#261A14 86%,#2C1C13 100%);
+  color:#f3f1ed;
+  -webkit-mask-image:linear-gradient(180deg,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,0) 34%,
+      rgba(0,0,0,.14) 40%, rgba(0,0,0,.45) 47%,
+      rgba(0,0,0,.80) 53%, #000 60%, #000 100%);
+          mask-image:linear-gradient(180deg,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,0) 34%,
+      rgba(0,0,0,.14) 40%, rgba(0,0,0,.45) 47%,
+      rgba(0,0,0,.80) 53%, #000 60%, #000 100%);
+  -webkit-mask-size:100% 300%;   mask-size:100% 300%;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  -webkit-mask-position:0% 0%;   mask-position:0% 0%;
+  animation-name:fillRise;
+  animation-duration:var(--dur-fillup);
+  animation-timing-function:var(--ease-fillup);
+  animation-delay:var(--del-fill);
+  animation-fill-mode:both
+}
+.vlayer.gold h1{color:#f3f1ed}
+.vlayer.gold .sub{color:rgba(243,241,237,.70)}
+/* before the colour arrives the art is a neutral placeholder, not gold */
+
+/* ===== VERIFIED SCREEN — each variation pays off its own art =====
+   The wash turns the `base` layer into the `gold` one; the art's own motion
+   waits until that edge has gone past it, then runs once and stays put. */
+:root{ --del-verify:calc(var(--del-fill) + var(--dur-fillup) * 0.72); }
+
+.vlayer.gold .idcard-heavy .idh-head,
+.vlayer.gold .idcard-heavy .idh-body,
+.vlayer.gold .idcard-heavy .idh-check{
+  animation-iteration-count:1;
+  animation-fill-mode:both;
+  animation-delay:var(--del-verify)
+}
+/* held states, so nothing snaps back when the single run finishes */
+@keyframes idhGoldOnce{ from{fill:var(--idcard-beige)} to{fill:var(--idcard-gold)} }
+@keyframes idhCheckOnce{
+  0%       {stroke-dashoffset:100;opacity:0}
+  1%       {stroke-dashoffset:100;opacity:1}
+  100%     {stroke-dashoffset:0;  opacity:1}
+}
+.vlayer.gold .idcard-heavy .idh-head,
+.vlayer.gold .idcard-heavy .idh-body{animation-name:idhGoldOnce;animation-duration:520ms}
+.vlayer.gold .idcard-heavy .idh-check{animation-name:idhCheckOnce;animation-duration:620ms;
+  animation-delay:calc(var(--del-verify) + 260ms)}
+/* the base copy is the card a moment before — beige, no check */
+.vlayer.base .idcard-heavy .idh-head,
+.vlayer.base .idcard-heavy .idh-body{animation:none;fill:var(--idcard-beige)}
+
+/* v2: the rings fill left → right once the wash has passed them */
+.vlayer.gold .ringart .ring-wipe{
+  animation-name:ringSweep;animation-duration:var(--dur-ringsweep);
+  animation-timing-function:var(--ease-ringsweep);
+  animation-delay:var(--del-verify);animation-fill-mode:both;
+  animation-iteration-count:1
+}
+/* on the dark wash the unfilled rings need to read as the quiet state */
+.vlayer.gold .ringart .ring-base{stroke:rgba(243,241,237,.28)}
+
+/* v0: the icon is what the colour arrives in — grey before, green after */
+.vlayer.base .idcard path{fill:rgba(0,0,0,.15)}
+.vlayer.gold .idcard path{fill:var(--ring-fill)}
+/* glass: light edge above, faint shadow below, so it reads as a pane */
+.vlayer.gold .idcard{filter:drop-shadow(0 1px 0 rgba(255,255,255,.22)) drop-shadow(0 -1px 0 rgba(0,0,0,.10))}
+.vlayer.gold .progress i{background:rgba(255,255,255,.22)}
+.vlayer.gold .progress i::after{background:#f3f1ed}
+@keyframes fillRise{
+  from{-webkit-mask-position:0% 0%;   mask-position:0% 0%}
+  to  {-webkit-mask-position:0% 100%; mask-position:0% 100%}
+}
+
+/* ===== NAV BAR — 6241:53371 =====
+   container 393×88 · pill 369×60 inset 12 · list 345 wide, 5×48 items @74.25 */
+.navbar{
+  position:absolute;left:0;right:0;bottom:10px;height:88px;z-index:50;
+  display:flex;justify-content:center;align-items:flex-start;
+  padding-top:8px;pointer-events:none
+}
+.navpill{
+  pointer-events:auto;width:369px;height:60px;border-radius:30px;
+  display:flex;align-items:center;justify-content:space-between;padding:0 12px;
+  /* Glass, but legible over anything. At .42 the pill went mid-grey over a dark
+     card and the grey icons vanished; .72 keeps real transmission and blur while
+     guaranteeing a light surface. A second border used to override the first. */
+  background:rgba(243,241,237,.72);
+  border:1px solid rgba(255,255,255,.30);
+  backdrop-filter:blur(28px) saturate(1.7);-webkit-backdrop-filter:blur(28px) saturate(1.7);
+  box-shadow:0 1px 2px rgba(0,0,0,.06), 0 10px 24px rgba(0,0,0,.12)
+}
+.navitem{
+  width:48px;height:48px;border-radius:16px;flex:0 0 auto;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  font-family:var(--sans);font-size:10px;line-height:1.3;letter-spacing:.5px;
+  color:#3e3c36;cursor:pointer;
+  transition:background var(--dur-select) var(--ease-select),
+             color var(--dur-select) var(--ease-select)
+}
+.navitem svg{width:20px;height:20px;display:block;fill:currentColor;
+  filter:drop-shadow(0 0 1.5px rgba(255,255,255,.65))}
+.navitem span{text-shadow:0 0 2px rgba(255,255,255,.6)}
+.navitem span{white-space:nowrap}
+/* active = dark ink on the same pill, no inner chip */
+.navitem.on{background:transparent;color:var(--text-primary)}
+.navitem:active{transform:scale(.94)}
+
+/* ===== WELCOME TRANSITION ===== */
+.welcome{position:absolute;inset:0;background:#fff;overflow:hidden}
+.wl-gold{
+  /* 250% tall: the top 42% is FLAT gold, so at rest the whole screen is a
+     solid colour — the gradient edge and the white live below the viewport
+     and only travel through it as the layer rises */
+  position:absolute;left:0;right:0;top:0;height:250%;
+  background:linear-gradient(180deg,
+    var(--bkgd-01) 0%, var(--bkgd-01) 42%,
+    #33332f 47%, #6e6e68 51%, #c6c4be 54%, #eceae5 57%,
+    #ffffff 60%, #ffffff 100%);
+  /* holds on solid gold for --dur-washdelay so the line can be read first.
+     longhand: a var() delay inside the shorthand is fragile to parse */
+  animation-name:goldWash;
+  animation-duration:var(--dur-welcome);
+  animation-timing-function:var(--ease-welcome);
+  animation-delay:var(--dur-washdelay);
+  animation-fill-mode:both
+}
+/* -58% of 250% lands the pure-white band across the whole viewport */
+@keyframes goldWash{from{transform:translateY(0)}to{transform:translateY(-58%)}}
+.wl-title{
+  position:absolute;left:20px;right:40px;top:44%;
+  font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.22;color:#f3f1ed;
+  animation-name:wlTitle;
+  animation-duration:var(--dur-welcome);
+  animation-timing-function:var(--ease-welcome);
+  animation-delay:var(--dur-washdelay);
+  animation-fill-mode:both
+}
+/* ---- line-by-line title hand-off ----
+   each line sits in its own overflow mask so it can slide out / in
+   independently; the block itself never moves as one piece */
+.ln{display:block;overflow:hidden;padding-bottom:5px;margin-bottom:-5px}
+.ln>i{display:block;font-style:normal}
+
+/* leaving: lines exit upward behind their masks, staggered */
+.leaving .ln>i{
+  animation-name:lineOut;
+  animation-duration:var(--dur-lineout);
+  animation-timing-function:var(--ease-lineout);
+  animation-fill-mode:forwards
+}
+.leaving .ln:nth-child(2)>i{animation-delay:var(--del-line)}
+.leaving .ln:nth-child(3)>i{animation-delay:calc(var(--del-line)*2)}
+@keyframes lineOut{to{transform:translateY(-115%);opacity:0}}
+
+/* arriving: lines rise in from below, same stagger */
+.linesin .ln>i{
+  animation-name:lineIn;
+  animation-duration:var(--dur-linein);
+  animation-timing-function:var(--ease-linein);
+  animation-fill-mode:both
+}
+.linesin .ln:nth-child(2)>i{animation-delay:var(--del-line)}
+.linesin .ln:nth-child(3)>i{animation-delay:calc(var(--del-line)*2)}
+@keyframes lineIn{from{transform:translateY(115%);opacity:0}to{transform:none;opacity:1}}
+/* subtitle follows the last line in */
+.subin{
+  animation-name:fadeIn;
+  animation-duration:var(--dur-linein);
+  animation-timing-function:var(--ease-linein);
+  animation-delay:calc(var(--del-line)*3);
+  animation-fill-mode:both
+}
+
+/* the ink flips as the gradient edge sweeps past the text, ~halfway */
+@keyframes wlTitle{
+  0%{color:#f3f1ed;transform:translateY(0)}
+  38%{color:#f3f1ed}
+  56%{color:var(--text-primary)}
+  100%{color:var(--text-primary);transform:translateY(-172px)}
+}
+
+/* ===== CREATING (dark skeleton) ===== */
+.skelout{border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:20px;margin-top:44px;height:376px}
+.skelin{border:1px solid rgba(255,255,255,.14);border-radius:12px;height:200px;position:relative;overflow:hidden}
+.skelin::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.07) 50%,transparent 70%);
+  animation:shimmer 1.5s linear infinite
+}
+@keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+
+/* ===== READY (brand reveal) ===== */
+/* no extra inset — the shared nav supplies the 40px top padding, so the
+   header and headline land at the same y as every other screen */
+.brandscreen{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
+/* both copies fill the screen; the live one is masked */
+.rlayer{position:absolute;inset:0;display:flex;flex-direction:column;padding:0 20px;overflow:hidden}
+.rlayer.dark{
+  background:var(--bkgd-01);color:rgba(243,241,237,.34);z-index:1;
+  pointer-events:none
+}
+/* The base layer carries NO card information — only the empty outlines, so
+   nothing is legible until the mask reaches it. The real headline, card face,
+   values and buttons exist solely inside the masked layer, which means the
+   finished state emerges as the mask grows instead of appearing on black and
+   then being tinted. The boxes are kept for layout so the two layers align
+   pixel for pixel and the mask edge has nothing to jump over. */
+.rlayer.dark .head,
+.rlayer.dark .ptop,
+.rlayer.dark .prow,
+.rlayer.dark .bigcard > *{visibility:hidden}
+.rlayer.dark .cardpanel{
+  background:transparent;
+  border:1px solid rgba(255,255,255,.13)
+}
+.rlayer.dark .bigcard{
+  background:transparent;
+  border:1px solid rgba(255,255,255,.13)
+}
+.rlayer.dark .iconbtn.onbrand{background:rgba(255,255,255,.08)}
+.rlayer.dark .iconbtn.onbrand svg{stroke:rgba(243,241,237,.3)}
+.rlayer.live{background:var(--brand-deep,var(--brand));color:var(--brand-on);z-index:2}
+.rlayer.live .rinner{position:relative;z-index:3;flex:1;display:flex;flex-direction:column}
+.rlayer.dark .foot{opacity:0}
+.rlayer.live .foot{
+  animation-name:btnRise;
+  animation-duration:var(--dur-btnrise);
+  animation-timing-function:var(--ease-cardrise);
+  animation-delay:calc(var(--del-reveal) + var(--dur-reveal));
+  animation-fill-mode:both
+}
+.rlayer.live h1{color:var(--brand-on)}
+.rlayer .progress i{background:rgba(255,255,255,.22)}
+.rlayer.live .progress i::after{background:var(--brand-on)}
+.rlayer.dark .progress i::after{background:rgba(243,241,237,.3)}
+.rlayer .nav{padding-left:0;padding-right:0}
+
+/* the reveal: a soft gradient mask swept bottom -> top */
+.masksweep{
+  -webkit-mask-image:linear-gradient(180deg,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,0) 34%,
+      rgba(0,0,0,.14) 40%, rgba(0,0,0,.45) 47%,
+      rgba(0,0,0,.80) 53%, #000 60%, #000 100%);
+          mask-image:linear-gradient(180deg,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,0) 34%,
+      rgba(0,0,0,.14) 40%, rgba(0,0,0,.45) 47%,
+      rgba(0,0,0,.80) 53%, #000 60%, #000 100%);
+  -webkit-mask-size:100% 300%;   mask-size:100% 300%;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  -webkit-mask-position:0% 0%;   mask-position:0% 0%;
+  animation-name:fillRise;
+  animation-duration:var(--dur-reveal);
+  animation-timing-function:var(--ease-fillup);
+  animation-delay:var(--del-reveal);
+  animation-fill-mode:both
+}
+.brandbody{position:relative;z-index:3;flex:1;display:flex;flex-direction:column;padding:0 20px;overflow:hidden}
+.brandbody>*{opacity:0;animation:riseIn var(--dur-cardrise) var(--ease-cardrise) forwards}
+@keyframes riseIn{from{opacity:0;transform:translateY(26px) scale(.97)}to{opacity:1;transform:none}}
+/* 54 + 70(title) + 66 puts the panel top at 296px, per the design */
+.cardpanel{background:#fff;border-radius:14px;padding:18px;color:var(--text-primary);margin-top:66px}
+.cardpanel .ptop{display:flex;justify-content:space-between;align-items:center;font-size:16px;letter-spacing:-.01em}
+.cardpanel .ptop b{font-weight:500}
+.bigcard{
+  border-radius:11px;height:188px;margin-top:14px;background:var(--brand);
+  display:grid;place-items:center;position:relative;overflow:hidden
+}
+.bigcard .mark{font-size:62px;font-weight:700;color:var(--brand-on);font-family:var(--sans);letter-spacing:-.03em}
+.bigcard .custom{
+  position:absolute;top:14px;left:14px;z-index:3;
+  background:rgba(0,0,0,.22);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.35);border-radius:100px;
+  padding:6px 14px;font-size:13px;color:var(--brand-on)
+}
+/* last four, bottom-right of the card face */
+.bigcard .last4{
+  position:absolute;bottom:14px;right:14px;z-index:3;
+  background:rgba(0,0,0,.22);color:var(--brand-on);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-radius:100px;padding:6px 14px;font-size:14px
+}
+.bigcard .mark{position:relative;z-index:3}
+.bigcard .mark svg{width:74px;height:74px;color:var(--brand-on);display:block}
+/* artwork themes: video fills both the page and the card face */
+.brandvideo,.cardvideo{
+  position:absolute;left:0;right:0;top:0;width:100%;height:100%;
+  object-fit:cover;display:none;z-index:1
+}
+/* the artwork's pale band sat behind the headline. The layer is taller than
+   the frame and pulled up, so we see further down the image and it still
+   reaches the bottom. */
+.brandvideo{height:134%;top:-34%;bottom:auto}
+/* artwork is busy — 40% black keeps the headline readable */
+.brandscrim{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:2;display:none}
+.art-dating .brandscrim{display:block}
+.art-dating .rlayer.live .brandvideo,.art-dating .rlayer.live .cardvideo{display:block}
+.art-dating .brandflood{background:#2b1430}
+.art-dating .bigcard{background:#2b1430}
+.cardpanel .prow{display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--divider);font-size:16px}
+.cardpanel .prow:last-child{border-bottom:0;padding-bottom:2px}
+
+/* ===== iOS KEYBOARD ===== */
+.kb{flex:0 0 auto;background:#d1d3d9;padding:8px 3px 0;user-select:none}
+.kbrow{display:flex;justify-content:center;gap:6px;margin-bottom:11px;padding:0 3px}
+.kbrow.r2{padding:0 22px}
+.kbkey{flex:1;height:42px;background:#fff;border-radius:5px;display:grid;place-items:center;font-size:22px;box-shadow:0 1px 0 rgba(0,0,0,.28);color:#000;cursor:pointer;transition:background .08s}
+.kbkey:active{background:#c8ccd4}
+.kbkey.wide{flex:1.5;background:#adb3bd;font-size:18px}
+.kbkey.space{flex:5;font-size:16px}
+.kbkey.num{flex:1.5;background:#adb3bd;font-size:16px}
+/* return is a normal key — dismissing happens by tapping outside */
+.kbkey.go{background:#adb3bd;color:#000}
+.kbbottom{display:flex;align-items:center;justify-content:space-between;padding:2px 18px 10px;height:42px;font-size:21px;opacity:.65}
+/* Keyboard clearance comes from a SHRINKABLE spacer, not padding-bottom.
+   Padding can't shrink, so when it exceeded the available space the flex
+   column overflowed and pushed the footer past the phone's rounded corner
+   (where overflow:hidden clipped it). A flex-basis spacer yields instead. */
+.cardbody{
+  display:flex;flex-direction:column;
+  flex-grow:1;flex-shrink:1;flex-basis:0;
+  min-height:0;overflow:visible
+}
+.cardbody .pushdown{flex-grow:1;flex-shrink:1;flex-basis:0}
+/* keyboard up: the bottom spacer reserves the keyboard, so fields sit above it */
+.cardbody .pushup{
+  flex-grow:0;flex-shrink:1;flex-basis:calc(var(--kb-h,274px) + 20px);
+  transition-property:flex-basis;
+  transition-duration:var(--dur-kbslide);
+  transition-timing-function:var(--ease-kbslide)
+}
+/* card form: on dismiss both spacers grow, centring the fields */
+.cf-down .cardbody .pushup{flex-grow:1;flex-shrink:1;flex-basis:0}
+/* naming screen wants a bit more air, and holds position on dismiss */
+/* naming screen: field sits under the header and never moves. The keyboard
+   slides over the empty space below it, so opening/closing shifts nothing. */
+/* keyboard up: top spacer grows, bottom reserves the keyboard -> field sits
+   just above the keys. keyboard down: bottom grows and the field is placed
+   explicitly, 112px under the title block (22+84+108+112 = 326, measured). */
+.namebody .pushdown{flex-grow:1;flex-shrink:1;flex-basis:0}
+.namebody .pushup{flex-grow:0;flex-shrink:1;flex-basis:calc(var(--kb-h,274px) + 52px)}
+.cf-down .namebody .pushdown{flex-grow:0}
+.cf-down .namebody .pushup{flex-grow:1;flex-shrink:1;flex-basis:0}
+.cf-down .namebody .fields{margin-top:112px}
+/* card-info screen — one page, three states, keyboard slides */
+.kbslide{
+  position:absolute;left:0;right:0;bottom:0;z-index:30;
+  transition:transform var(--dur-kbslide) var(--ease-kbslide)
+}
+.cf-kbdown .kbslide,.cf-down .kbslide{transform:translateY(100%)}
+/* no slide on arrival — only when the user dismisses it */
+.cf-instant .kbslide{transition:none}
+.cf-val{display:none}
+.cf-caret{color:#d8722f;margin-right:1px;animation:blink 1.1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.cf-ph{color:var(--text-tertiary)}
+.cf-filled .cf-val{display:inline}
+.cf-filled .cf-ph,.cf-filled .cf-caret{display:none}
+.cf-hint,.cf-foot{opacity:0;pointer-events:none;transition:opacity .35s var(--ease-push) .12s}
+.cf-down .cf-hint,.cf-down .cf-foot{opacity:1;pointer-events:auto}
+.field[data-cf]{cursor:text}
+
+/* iOS numeric pad */
+.numkb{padding:8px 6px 14px}
+.numkb .kbrow{gap:8px;margin-bottom:9px}
+.numkb .kbkey{height:46px;flex-direction:column;gap:0;line-height:1}
+.numkb .kbkey b{font-size:25px;font-weight:400}
+.numkb .kbkey i{font-style:normal;font-size:9px;letter-spacing:.09em;margin-top:1px}
+.numkb .kbkey{display:flex;align-items:center;justify-content:center}
+.numkb .kbkey.ghost{background:transparent;box-shadow:none;font-size:22px}
+
+/* prototype-only: reveal tap targets */
+.phone.hints [data-go],.phone.hints [data-act],.phone.hints [data-key],
+.phone.hints [data-kbgo],.phone.hints [data-pick],.phone.hints [data-char]{outline:1.5px dashed #d8722f;outline-offset:2px;border-radius:8px}
+
+/* ===== standalone version pages: no tray, phone centred ===== */
+body.solo .panel{display:none}
+body.solo .stage{flex:1}
+
+/* pills that are links out to the standalone version pages */
+a.pill{text-decoration:none;display:grid;place-items:center}

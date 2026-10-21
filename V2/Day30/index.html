@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<!-- "default" keeps the status bar legible on the light screens and, crucially,
+     makes iOS report honest safe-area insets. Without apple-mobile-web-app-capable
+     a Home Screen shortcut reports a bottom inset AND already excludes the home
+     indicator, so the tab bar reserved that space twice. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Cloaked"/>
+<meta name="theme-color" content="#ffffff"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<title>Cloaked — Identity Redesign</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    background: #1a1a1a;
+    color: #fff;
+    display: flex;
+  }
+
+  /* ── Left sidebar ── */
+  .sidebar {
+    width: 340px;
+    min-width: 340px;
+    background: #1a1a1a;
+    color: #f3f3f3;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .sidebar-header {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 20px 28px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .sidebar-title {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.1px;
+    color: #fff;
+  }
+
+  /* ── Menu ── */
+  .menu { display: flex; flex-direction: column; margin-top: auto; }
+  .menu-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 22px 28px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.92);
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .menu-row:hover { background: rgba(255,255,255,0.04); }
+
+  .menu-group-head,
+  .menu > .menu-row[data-tab] {
+    font-family: 'Simula', Georgia, 'Times New Roman', serif;
+    font-size: 21px;
+    padding: 34px 28px;
+    letter-spacing: 0.2px;
+  }
+  .menu-group-head .menu-arrow {
+    font-size: 17px; color: #fff; line-height: 1;
+    transition: transform 0.25s ease;
+  }
+  .menu-group.collapsed .menu-arrow { transform: rotate(180deg); }
+
+  .menu-sub { background: transparent; overflow: hidden; transition: max-height 0.3s ease; }
+  .menu-group.collapsed .menu-sub { max-height: 0 !important; }
+  .menu-row.sub {
+    background: #0e0e0e;
+    padding-left: 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .menu-row.sub:last-child { border-bottom: 1px solid rgba(255,255,255,0.08); }
+
+  .menu-row .tag {
+    font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: rgba(255,255,255,0.4); font-weight: 600; margin-left: 8px;
+  }
+
+  /* Radio indicator */
+  .radio {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.3); flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .menu-row.active .radio { background: #fff; border-color: #fff; }
+
+  /* ── Right preview area ── */
+  .preview {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    background: #0a0a0a;
+  }
+  /* The phone stays a true 390x844 device and is scaled as a whole to fit the
+     window — so the iframe is always rendered at its native size and nothing
+     inside has to be responsive. --pf-scale is set by fitPhone() below. */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    box-shadow: 0 0 0 10px #0a0a0a, 0 0 0 12px #2a2a2a, 0 30px 80px rgba(0,0,0,0.55);
+    overflow: hidden;
+    position: relative;
+    background: #262626;
+    flex: 0 0 auto;
+    transform: scale(var(--pf-scale, 1));
+    transform-origin: center center;
+  }
+  .phone iframe {
+    width: 390px; height: 844px; border: none;
+    border-radius: 48px; display: block;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 900px) {
+    body { flex-direction: column; }
+    .sidebar { width: 100%; min-width: 0; height: auto; flex: 0 0 auto; }
+    .sidebar-header { min-height: 0; padding: 16px 20px; }
+    .sidebar-title { font-size: 15px; }
+    .preview { padding: 12px; }
+  }
+
+  /* On a phone or tablet there is no frame — the app fills the screen, exactly
+     as it would if you opened app.html directly. */
+  @media (hover: none), (pointer: coarse) {
+    html, body { height: 100%; overflow: hidden; background: #fff; }
+    body { flex-direction: column; }
+    .sidebar { display: none; }
+    .preview { padding: 0; background: #fff; }
+    .phone {
+      width: 100%; height: 100%;
+      border-radius: 0; box-shadow: none; background: #fff;
+      transform: none !important;
+    }
+    .phone iframe { width: 100%; height: 100%; border-radius: 0; }
+  }
+/*BADGE-INDEX css BEGIN*/
+  /* Debug badge toggle (MB). Whole block removable. */
+  .dbg-toggle {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: auto; padding: 14px 28px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 12px; color: rgba(255,255,255,0.55);
+    cursor: pointer; user-select: none;
+  }
+  .dbg-toggle:hover { color: rgba(255,255,255,0.85); }
+  .dbg-toggle input { accent-color: #7fe3c7; margin: 0; }
+  .dbg-toggle span { flex: 1; }
+  .dbg-toggle em {
+    font-style: normal; font-family: ui-monospace, Menlo, monospace; font-size: 10px;
+    border: 1px solid rgba(255,255,255,0.22); border-radius: 3px; padding: 1px 4px;
+    color: rgba(255,255,255,0.45);
+  }
+/*BADGE-INDEX css END*/
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Cloaked app<br>Identity redesign</div>
+  </div>
+  <nav class="menu" id="menu">
+
+    <!-- ──────────────────────────────────────────────────────────────────
+         This hub serves ONE folder: Day 30 (app.html). Navigate with the
+         phone's own bottom nav; the sidebar list stays hidden. Day 01 is the
+         sibling folder V2/DayOne/ with its own index.html — deliberately not a
+         row here, so either folder can be hosted on its own (MR-3, 18 Sep
+         2026). The Day 01 / Day 30 scaffold below is kept for reference only.
+
+    <div class="menu-group" id="group-identity">
+      <button class="menu-row menu-group-head" onclick="toggleGroup('identity')">
+        <span class="menu-label">Identity</span>
+        <span class="menu-arrow">&#8593;</span>
+      </button>
+      <div class="menu-sub">
+        <button class="menu-row sub active" data-tab="day01"><span>Day 01</span><span class="radio"></span></button>
+        <button class="menu-row sub" data-tab="day30"><span>Day 30</span><span class="radio"></span></button>
+      </div>
+    </div>
+
+         Previous per-tab list, kept for reference:
+
+    <div class="menu-group" id="group-existing">
+      <button class="menu-row menu-group-head" onclick="toggleGroup('existing')">
+        <span class="menu-label">Existing</span>
+        <span class="menu-arrow">&#8593;</span>
+      </button>
+      <div class="menu-sub">
+        <button class="menu-row sub active" data-tab="home"><span>Home</span><span class="radio"></span></button>
+        <button class="menu-row sub" data-tab="activity"><span>Activity</span><span class="radio"></span></button>
+        <button class="menu-row sub" data-tab="monitoring"><span>Monitoring</span><span class="radio"></span></button>
+      </div>
+    </div>
+    <div class="menu-group" id="group-new">
+      <button class="menu-row menu-group-head" onclick="toggleGroup('new')">
+        <span class="menu-label">Redesign</span>
+        <span class="menu-arrow">&#8593;</span>
+      </button>
+      <div class="menu-sub">
+        <button class="menu-row sub" data-tab="idcard"><span>ID Card<span class="tag">empty</span></span><span class="radio"></span></button>
+        <button class="menu-row sub" data-tab="vaults"><span>Vaults<span class="tag">empty</span></span><span class="radio"></span></button>
+      </div>
+    </div>
+         ────────────────────────────────────────────────────────────────── -->
+  </nav>
+<!-- BADGE-INDEX html BEGIN -->
+  <!-- Debug badge toggle (MB). Whole block removable; the launcher works without it.
+       See V2/badge/README.md -->
+  <label class="dbg-toggle" id="dbgToggle">
+    <input type="checkbox" id="dbgChk">
+    <span>Debug badge</span>
+    <em>D</em>
+  </label>
+<!-- BADGE-INDEX html END -->
+</aside>
+
+<main class="preview">
+  <div class="phone">
+    <iframe id="phoneFrame" src="app.html?skip=1&tab=home&v=20260826-cardstop"></iframe>
+  </div>
+</main>
+
+<script>
+  const frame = document.getElementById('phoneFrame');
+  const preview = document.querySelector('.preview');
+
+  // Scale the whole phone (bezel included) to whatever room the preview has.
+  // 24px of bezel comes from the two box-shadow rings.
+  const FRAMED = '(hover: hover) and (pointer: fine)';
+
+  function fitPhone() {
+    const BEZEL = 24, W = 390, H = 844;
+    /* touch device: no frame, so nothing to scale */
+    const framed = window.matchMedia ? window.matchMedia(FRAMED).matches : true;
+    if (!framed) {
+      document.documentElement.style.removeProperty('--pf-scale');
+      return;
+    }
+    const cs = getComputedStyle(preview);
+    const availW = preview.clientWidth  - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const availH = preview.clientHeight - parseFloat(cs.paddingTop)  - parseFloat(cs.paddingBottom);
+    const scale = Math.min(1, (availH - BEZEL) / H, (availW - BEZEL) / W);
+    document.documentElement.style.setProperty('--pf-scale', Math.max(scale, 0.3));
+  }
+  fitPhone();
+  window.addEventListener('resize', fitPhone, { passive: true });
+  window.addEventListener('orientationchange', fitPhone);
+  if (window.ResizeObserver) new ResizeObserver(fitPhone).observe(preview);
+
+  // Collapse / expand a group
+  function toggleGroup(id) {
+    document.getElementById('group-' + id).classList.toggle('collapsed');
+  }
+  window.toggleGroup = toggleGroup;
+
+  // Set the open-height of each sub list so the collapse animation works
+  document.querySelectorAll('.menu-sub').forEach(function (el) {
+    el.style.maxHeight = el.scrollHeight + 'px';
+  });
+
+  // Row selection — switch the tab inside the running app without reloading
+  document.querySelectorAll('.menu-row[data-tab]').forEach(row => {
+    row.addEventListener('click', () => {
+      document.querySelectorAll('.menu-row').forEach(r => r.classList.remove('active'));
+      row.classList.add('active');
+      const tab = row.dataset.tab;
+      let handled = false;
+      try {
+        const w = frame.contentWindow;
+        if (w && typeof w.showTab === 'function') { w.showTab(tab); handled = true; }
+      } catch (e) {}
+      if (!handled) frame.src = 'app.html?skip=1&tab=' + tab;
+    });
+  });
+
+  /* The List/Cards switch that used to sit in the sidebar is gone — Yuan didn't
+     want it in the frame. app-cards.html is gone too (moved to
+     _to_delete/cards-variant/, 19 Aug). The layout code itself is still in
+     app.html: setCardLayout(true) in the console, or ?cards=1 on the URL.
+     NOTE: the variant sticks in localStorage, so anywhere you once opened the
+     cards build, open app.html?cards=0 once to forget it. */
+
+  // Tab sync from inside the phone: move the dot without reloading the iframe
+  window.addEventListener('message', function (e) {
+    const d = e.data;
+    if (!d || d.type !== 'tabSync' || !d.tab) return;
+    const row = document.querySelector('.menu-row[data-tab="' + d.tab + '"]');
+    if (!row || row.classList.contains('active')) return;
+    document.querySelectorAll('.menu-row').forEach(r => r.classList.remove('active'));
+    row.classList.add('active');
+  });
+/*BADGE-INDEX js BEGIN*/
+  /* Debug badge toggle (MB). Whole block removable.
+     The checkbox and a D in the parent window both postMessage app.html; app.html
+     also listens for D and the triple-tap itself, so either side can toggle.
+     Re-pushed on iframe load so a reload keeps the badge. */
+  (function () {
+    var chk = document.getElementById('dbgChk');
+    if (!chk) return;
+    function push() {
+      try { frame.contentWindow.postMessage({ cloakedDebug: chk.checked }, '*'); } catch (e) {}
+    }
+    chk.addEventListener('change', push);
+    frame.addEventListener('load', push);
+    window.addEventListener('message', function (e) {
+      if (e.data && e.data.cloakedDebugState !== undefined) chk.checked = !!e.data.cloakedDebugState;
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'd' && e.key !== 'D') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      chk.checked = !chk.checked; push();
+    });
+  })();
+/*BADGE-INDEX js END*/
+</script>
+
+</body>
+</html>

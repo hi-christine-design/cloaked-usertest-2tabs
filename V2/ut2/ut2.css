@@ -1,0 +1,1517 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   UT2 · research-round-2 changes (16 Oct 2026)
+   One layer on top of the V2 build. Nothing here is active unless <html>
+   carries .ut2-after, which ut2.js adds when the URL is ?ut2=after (the
+   default). ?ut2=before loads the untouched V2 build.
+
+   No new design tokens. The prototype has no colour variables of its own, so
+   the values below are the ones it already uses, measured off the live build
+   (ink, black FAB, grey sub-copy, hairline, scrim). The only colour that is
+   not product UI is --ut2-review: the highlight ring the launcher draws.
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --ut2-ink:   #141410;   /* .vt-row / .icc-title colour            */
+  --ut2-black: #0B0B0A;   /* .vt-fab / .ic-fab fill                 */
+  --ut2-grey:  #84827E;   /* .icc-sub                                */
+  --ut2-line:  #E0DDD6;   /* .vt-row / .vt-tile hairline             */
+  --ut2-scrim: rgba(20, 20, 16, .42);   /* #nqDim                    */
+  --ut2-review: #7B61FF;  /* review overlay only — not product UI    */
+}
+
+/* C2 · one line under each section title */
+.ut2-after .ut2-sub {
+  display: block;
+  padding: 0 20px 12px;
+  font: 400 14px/1.35 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  color: var(--ut2-grey);
+}
+.ut2-sub { display: none; }
+
+/* C3 · C4 · the email / phone tray — alias first, your own info apart */
+.ut2-after #nqPick .vt-sheet-body,
+.ut2-after #vtAddEmail .vt-sheet-body,
+.ut2-after .d1j-tray-rows { display: flex; flex-direction: column; }
+.ut2-after #nqPick [data-nqpick="alias"],
+.ut2-after #vtAddEmail [data-addemail="alias"],
+.ut2-after .d1j-tray-row[data-tray="alias"] { order: -1; }
+.ut2-after #nqPick [data-nqpick="real"],
+.ut2-after #vtAddEmail [data-addemail="existing"],
+.ut2-after .d1j-tray-row[data-tray="own"] { order: 2; }
+.ut2-cap { display: none; }
+.ut2-after .ut2-cap {
+  display: block;
+  padding: 14px 20px 6px;
+  font: 600 11px/1.2 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ut2-grey);
+}
+.ut2-after .ut2-cap.is-alias { order: -2; }
+.ut2-after .ut2-cap.is-own   { order: 1; margin-top: 10px; border-top: 8px solid #F4F2EE; }
+
+/* C6 · "Add an item": the alias option leads */
+/* C6 · "Add an item": the alias option leads. The sheet's title and grid
+   are absolutely placed (Day 30) / margin-placed (Day 1), so the banner sits
+   in its own absolute band and the grid moves down by exactly that band.   */
+.ut2-genwrap { display: none; }
+.ut2-after .ut2-genwrap { display: block; position: absolute; left: 20px; right: 20px; top: 166px; z-index: 1; }
+.ut2-gen {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border: 0; border-radius: 16px;
+  background: var(--ut2-black);
+  color: #fff;
+  text-align: left;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  cursor: pointer;
+}
+.ut2-gen .ut2-gen-ic {
+  flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%;
+  background: #fff; display: flex; align-items: center; justify-content: center;
+}
+.ut2-gen .ut2-gen-ic img { width: 26px; height: 26px; }
+.ut2-gen .ut2-gen-t { display: block; font-size: 17px; line-height: 1.25; }
+.ut2-gen .ut2-gen-s { display: block; font-size: 13px; line-height: 1.3; color: rgba(255,255,255,.62); margin-top: 2px; }
+.ut2-gen .ut2-gen-go { margin-left: auto; font-size: 22px; opacity: .7; }
+.ut2-gen-cap {
+  padding: 14px 2px 0;
+  font: 600 11px/1.2 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ut2-grey);
+}
+/* the band is ~102px; the six tiles give it back so Import stays on screen */
+.ut2-after #vtAdd .vt-add-grid { top: 282px !important; }
+.ut2-after #d1jAdd .d1j-add-grid { margin-top: 282px !important; }
+.ut2-after #vtAdd .vt-add-grid,
+.ut2-after #d1jAdd .d1j-add-grid { grid-template-rows: repeat(3, 136px) !important; grid-auto-rows: 136px !important; }
+.ut2-after #vtAdd .vt-add-grid .vt-tile,
+.ut2-after #d1jAdd .d1j-add-cell { height: 136px !important; min-height: 0 !important; }
+
+/* bottom sheet shell (used by C7) */
+.ut2-shdim {
+  position: fixed; inset: 0; background: var(--ut2-scrim);
+  opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 9000;
+}
+.ut2-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 9001;
+  background: #fff; border-radius: 16px 16px 0 0;
+  padding: 10px 0 34px;
+  transform: translateY(100%); transition: transform .32s cubic-bezier(.2,.8,.2,1);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  color: var(--ut2-ink);
+}
+.ut2-sheet.on { transform: none; }
+.ut2-shdim.on { opacity: 1; pointer-events: auto; }
+.ut2-sheet .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--ut2-line); margin: 0 auto 14px; }
+.ut2-sheet h3 { font-weight: 400; font-size: 24px; padding: 0 20px 10px; }
+.ut2-sheet button.row {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  padding: 16px 20px; border: 0; border-top: 1px solid var(--ut2-line);
+  background: none; text-align: left; font: inherit; color: inherit; cursor: pointer;
+}
+.ut2-sheet .row .t { display: block; font-size: 17px; }
+.ut2-sheet .row .s { display: block; font-size: 13px; color: var(--ut2-grey); margin-top: 2px; }
+.ut2-sheet .row .av {
+  flex: 0 0 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #F4F2EE;
+}
+.ut2-sheet .row .av.dark { background: var(--ut2-black); }
+.ut2-sheet .row .av img { width: 24px; height: 24px; }
+.ut2-sheet .row .av.dark img { filter: invert(1); }
+
+/* C7 · "how it works" sheet — Figma 9561:65463 (Christine, 19 Oct). r16
+   top, no grab bar; header 24/1.1 at 32 20 16; list items 20 padding, 12
+   gap, avatar 40 round #141410 with a 24 #F3F1ED icon; title 16/1.3 -0.32
+   #141410, sub 14/1.2 -0.28 #84827E, one line each; Got it 56 r240
+   #0B0B0A in a 10px inset. */
+.ut2-sheet.ut2-how { padding: 0 0 24px; }
+.ut2-how h3 { margin: 0; padding: 32px 20px 16px; font-size: 24px; line-height: 1.1; font-weight: 400; }
+.ut2-how .li { display: flex; align-items: center; gap: 12px; padding: 20px; }
+.ut2-how .li .av { flex: 0 0 40px; height: 40px; border-radius: 50%; background: #141410; display: flex; align-items: center; justify-content: center; color: #F3F1ED; }
+.ut2-how .li .av svg { width: 24px; height: 24px; display: block; }
+.ut2-how .li .av .fa {
+  display: flex; align-items: center; justify-content: center; width: 28px; height: 18px; box-sizing: border-box;
+  border: 1.5px solid #F3F1ED; border-radius: 2px; font-style: normal; font-size: 10.5px; font-weight: 600; letter-spacing: -0.21px; line-height: 1;
+}
+.ut2-how .li .tx { flex: 1; min-width: 0; }
+.ut2-how .li b { display: block; font-weight: 400; font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-how .li span { display: block; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #84827E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-how .gotw { padding: 10px; }
+.ut2-how .ut2-got { width: 100%; margin: 0; height: 56px; border-radius: 240px; background: #0B0B0A; font: 400 16px -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.32px; }
+.ut2-got {
+  display: block; width: calc(100% - 40px); margin: 14px 20px 0; height: 52px;
+  border: 0; border-radius: 26px; background: var(--ut2-black); color: #fff;
+  font: 500 17px -apple-system, BlinkMacSystemFont, sans-serif; cursor: pointer;
+}
+.ut2-shdim.ut2-howdim, .ut2-sheet.ut2-how { z-index: 9100; }
+.ut2-sheet.ut2-how { z-index: 9101; }
+
+/* Review overlay — drawn by the launcher's "show me" links */
+.ut2-mark {
+  position: fixed; z-index: 2147483000; pointer-events: none;
+  border: 2px solid var(--ut2-review); border-radius: 12px;
+  box-shadow: 0 0 0 4px rgba(123,97,255,.18);
+  animation: ut2pulse 1.6s ease-in-out 3;
+  transition: left .15s, top .15s, width .15s, height .15s;
+}
+.ut2-mark.before { border-style: dashed; }
+.ut2-mark i {
+  position: absolute; left: -2px; top: -24px;
+  font: 600 11px/1 -apple-system, BlinkMacSystemFont, sans-serif; font-style: normal;
+  color: #fff; background: var(--ut2-review);
+  padding: 5px 7px; border-radius: 6px; white-space: nowrap;
+}
+.ut2-mark.below i { top: auto; bottom: -24px; }
+@keyframes ut2pulse { 50% { box-shadow: 0 0 0 9px rgba(123,97,255,.08); } }
+
+/* 07 · 08 — Alias / Yours on every Vault row, forwarding under each alias.
+   Alias = black, as on the cards (identity colour rule); Yours = outline. */
+.ut2-tag { display: none; }
+.ut2-after .ut2-tag {
+  /* Christine, 21 Oct (Figma 9666:97473): grey 16px tag, r4, 10px medium caps, 8px after the name */
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  height: 16px; padding: 0 5px; margin-left: 8px; box-sizing: border-box;
+  border-radius: 4px; vertical-align: middle; text-transform: uppercase;
+  font: 510 10px/1 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: 0;
+}
+.ut2-after .ut2-tag.alias { background: #d9d9d9; color: #000; }
+.ut2-after .vt-row.ut2-al .vt-row-top { display: flex; align-items: center; justify-content: flex-start; min-width: 0; }
+.ut2-after .vt-row.ut2-al .vt-row-title { flex: 0 1 auto; }
+.ut2-after .vt-row.ut2-al .vt-row-top .ut2-tag { margin-left: -2px; }   /* the row's 10px gap - 2 = 8 */
+.ut2-after .vt-row.ut2-al .vt-row-meta { margin-left: auto; }
+.ut2-fwd { display: none; }
+.ut2-after .ut2-fwd {
+  display: block; margin-top: 2px;
+  font: 400 12px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; color: var(--ut2-grey);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ut2-after .ut2-fwd::before { content: '↪ '; }
+
+/* 09 — what "Good" means, under the open card */
+.ut2-risk { display: none; }
+.ut2-after .ut2-risk {
+  display: block; margin: 12px 20px 0; padding: 0 4px;
+  font: 400 13px/1.35 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; color: var(--ut2-ink);
+}
+.ut2-risk b { font-weight: 600; }
+
+/* 10 — Skip reuses the build's .icc-ghost; nothing to style */
+
+/* v20 — ID card pick sheets: no Generate row, a pointer to the Vault instead */
+.ut2-after .ut2-hide { display: none !important; }
+.ut2-vhint { display: none; }
+.ut2-after .ut2-vhint {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 14px 20px; border-bottom: 1px solid var(--ut2-line); box-sizing: border-box;
+}
+.ut2-vhint p {
+  flex: 1 1 auto; margin: 0; min-width: 0;
+  font: 400 14px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; color: var(--ut2-grey);
+}
+.ut2-vhint .go {
+  flex: 0 0 auto; display: inline-flex; align-items: center; height: 32px; padding: 0 14px; border-radius: 240px;
+  border: 1px solid var(--ut2-line); background: #fff; color: var(--ut2-ink); white-space: nowrap;
+  font: 400 14px -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; cursor: pointer;
+}
+/* v10 — where the special words go */
+.ut2-kw { display: none; }
+.ut2-after .ut2-kw {
+  display: block; padding: 0 2px 8px;
+  font: 400 13px/1.35 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; color: var(--ut2-grey);
+}
+.ut2-after .nq-fwords .ut2-kw { padding: 0 20px 8px; }
+.ut2-after .d1j-ae-wbox .ut2-kw { padding: 0 0 8px; }
+
+/* v20 — labelled group button replaces the bare + on the ID card tab */
+.ut2-xfab-t { display: none; }
+.ut2-after .ic-fab.ut2-xfab {
+  width: auto !important; height: 56px; padding: 0 20px 0 16px; gap: 8px;
+  border-radius: 28px;
+}
+.ut2-after .ic-fab.ut2-xfab svg { width: 20px; height: 20px; flex: 0 0 20px; }
+.ut2-after .ut2-xfab-t {
+  display: block; white-space: nowrap; color: #fff;
+  font: 400 16px/1 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -.32px;
+}
+/* v20 — no mint: the 1ms mint still paints a frame or two of the dark face */
+.ut2-after:not(.ut2-iccalias) #icCreate.gen #iccTitle,
+.ut2-after:not(.ut2-iccalias) #icCreate.gen #iccCard { visibility: hidden; }
+/* Create alias (20 Oct) — the ID card flow as an alias flow: no Add manually,
+   no Custom / Share on the result (ut2.js aliasFlow); Day 30's Skip on the
+   personalize page stays */
+.ut2-iccalias[data-ut2-ast="reco"] #iccGhost, .ut2-iccalias[data-ut2-ast="mint"] #iccGhost,
+.ut2-iccalias #iccShare { display: none !important; }
+
+/* v21 — the "Your … is created!" page never shows; ut2.js presses its Done */
+.ut2-after #nqGen { visibility: hidden !important; }
+.ut2-after .d1j-wzs:has(> .d1j-gen) { visibility: hidden !important; }
+
+/* 19 — Vaults | Folder toggle at the top of the Vault (?ut2cards=toggle).
+   Ground is the search field's #F3F1ED; "on" is the .d1j-rc-pill fill. */
+.ut2-vseg {
+  display: flex; flex: 0 0 auto; gap: 4px; margin: 4px 20px 12px; padding: 4px;
+  height: 40px; box-sizing: border-box; border-radius: 240px;
+  background: #F3F1ED;
+}
+.ut2-vseg button {
+  flex: 1 1 0; border: 0; border-radius: 240px; background: none; cursor: pointer;
+  font-family: inherit; font-size: 15px; letter-spacing: -0.3px; color: var(--ut2-ink);
+}
+.ut2-vseg button.on { background: var(--ut2-black); color: #fff; }
+.ut2-vseg.dark { background: rgba(255, 255, 255, .16); position: relative; z-index: 3; }
+.ut2-vseg.dark button { color: #F3F1ED; }
+.ut2-vseg.dark button.on { background: #F3F1ED; color: var(--ut2-ink); }
+
+/* v22 — Vault intro, Figma 9552:62775 (19 Oct): one dark page that scrolls.
+   Values from Figma: bkgd_01 #141410 page and visual boxes, bkgd_02 #1B1B18
+   cards (r16, 12 inset, box r6 329x264), text primary #F3F1ED / secondary
+   white 60%, H1 New York 32/1.1 -0.64, H2 28/1.1, body 14/1.2 -0.28,
+   toolbar buttons white 5% r300 at top 64. The tab bar stays on top (Christine). */
+.ut2-onb.embed {
+  position: fixed; inset: 0; z-index: 9500; display: none;
+  background: #141410; color: #F3F1ED; -webkit-font-smoothing: antialiased;
+}
+.ut2-after #vaultsScreen > .ut2-onb.embed:not(.done) { display: block; }
+.ut2-onb .hdr {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 3; height: 120px; box-sizing: border-box;
+  padding: 64px 20px 0; display: flex; align-items: flex-start; justify-content: space-between;
+  transition: background .2s ease;
+}
+.ut2-onb .hdr.solid { background: #141410; height: 112px; }
+.ut2-onb .hdr button {
+  height: 40px; border: 0; border-radius: 300px; background: rgba(255, 255, 255, .05);
+  box-shadow: 0 0 8px rgba(0, 0, 0, .08); color: #F3F1ED; font: inherit; cursor: pointer;
+}
+.ut2-onb .hdr .x { width: 40px; padding: 0; display: flex; align-items: center; justify-content: center; }
+.ut2-onb .hdr .skip { padding: 0 16px; font-size: 14px; letter-spacing: -0.28px; }
+.ut2-onb .hdr .ttl { position: absolute; left: 0; right: 0; top: 64px; line-height: 40px; text-align: center; font-size: 16px; letter-spacing: -0.32px; pointer-events: none; }
+.ut2-onb .scr { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding-bottom: calc(var(--nav-h, 100px) + var(--sab, 0px)); box-sizing: border-box; }
+.ut2-onb .scr::-webkit-scrollbar { display: none; }
+.ut2-onb .hero { position: relative; height: 535px; margin-bottom: -30px; overflow: hidden; }
+.ut2-onb .hero.live { height: 560px; }
+.ut2-onb .hero img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+.ut2-onb .hero::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 80px; z-index: 2; background: linear-gradient(rgba(20, 20, 16, 0), #141410); }
+/* live hero: the first intro's build, moved in (see mountOnb). Stripes fill
+   the hero; the disk keeps the build's own 337 size, centred where the Figma
+   circle sits. */
+.ut2-onb .hero.live { background: #141410; }
+.ut2-onb .hero.live img { display: none; }
+.ut2-onb .hero .ici-stripe { z-index: 0; }
+/* disk top sits 28px under the Vault title row (64+40), not behind it */
+.ut2-onb .hero .ici-build { z-index: 1; --ici-cy: 300px; opacity: 1 !important; }
+.ut2-onb .intro { position: relative; z-index: 3; padding: 0 20px; margin-bottom: 34px; }  /* above the hero fade */
+.ut2-onb .intro h1 { margin: 0; font: 400 32px/1.1 ui-serif, "New York", Simula, Georgia, serif; letter-spacing: -0.64px; }
+.ut2-onb .intro p { margin: 16px 0 0; max-width: 341px; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: rgba(255, 255, 255, .6); }
+.ut2-onb .card { margin: 0 20px 24px; padding: 12px 12px 34px; border-radius: 16px; background: #1B1B18; }
+.ut2-onb .card .vis { position: relative; height: 264px; border-radius: 6px; background: #141410; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.ut2-onb .card h2 { margin: 24px 12px 0; max-width: 250px; font-size: 28px; line-height: 1.1; font-weight: 400; }
+.ut2-onb .card p { margin: 24px 12px 0; max-width: 290px; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: rgba(255, 255, 255, .6); }
+.ut2-onb .cta {
+  display: block; width: calc(100% - 40px); margin: 16px 20px 56px; height: 56px; border: 0; border-radius: 240px; cursor: pointer;
+  background: #F3F1ED; color: #141410; font: inherit; font-size: 17px;
+}
+.ut2-onb .ut2-tag { font-style: normal; }
+
+/* alias visual, Figma 9553:63458 — four beats in the 329x264 box:
+   (1) white pill (bkgd_02 white, 289x48 r24 at top 108, avatar 32 on its
+   identity colour, 16 medium #141410) with your real info; (2) it turns
+   dark (#1B1B18, avatar #141410, text #F3F1ED) and shows the alias;
+   (3) it rises to top 39 and a 0.5px 2/2 dotted fork (#F3F1ED) opens under
+   it; (4) pill at top 16 (16 inset), 14 regular, fork at 64, two #1B1B18
+   cards 152 high r16 at 96, icon 24 at 12,12, text 12/1.3 bottom-left.
+   Plays when the box is in view (.play), resets once it leaves. */
+.ut2-onb-fx { position: absolute; inset: 0; }
+.ut2-onb-fx .ap {
+  position: absolute; left: 20px; right: 20px; top: 108px; height: 48px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px; padding: 0 16px 0 8px; border-radius: 24px;
+  background: #fff; color: #141410; font-size: 16px; font-weight: 500; letter-spacing: -0.32px; white-space: nowrap;
+}
+.ut2-onb-fx .ap .av { width: 32px; height: 32px; border-radius: 50%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; background: var(--tone); }
+.ut2-onb-fx .ap .av img { width: 19px; height: 19px; }
+.ut2-onb-fx .ap .av img.lt { width: 25.6px; height: 25.6px; filter: brightness(0); }
+.ut2-onb-fx .ap .av img.dk.inv { filter: invert(.95); }
+.ut2-onb-fx .ap .v { display: grid; }
+.ut2-onb-fx .ap .v > span { grid-area: 1 / 1; }
+.ut2-onb-fx .ap .al { opacity: 0; }
+.ut2-onb-fx .fk { position: absolute; left: 50%; top: 87px; margin-left: -78.5px; overflow: visible; clip-path: inset(0 50% 100% 50%); }
+.ut2-onb-fx .opts { position: absolute; left: 16px; right: 16px; top: 96px; height: 152px; display: flex; gap: 16px; opacity: 0; }
+.ut2-onb-fx .o { position: relative; flex: 1; min-width: 0; border-radius: 16px; background: #1B1B18; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 8px 14px; box-sizing: border-box; }
+.ut2-onb-fx .o .ic { position: absolute; left: 12px; top: 12px; width: 24px; height: 24px; filter: invert(.95); }
+.ut2-onb-fx .o .ic.w { filter: none; }
+.ut2-onb-fx .o b { display: block; font-weight: 400; font-size: 12px; line-height: 1.3; color: #F3F1ED; }
+.ut2-onb-fx .o span { display: block; margin-top: 6px; font-size: 12px; line-height: 1.3; color: rgba(255, 255, 255, .6); }
+.ut2-onb .card.play .ut2-onb-fx .ap { animation: ut2-fx-dark .4s ease .5s both, ut2-fx-move 1.2s ease 1.1s both; }
+.ut2-onb .card.play .ut2-onb-fx .ap .av { animation: ut2-fx-av .4s ease .5s both, ut2-flip .6s cubic-bezier(.2, .7, .2, 1) .5s both; }
+.ut2-onb .card.play .ut2-onb-fx .ap .av img.lt { animation: ut2-fx-lt .4s ease .5s both; }
+.ut2-onb .card.play .ut2-onb-fx .ap .av img.dk { animation: ut2-fx-dk .4s ease .5s both; }
+.ut2-onb .card.play .ut2-onb-fx .ap .rl { animation: ut2-ob-out .25s ease .5s both; }
+.ut2-onb .card.play .ut2-onb-fx .ap .al { animation: ut2-ob-in .3s ease .65s both; }
+.ut2-onb .card.play .ut2-onb-fx .fk { animation: ut2-ob-fork .35s linear 1.5s both, ut2-fx-fk .4s ease 1.9s both; }
+.ut2-onb .card.play .ut2-onb-fx .opts { animation: ut2-ob-card .4s ease 2.1s both; }
+@keyframes ut2-fx-dark { from { background: #fff; color: #141410; } to { background: #1B1B18; color: #F3F1ED; } }
+@keyframes ut2-fx-av   { from { background: var(--tone); } to { background: #141410; } }
+/* Christine, 19 Oct (test 3.mov): the Cloaked / alias icon arrives with one
+   quick flip — edge-on for a beat, then opens flat; no bounce */
+@keyframes ut2-flip {
+  0%   { transform: perspective(240px) rotateY(90deg); }
+  18%  { transform: perspective(240px) rotateY(88deg); }
+  100% { transform: perspective(240px) rotateY(0); }
+}
+@keyframes ut2-fx-lt   { from { filter: brightness(0); } to { filter: none; } }
+@keyframes ut2-fx-dk   { to { filter: invert(.95); } }
+@keyframes ut2-fx-move {
+  0%   { top: 108px; left: 20px; right: 20px; font-size: 16px; }
+  33%  { top: 39px;  left: 20px; right: 20px; font-size: 16px; }
+  66%  { top: 39px;  left: 20px; right: 20px; font-size: 16px; font-weight: 500; letter-spacing: -0.32px; }
+  100% { top: 16px;  left: 16px; right: 16px; font-size: 14px; font-weight: 400; letter-spacing: -0.28px; }
+}
+@keyframes ut2-fx-fk { from { top: 87px; } to { top: 64px; } }
+@keyframes ut2-ob-out  { from { opacity: 1; } to { opacity: 0; } }
+@keyframes ut2-ob-in   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ut2-ob-fork {
+  0%   { clip-path: inset(0 50% calc(100% - 9px) 50%); }
+  50%  { clip-path: inset(0 0 calc(100% - 17px) 0); }
+  100% { clip-path: inset(0 -2px); }
+}
+@keyframes ut2-ob-card { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* email alias, Figma 9553:63458 (updated 19 Oct) — see onbMail(). Box
+   #263427 → gradient to #141410 at 55% → fully #141410. Pills 289×48 r24
+   (real white, sage #A2BF7A avatar / alias #1B1B18, #141410 avatar), 16
+   medium; line 0.5 92–172, eye 24 at 120; fork 157×32 at 87 → 64; option
+   cards 140/141×152 r16 #1B1B18 at 96, icon 24 at 12/12, 12/1.3 text at 8.
+   One timeline per element: real .6→2.8, line 1.15→2.8, eye 1.3→2.8,
+   alias 1.45→5.1, fork 3.85→5.1, cards 4.9. */
+.ut2-onb-ml { position: absolute; inset: 0; background: #263427; overflow: hidden; }
+.ut2-onb-ml::before { content: ''; position: absolute; inset: 0; background: linear-gradient(#263427, #141410 55%); opacity: 0; }
+.ut2-onb-ml::after { content: ''; position: absolute; inset: 0; background: #141410; opacity: 0; }
+.ut2-onb-ml > * { z-index: 1; }
+.ut2-onb-ml .pp {
+  position: absolute; left: 50%; top: 172px; width: 289px; height: 48px; margin-left: -144.5px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px; padding-left: 8px; border-radius: 24px;
+  font-size: 16px; font-weight: 500; letter-spacing: -0.32px; white-space: nowrap;
+}
+.ut2-onb-ml .av { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.ut2-onb-ml .av img { width: 25.6px; height: 25.6px; }
+.ut2-onb-ml .real { top: 108px; background: #fff; color: #141410; z-index: 2; }
+.ut2-onb-ml .real .av { background: #A2BF7A; }
+.ut2-onb-ml .real .av img { filter: brightness(0); }
+.ut2-onb-ml .alias { background: #1B1B18; color: #F3F1ED; opacity: 0; }
+.ut2-onb-ml .alias .av { background: #141410; }
+.ut2-onb-ml .ln { position: absolute; left: 50%; top: 92px; width: 1px; height: 80px; margin-left: -0.5px; background: rgba(243, 241, 237, .5); transform: scaleY(0); transform-origin: top; }
+.ut2-onb-ml .eye { position: absolute; left: 50%; top: 120px; margin-left: -12px; opacity: 0; }
+.ut2-onb-ml .fk { position: absolute; left: 50%; top: 98px; margin-left: -78.5px; overflow: visible; clip-path: inset(0 50% 100% 50%); }
+/* option pills, frame 5 (updated 19 Oct): 140/141×48 r16 at 166, avatar 32
+   #141410 at 8 with a 16 icon, 10/1.3 #F3F1ED text at 44 */
+.ut2-onb-ml .o {
+  position: absolute; top: 166px; left: 50%; width: 140px; height: 48px; border-radius: 16px; background: #1B1B18; opacity: 0;
+  display: flex; align-items: center; gap: 4px; padding-left: 8px; box-sizing: border-box;
+}
+.ut2-onb-ml .o.l { margin-left: -148.5px; }
+.ut2-onb-ml .o.r { margin-left: 7.5px; width: 141px; }
+.ut2-onb-ml .o .oi { flex: 0 0 32px; width: 32px; height: 32px; border-radius: 50%; background: #141410; display: flex; align-items: center; justify-content: center; }
+.ut2-onb-ml .o .oi img { width: 16px; height: 16px; filter: invert(.95); }
+.ut2-onb-ml .o .oi img.w { filter: none; }
+.ut2-onb-ml .o b { display: block; font-weight: 400; font-size: 10px; line-height: 1.3; color: #F3F1ED; }
+.ut2-onb .card.play .ut2-onb-ml::before { animation: ut2-ob-in .6s ease .6s both; }
+.ut2-onb .card.play .ut2-onb-ml::after { animation: ut2-ob-in .5s ease 2.3s both; }
+.ut2-onb .card.play .ut2-onb-ml .real { animation: ut2-ml-real 2.2s linear .6s both; }
+.ut2-onb .card.play .ut2-onb-ml .ln { animation: ut2-ml-ln 1.65s linear 1.15s both; }
+.ut2-onb .card.play .ut2-onb-ml .eye { animation: ut2-ml-eye 1.5s linear 1.3s both, ut2-flip .6s cubic-bezier(.2, .7, .2, 1) 1.3s both; }
+.ut2-onb .card.play .ut2-onb-ml .alias { animation: ut2-ml-alias 3.65s linear 1.45s both; }
+.ut2-onb .card.play .ut2-onb-ml .alias .av { animation: ut2-flip .6s cubic-bezier(.2, .7, .2, 1) 1.5s both; }
+.ut2-onb .card.play .ut2-onb-ml .fk { animation: ut2-ml-fk .7s linear 3.85s both; }
+.ut2-onb .card.play .ut2-onb-ml .o { animation: ut2-ob-card .4s ease 4.6s both; }
+.ut2-onb .card.play .ut2-onb-ml .o.r { animation-delay: 4.68s; }
+@keyframes ut2-ml-real {
+  0%   { top: 108px; opacity: 1; animation-timing-function: ease; }
+  23%  { top: 44px; opacity: 1; }
+  77%  { top: 44px; opacity: 1; }
+  100% { top: 44px; opacity: 0; }
+}
+@keyframes ut2-ml-ln {
+  0%   { transform: scaleY(0); opacity: 1; animation-timing-function: ease; }
+  18%  { transform: scaleY(1); opacity: 1; }
+  70%  { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+@keyframes ut2-ml-eye { 0% { opacity: 0; } 10% { opacity: 1; } 67% { opacity: 1; } 100% { opacity: 0; } }
+/* 1.45 → 5.1s: in at 172 · to the middle (2.3–2.8) · up to 50 (3.3–3.8) · widens to 297, 14 regular (4.6–5.1) */
+@keyframes ut2-ml-alias {
+  0%   { top: 164px; opacity: 0; animation-timing-function: ease; }
+  11%  { top: 172px; opacity: 1; }
+  23%  { top: 172px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  37%  { top: 108px; opacity: 1; }
+  51%  { top: 108px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  64%  { top: 50px; opacity: 1; }
+  86%  { top: 50px; width: 289px; margin-left: -144.5px; font-size: 16px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  100% { top: 50px; width: 297px; margin-left: -148.5px; font-size: 14px; font-weight: 400; letter-spacing: -0.28px; opacity: 1; }
+}
+/* 3.85 → 4.55s: the fork draws down from the alias to the two pills */
+@keyframes ut2-ml-fk {
+  0%   { clip-path: inset(0 50% 100% 50%); }
+  35%  { clip-path: inset(0 50% calc(100% - 30px) 50%); }
+  60%  { clip-path: inset(0 -3px calc(100% - 40px) -3px); }
+  100% { clip-path: inset(0 -3px -2px -3px); }
+}
+
+/* email alias, third pass (Figma 9553:63458, 19 Oct) — onbMail() reuses the
+   contact card (.ut2-onb-ph) with .ml: green #263427, pills 268, sage
+   avatar; its own timelines for the close-up (real 20, eye 76, line 68–108,
+   alias 108) and the last beat (dark, alias 64, dotted arrow at 112, brand
+   chips at 152, rotating from 6s). */
+.ut2-onb-ph.ml { background: #263427; }
+.ut2-onb-ph.ml::before { background: linear-gradient(#263427, #141410 55%); }
+.ut2-onb-ph.ml .pp { width: 268px; margin-left: -134px; }
+.ut2-onb-ph.ml .av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.ut2-onb-ph.ml .av img { width: 25.6px; height: 25.6px; }
+.ut2-onb-ph.ml .real .av { background: #A2BF7A; }
+.ut2-onb-ph.ml .real .av img { filter: brightness(0); }
+.ut2-onb-ph.ml .alias .av { background: #141410; }
+.ut2-onb-ph.ml .dot { top: 112px; }
+.ut2-onb-ph.ml .chips { top: 152px; }
+/* brand chips (all three alias cards): 171×48, logo 24 at 12, 12 apart, first at -5 */
+.ut2-onb-ph .trk.b, .ut2-onb-py .trk.b { left: -5px; }
+.ut2-onb-ph .chip.b, .ut2-onb-py .chip.b { width: 171px; margin-right: 12px; padding: 0 0 0 12px; justify-content: flex-start; gap: 12px; }
+.ut2-onb-ph .chip.b img, .ut2-onb-py .chip.b img { width: 24px; height: 24px; border-radius: 50%; flex: 0 0 24px; object-fit: contain; }
+.ut2-onb .card.play .ut2-onb-ph.ml .real { animation: ut2-ml2-real 3.8s linear .6s both; }
+.ut2-onb .card.play .ut2-onb-ph.ml .ln { animation: ut2-ml2-ln 3.25s linear 1.15s both; }
+.ut2-onb .card.play .ut2-onb-ph.ml .eye { animation: ut2-ml2-eye 3.1s linear 1.3s both, ut2-flip .6s cubic-bezier(.2, .7, .2, 1) 1.3s both; }
+.ut2-onb .card.play .ut2-onb-ph.ml .alias { animation: ut2-ml2-alias 2.95s linear 1.45s both; }
+.ut2-onb .card.play .ut2-onb-ph.ml .dot { animation: ut2-py-dot .35s linear 4.45s both; }
+.ut2-onb .card.play .ut2-onb-ph.ml .chips { animation: ut2-ob-card .4s ease 4.7s both; }
+@keyframes ut2-ml2-real {
+  0%   { top: 108px; opacity: 1; animation-timing-function: ease; }
+  13%  { top: 44px; opacity: 1; }
+  42%  { top: 44px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  55%  { top: 20px; opacity: .5; }
+  87%  { top: 20px; opacity: .5; }
+  100% { top: 20px; opacity: 0; }
+}
+@keyframes ut2-ml2-ln {
+  0%   { top: 92px; height: 80px; transform: scaleY(0); opacity: 1; animation-timing-function: ease; }
+  9%   { top: 92px; height: 80px; transform: scaleY(1); }
+  32%  { top: 92px; height: 80px; transform: scaleY(1); animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  48%  { top: 68px; height: 40px; transform: scaleY(1); opacity: 1; }
+  83%  { top: 68px; height: 40px; transform: scaleY(1); opacity: 1; }
+  100% { top: 68px; height: 40px; transform: scaleY(1); opacity: 0; }
+}
+@keyframes ut2-ml2-eye {
+  0%   { top: 120px; opacity: 0; }
+  5%   { top: 120px; opacity: 1; }
+  29%  { top: 120px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  45%  { top: 76px; opacity: 1; }
+  84%  { top: 76px; opacity: 1; }
+  100% { top: 76px; opacity: 0; }
+}
+@keyframes ut2-ml2-alias {
+  0%   { top: 164px; opacity: 0; animation-timing-function: ease; }
+  11%  { top: 172px; opacity: 1; }
+  25%  { top: 172px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  42%  { top: 108px; opacity: 1; }
+  83%  { top: 108px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  100% { top: 64px; opacity: 1; }
+}
+
+/* contact alias, Figma 9558:63459 — see onbPhone(). Box 329x264: mauve
+   #83244F → top-down gradient to #141410 at 55% → fully #141410; pills
+   178x48 r24 (real white / alias #1B1B18), avatar 32; 0.5px line; eye 24;
+   dotted arrow 34; chips #1B1B18 h48 r24, 16 medium #F3F1ED, 8 apart,
+   first at -32. One timeline per element (real .6→4.4s, line 1.15→4.4,
+   eye 1.3→4.4, alias 1.45→4.4) so the beats never fight. */
+.ut2-onb-ph { position: absolute; inset: 0; background: #83244F; overflow: hidden; }
+.ut2-onb-ph::before { content: ''; position: absolute; inset: 0; background: linear-gradient(#83244F, #141410 55%); opacity: 0; }
+.ut2-onb-ph::after { content: ''; position: absolute; inset: 0; background: #141410; opacity: 0; }
+.ut2-onb-ph > * { z-index: 1; }
+.ut2-onb-ph .pp {
+  position: absolute; left: 50%; top: 172px; width: 178px; height: 48px; margin-left: -89px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px; padding-left: 8px; border-radius: 24px;
+  font-size: 16px; font-weight: 500; letter-spacing: -0.32px; white-space: nowrap;
+}
+.ut2-onb-ph .pp .av { flex: 0 0 auto; }
+.ut2-onb-ph .real { top: 108px; background: #fff; color: #141410; z-index: 2; }
+.ut2-onb-ph .alias { background: #1B1B18; color: #F3F1ED; opacity: 0; }
+.ut2-onb-ph .ln { position: absolute; left: 50%; top: 92px; width: 1px; height: 80px; margin-left: -0.5px; background: rgba(243, 241, 237, .5); transform: scaleY(0); transform-origin: top; }
+.ut2-onb-ph .eye { position: absolute; left: 50%; top: 120px; margin-left: -12px; opacity: 0; }
+.ut2-onb-ph .dot { position: absolute; left: 50%; top: 116px; margin-left: -3px; clip-path: inset(0 0 100% 0); }
+/* rotating chips (rotChips() in ut2.js slides the track) */
+.ut2-onb-ph .chips, .ut2-onb-py .chips { position: absolute; left: 0; right: 0; height: 48px; opacity: 0; }
+.ut2-onb-ph .chips { top: 155px; }
+.ut2-onb-ph .trk, .ut2-onb-py .trk { position: absolute; left: -32px; top: 0; display: flex; will-change: transform; }
+.ut2-onb-ph .chip, .ut2-onb-py .chip {
+  flex: 0 0 auto; height: 48px; margin-right: 8px; padding: 0 22px; box-sizing: border-box; border-radius: 24px; background: #1B1B18; color: #F3F1ED;
+  display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; letter-spacing: -0.32px; white-space: nowrap;
+}
+.ut2-onb-ph .chip.w, .ut2-onb-py .chip.w { width: 126px; padding: 0; }
+.ut2-onb .card.play .ut2-onb-ph::before { animation: ut2-ob-in .6s ease .6s both; }
+.ut2-onb .card.play .ut2-onb-ph::after { animation: ut2-ob-in .5s ease 3.9s both; }
+.ut2-onb .card.play .ut2-onb-ph .real { animation: ut2-ph2-real 3.8s linear .6s both; }
+.ut2-onb .card.play .ut2-onb-ph .ln { animation: ut2-ph2-ln 3.25s linear 1.15s both; }
+.ut2-onb .card.play .ut2-onb-ph .eye { animation: ut2-ph2-eye 3.1s linear 1.3s both, ut2-flip .6s cubic-bezier(.2, .7, .2, 1) 1.3s both; }
+.ut2-onb .card.play .ut2-onb-ph .alias { animation: ut2-ph2-alias 2.95s linear 1.45s both; }
+.ut2-onb .card.play .ut2-onb-ph .alias .av { animation: ut2-flip .6s cubic-bezier(.2, .7, .2, 1) 1.5s both; }
+.ut2-onb .card.play .ut2-onb-ph .dot { animation: ut2-ph2-dot 1.65s linear 2.75s both; }
+.ut2-onb .card.play .ut2-onb-ph .chips { animation: ut2-ph2-chips 1.45s linear 2.95s both; }
+/* .6 → 4.4s: rise 108→44 (.6–1.1), hold, close up to -20 at 50% (2.2–2.7), gone (3.9–4.4) */
+@keyframes ut2-ph2-real {
+  0%   { top: 108px; opacity: 1; animation-timing-function: ease; }
+  13%  { top: 44px; opacity: 1; }
+  42%  { top: 44px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  55%  { top: -20px; opacity: .5; }
+  87%  { top: -20px; opacity: .5; }
+  100% { top: -20px; opacity: 0; }
+}
+/* 1.15 → 4.4s: drops (92, 80 long), then 28–68 with the close-up, then gone */
+@keyframes ut2-ph2-ln {
+  0%   { top: 92px; height: 80px; transform: scaleY(0); opacity: 1; animation-timing-function: ease; }
+  9%   { top: 92px; height: 80px; transform: scaleY(1); }
+  32%  { top: 92px; height: 80px; transform: scaleY(1); animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  48%  { top: 28px; height: 40px; transform: scaleY(1); opacity: 1; }
+  83%  { top: 28px; height: 40px; transform: scaleY(1); opacity: 1; }
+  100% { top: 28px; height: 40px; transform: scaleY(1); opacity: 0; }
+}
+/* 1.3 → 4.4s */
+@keyframes ut2-ph2-eye {
+  0%   { top: 120px; opacity: 0; }
+  5%   { top: 120px; opacity: 1; }
+  29%  { top: 120px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  45%  { top: 36px; opacity: 1; }
+  84%  { top: 36px; opacity: 1; }
+  100% { top: 36px; opacity: 0; }
+}
+/* 1.45 → 4.4s: in at 172, up to 68 with the close-up, settles at 64 */
+@keyframes ut2-ph2-alias {
+  0%   { top: 164px; opacity: 0; animation-timing-function: ease; }
+  14%  { top: 172px; opacity: 1; }
+  25%  { top: 172px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  42%  { top: 68px; opacity: 1; }
+  83%  { top: 68px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  100% { top: 64px; opacity: 1; }
+}
+/* 2.75 → 4.4s: draws down (.35s), moves up 4 with the last beat */
+@keyframes ut2-ph2-dot {
+  0%   { top: 116px; clip-path: inset(0 0 100% 0); }
+  21%  { top: 116px; clip-path: inset(0 0 -1px 0); }
+  70%  { top: 116px; clip-path: inset(0 0 -1px 0); animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  100% { top: 112px; clip-path: inset(0 0 -1px 0); }
+}
+/* 2.95 → 4.4s */
+@keyframes ut2-ph2-chips {
+  0%   { top: 147px; opacity: 0; animation-timing-function: ease; }
+  24%  { top: 155px; opacity: 1; }
+  66%  { top: 155px; opacity: 1; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  100% { top: 152px; opacity: 1; }
+}
+
+/* pay, Figma 9558:63699 — see onbPay(). Box #1A4459 → gradient to
+   #141410 at 55%. Everything sits in .mv in beat-2 coordinates (real 44,
+   line 92–172, eye 120, alias 170, dotted 218–252, chips 258) and .mv pans
+   -62 (beat 3) then -106 (beat 4). Pills 138x48 r24, avatar 32 at 8, text
+   16 medium at 44. Chips rotate as on the contact card. */
+.ut2-onb-py { position: absolute; inset: 0; background: #1A4459; overflow: hidden; }
+.ut2-onb-py::before { content: ''; position: absolute; inset: 0; background: linear-gradient(#1A4459, #141410 55%); opacity: 0; }
+.ut2-onb-py .mv { position: absolute; inset: 0; }
+.ut2-onb-py .pp {
+  position: absolute; left: 50%; top: 170px; width: 138px; height: 48px; margin-left: -69px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px; padding-left: 8px; border-radius: 24px;
+  font-size: 16px; font-weight: 500; letter-spacing: -0.32px; white-space: nowrap;
+}
+.ut2-onb-py .pp .av { flex: 0 0 auto; }
+.ut2-onb-py .real { top: 108px; background: #fff; color: #141410; z-index: 2; }
+.ut2-onb-py .alias { background: #1B1B18; color: #F3F1ED; opacity: 0; }
+.ut2-onb-py .ln { position: absolute; left: 50%; top: 92px; width: 1px; height: 78px; margin-left: -0.5px; background: rgba(243, 241, 237, .5); transform: scaleY(0); transform-origin: top; }
+.ut2-onb-py .eye { position: absolute; left: 50%; top: 120px; margin-left: -12px; opacity: 0; }
+.ut2-onb-py .dot { position: absolute; left: 50%; top: 218px; margin-left: -3px; clip-path: inset(0 0 100% 0); }
+.ut2-onb-py .chips { top: 258px; }
+.ut2-onb .card.play .ut2-onb-py::before { animation: ut2-ob-in .6s ease .6s both; }
+.ut2-onb .card.play .ut2-onb-py .real { animation: ut2-py-up .5s ease .6s both, ut2-py-dim 2.2s linear 2.2s both; }
+.ut2-onb .card.play .ut2-onb-py .ln { animation: ut2-ph-ln .3s ease 1.15s both, ut2-py-ln 2.2s linear 2.2s both; }
+.ut2-onb .card.play .ut2-onb-py .eye { animation: ut2-py-eye 3.1s linear 1.3s both, ut2-flip .6s cubic-bezier(.2, .7, .2, 1) 1.3s both; }
+.ut2-onb .card.play .ut2-onb-py .alias { animation: ut2-ob-card .4s ease 1.45s both; }
+.ut2-onb .card.play .ut2-onb-py .alias .av { animation: ut2-flip .6s cubic-bezier(.2, .7, .2, 1) 1.5s both; }
+.ut2-onb .card.play .ut2-onb-py .mv { animation: ut2-py-pan 2.2s cubic-bezier(.4, 0, .2, 1) 2.2s both; }
+.ut2-onb .card.play .ut2-onb-py .dot { animation: ut2-py-dot .35s linear 2.75s both; }
+.ut2-onb .card.play .ut2-onb-py .chips { animation: ut2-ob-card .35s ease 3s both; }
+@keyframes ut2-py-up  { from { top: 108px; } to { top: 44px; } }
+@keyframes ut2-ph-ln   { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+/* 2.2s → 4.4s, in step with the pan: full → 25%, hold, → 0 */
+@keyframes ut2-py-dim { 0% { opacity: 1; } 23% { opacity: .25; } 77% { opacity: .25; } 100% { opacity: 0; } }
+@keyframes ut2-py-ln  { 0% { opacity: 1; } 23% { opacity: .5; } 77% { opacity: .5; } 100% { opacity: 0; } }
+/* eye 1.3s → 4.4s: in, dims with the first pan (2.2–2.7), gone with the second (3.9–4.4) */
+@keyframes ut2-py-eye { 0% { opacity: 0; } 5% { opacity: 1; } 29% { opacity: 1; } 45% { opacity: .25; } 84% { opacity: .25; } 100% { opacity: 0; } }
+/* 2.2s → 4.4s: -62 over .5s, hold, -106 over .5s */
+@keyframes ut2-py-pan { 0% { transform: none; } 23% { transform: translateY(-62px); } 77% { transform: translateY(-62px); } 100% { transform: translateY(-106px); } }
+@keyframes ut2-py-dot { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 -1px 0); } }
+
+/* folders, Figma 9564:66808 (rebuilt 19 Oct) — see onbFolder(). Box 329×264
+   #141410. Button 201×32 r160, 0.667 white 20%, + 10.67 and 10.67 text,
+   centred at 116 → filled #F3F1ED → up to 48. Rows at 94 / 134 / 174:
+   check 32 at x64 (off white 15%, on white + #0B0B0A tick), pill 32 r16
+   white at x105 (avatar 21.33 at 5.33, 10px -0.2 #141410) at 20% → 100%.
+   Card 229×196 r12 at 50,34: 1px white 10% outline → #96D3E9; title 15.55/1.1
+   at 11,10. Then the Figma render and the stack (bands at 24 + 0 / 40 / 88 /
+   128, the new card to 176). One animation per element. */
+.ut2-onb-fd { position: absolute; inset: 0; overflow: hidden; background: #141410; }
+.ut2-onb-fd .add {
+  position: absolute; left: 50%; top: 116px; width: 201px; height: 32px; margin-left: -100.5px; box-sizing: border-box; border-radius: 160px;
+  border: .667px solid rgba(255, 255, 255, .2); background: transparent; color: #F3F1ED; cursor: default; pointer-events: none; opacity: 0;
+  display: flex; align-items: center; justify-content: center; gap: 2.667px; font: inherit; font-size: 10.67px; line-height: 1.3; letter-spacing: -0.21px; white-space: nowrap;
+}
+.ut2-onb-fd .add svg { width: 10.67px; height: 10.67px; }
+.ut2-onb-fd .row { position: absolute; left: 50%; margin-left: -100.5px; display: flex; gap: 9px; align-items: center; opacity: 0; }
+.ut2-onb-fd .r1 { top: 94px; } .ut2-onb-fd .r2 { top: 134px; } .ut2-onb-fd .r3 { top: 174px; }
+.ut2-onb-fd .cb { position: relative; width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, .15); flex: 0 0 32px; }
+.ut2-onb-fd .cb .ck { position: absolute; inset: 0; opacity: 0; transform: scale(.6); }
+.ut2-onb-fd .pl {
+  display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 5.33px; box-sizing: border-box; border-radius: 16px;
+  background: #fff; color: #141410; font-size: 10px; line-height: 1.2; letter-spacing: -0.2px; white-space: nowrap; opacity: .2;
+}
+.ut2-onb-fd .pl .av, .ut2-onb-fd .pl svg.av { width: 21.33px; height: 21.33px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.ut2-onb-fd .pl .av img { width: 17px; height: 17px; filter: brightness(0); }
+.ut2-onb-fd .stack { position: absolute; left: 50%; margin-left: -113.5px; top: 24px; width: 229px; height: 380px; }
+.ut2-onb-fd .idc { position: absolute; left: 0; width: 229px; height: 196px; border-radius: 10.4px; overflow: hidden; color: #141410; opacity: 0; }
+.ut2-onb-fd .idc .h { height: 48px; padding: 10.4px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
+.ut2-onb-fd .idc b { width: 102px; font-weight: 400; font-size: 15.55px; line-height: 1.1; }
+.ut2-onb-fd .idc span { font-size: 9.07px; line-height: 1.2; letter-spacing: -0.18px; text-align: right; }
+.ut2-onb-fd .c1 { top: 0;     background: #FF550C; }
+.ut2-onb-fd .c2 { top: 40px;  background: #B9A56C; }
+.ut2-onb-fd .c3 { top: 88px;  background: #A2BF7A; }
+.ut2-onb-fd .c4 { top: 128px; background: #D5A2B9; }
+.ut2-onb-fd .cd { position: absolute; left: -1px; top: 10px; width: 229px; height: 196px; }
+.ut2-onb-fd .cd .ol { position: absolute; inset: 0; border: 1px solid rgba(255, 255, 255, .1); border-radius: 12px; opacity: 0; }
+.ut2-onb-fd .cd .fl { position: absolute; inset: 0; border-radius: 12px; background: #96D3E9; opacity: 0; }
+.ut2-onb-fd .cd .tx { position: absolute; left: 11px; top: 10px; width: 140px; font-size: 15.55px; line-height: 1.1; color: #F3F1ED; white-space: nowrap; }
+.ut2-onb-fd .tx .t1, .ut2-onb-fd .tx .t2 { display: inline-block; overflow: hidden; vertical-align: bottom; max-width: 0; }
+.ut2-onb-fd .tx .cur { display: inline-block; width: 1px; height: 16px; margin-left: 1px; vertical-align: -2px; background: #F3F1ED; opacity: 0; }
+.ut2-onb-fd .cd .im { position: absolute; left: 1px; top: 0; width: 228.74px; height: 195.55px; opacity: 0; }
+.ut2-onb .card.play .ut2-onb-fd .add { animation: ut2-g-btn 4.5s linear both; }
+.ut2-onb .card.play .ut2-onb-fd .row { animation: ut2-g-row 4.5s linear both; }
+.ut2-onb .card.play .ut2-onb-fd .row .pl { animation: ut2-g-on .25s ease 2.3s both; }
+.ut2-onb .card.play .ut2-onb-fd .row .ck { animation: ut2-g-ck .3s cubic-bezier(.2, .7, .2, 1) 2.3s both; }
+.ut2-onb .card.play .ut2-onb-fd .r2 .pl, .ut2-onb .card.play .ut2-onb-fd .r2 .ck { animation-delay: 2.7s; }
+.ut2-onb .card.play .ut2-onb-fd .r3 .pl, .ut2-onb .card.play .ut2-onb-fd .r3 .ck { animation-delay: 3.1s; }
+.ut2-onb .card.play .ut2-onb-fd .cd .ol { animation: ut2-ob-in .4s ease 3.6s both; }
+.ut2-onb .card.play .ut2-onb-fd .tx { animation: ut2-g-ink .4s ease 6.3s both; }
+.ut2-onb .card.play .ut2-onb-fd .tx .t1 { animation: ut2-g-t1 .7s steps(11) 4.6s both; }
+.ut2-onb .card.play .ut2-onb-fd .tx .t2 { animation: ut2-g-t2 .6s steps(11) 5.5s both; }
+.ut2-onb .card.play .ut2-onb-fd .tx .k1 { animation: ut2-g-k1 1s linear 4.45s both; }
+.ut2-onb .card.play .ut2-onb-fd .tx .k2 { animation: ut2-g-k2 1s linear 5.45s both; }
+.ut2-onb .card.play .ut2-onb-fd .cd .fl { animation: ut2-ob-in .4s ease 6.3s both; }
+.ut2-onb .card.play .ut2-onb-fd .cd .im { animation: ut2-ob-in .4s ease 7s both; }
+.ut2-onb .card.play .ut2-onb-fd .cd { animation: ut2-g-cd .6s cubic-bezier(.2, .7, .2, 1) 7.8s both; }
+.ut2-onb .card.play .ut2-onb-fd .c4 { animation: ut2-fd-deal .45s cubic-bezier(.2, .7, .2, 1) 8s both; }
+.ut2-onb .card.play .ut2-onb-fd .c3 { animation: ut2-fd-deal .45s cubic-bezier(.2, .7, .2, 1) 8.1s both; }
+.ut2-onb .card.play .ut2-onb-fd .c2 { animation: ut2-fd-deal .45s cubic-bezier(.2, .7, .2, 1) 8.2s both; }
+.ut2-onb .card.play .ut2-onb-fd .c1 { animation: ut2-fd-deal .45s cubic-bezier(.2, .7, .2, 1) 8.3s both; }
+/* 0 → 4.5s: in (.4) · fills (.9–1.2) · rises 116 → 48 (1.4–1.9) · dims to 30% (3.6–4) · out (4.2–4.5) */
+@keyframes ut2-g-btn {
+  0%    { opacity: 0; top: 116px; background: transparent; color: #F3F1ED; animation-timing-function: ease; }
+  8.9%  { opacity: 1; top: 116px; background: transparent; color: #F3F1ED; }
+  20%   { opacity: 1; top: 116px; background: transparent; color: #F3F1ED; animation-timing-function: ease; }
+  26.7% { opacity: 1; top: 116px; background: #F3F1ED; color: #141410; }
+  31.1% { opacity: 1; top: 116px; background: #F3F1ED; color: #141410; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+  42.2% { opacity: 1; top: 48px; background: #F3F1ED; color: #141410; }
+  80%   { opacity: 1; top: 48px; background: #F3F1ED; color: #141410; animation-timing-function: ease; }
+  88.9% { opacity: .3; top: 48px; background: #F3F1ED; color: #141410; }
+  93.3% { opacity: .3; top: 48px; background: #F3F1ED; color: #141410; animation-timing-function: ease; }
+  100%  { opacity: 0; top: 48px; background: #F3F1ED; color: #141410; }
+}
+/* 0 → 4.5s: in under the button (1.6–2), dims (3.6–4), out (4.2–4.5) */
+@keyframes ut2-g-row {
+  0%    { opacity: 0; transform: translateY(8px); }
+  35.6% { opacity: 0; transform: translateY(8px); animation-timing-function: ease; }
+  44.4% { opacity: 1; transform: none; }
+  80%   { opacity: 1; transform: none; animation-timing-function: ease; }
+  88.9% { opacity: .3; transform: none; }
+  93.3% { opacity: .3; transform: none; animation-timing-function: ease; }
+  100%  { opacity: 0; transform: none; }
+}
+@keyframes ut2-g-on  { from { opacity: .2; } to { opacity: 1; } }
+@keyframes ut2-g-ck  { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+@keyframes ut2-g-ink { from { color: #F3F1ED; } to { color: #141410; } }
+@keyframes ut2-g-t1  { from { max-width: 0; } to { max-width: 90px; } }
+@keyframes ut2-g-t2  { from { max-width: 0; } to { max-width: 90px; } }
+@keyframes ut2-g-k1  { 0% { opacity: 0; } 4% { opacity: 1; } 99% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes ut2-g-k2  { 0% { opacity: 0; } 4% { opacity: 1; } 55% { opacity: 1; } 56% { opacity: 0; } 70% { opacity: 0; } 71% { opacity: 1; } 84% { opacity: 1; } 85%, 100% { opacity: 0; } }
+@keyframes ut2-g-cd  { from { top: 10px; } to { top: 176px; } }
+@keyframes ut2-fd-deal  { from { opacity: 0; transform: translateY(70px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ut2-onb .card.play *, .ut2-onb .card.play *::after { animation-duration: 1ms !important; animation-delay: 0s !important; }
+}
+
+/* v22 banner version, Figma 9558:64871 — "What\u2019s vault" card above the
+   Vault search: 353x400 r16 #141410, the hero art behind, title New York 24
+   #F3F1ED at 16,24, body 16/1.3 white 60% (321 wide) at 58, X 24 at top
+   right 16/24. Tap opens the intro; X dismisses the card. */
+.ut2-onb-banner {
+  position: relative; margin: 0 20px 16px; height: 400px; border-radius: 16px; overflow: hidden; cursor: pointer;
+  background: #141410 url(../ut2/img/vault-banner-art.jpg) center bottom / 100% auto no-repeat; color: #F3F1ED;
+  -webkit-font-smoothing: antialiased;
+}
+.ut2-onb-banner::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 120px; background: linear-gradient(#141410, rgba(20, 20, 16, 0)); }
+.ut2-onb-banner h3 { position: relative; margin: 24px 56px 0 16px; font: 400 24px/1.1 ui-serif, "New York", Simula, Georgia, serif; }
+.ut2-onb-banner p { position: relative; margin: 8px 16px 0; max-width: 321px; font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: rgba(255, 255, 255, .6); }
+.ut2-onb-banner .x { position: absolute; right: 16px; top: 24px; width: 24px; height: 24px; padding: 0; border: 0; background: none; color: #F3F1ED; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1; }
+.ut2-onb-banner .x svg { width: 24px; height: 24px; }
+/* the card says it, so the one-line sub under the header steps aside (Figma has none) */
+#vaultsScreen:has(.ut2-onb-banner) .ut2-sub[data-sub="vault"],
+#vaultsScreen:has(.ut2-vcard) .ut2-sub[data-sub="vault"] { display: none; }
+/* Christine, 19 Oct: the intro explains the Vault now, so in the Vault-toggle
+   version (the only one with the intro) the one-line sub goes in both modes */
+.ut2-toggle .ut2-sub[data-sub="vault"] { display: none; }
+/* Figma 9561:65816 (Christine, 19 Oct): banner art is the Figma render of
+   the stripes + disk below the copy (ut2/img/vault-banner-art.jpg, from y 110). */
+
+/* Figma 9561:65816 — the Vault-toggle Vault screen. Header "Vaults" 16
+   medium; Edit 40 high, 16 a side, 14 regular -0.14, white with the
+   toolbar shadow. Search placeholder 16 -0.16 #84827E. Tabs 90.83 wide,
+   centred, 16 regular -0.16, padding 16 / 15 + 1px divider, selected
+   #141410 with a #0B0B0A underline. */
+.ut2-toggle #vtL2Title { letter-spacing: -0.16px; }
+.ut2-toggle #vtL2Edit { height: 40px; padding: 0 16px; font-size: 14px; letter-spacing: -0.14px; background: #fff; box-shadow: 0 0 8px rgba(0, 0, 0, .08), 0 8px 16px rgba(0, 0, 0, .1); }
+.ut2-toggle #vtL2Search { font-size: 16px; letter-spacing: -0.16px; }
+/* Day 1 hides the strip (day01.css); the new design has it */
+html.day1.ut2-toggle #vtL2Tabs { display: flex !important; }
+.ut2-toggle #vtL2Tabs, .ut2-toggle #vtL2Tabs.even { gap: 0; padding: 0; overflow-x: auto; }
+.ut2-toggle #vtL2Tabs .vt-tab, .ut2-toggle #vtL2Tabs.even .vt-tab, .ut2-vtab {
+  flex: 0 0 90.83px; width: 90.83px; min-width: 0; padding: 16px 0 15px; text-align: center;
+  font-size: 16px; font-weight: 400; line-height: 1.3; letter-spacing: -0.16px;
+}
+.ut2-vtab { position: relative; border: 0; background: none; color: #84827E; cursor: pointer; white-space: nowrap; font-family: inherit; }
+
+/* Christine, 19 Oct: the build's two-page dark ID card intro ("Every email,
+   phone number and signup hands out the real you") is no longer needed, in
+   either version — the ID card tab (Tab) and Folders (Vault toggle) open
+   straight on the empty wallet with its +. */
+/* Christine, 21 Oct (round 7): the intro is back on Day 01 — "Identities 전처럼 Day 01에 온보딩 보이게" */
+
+/* 19 · floating Items | Folders toggle — Figma 9561:65816 (Christine, 19
+   Oct; was the dark 9542:53109). 148×56 r300 glass: white 50% over a blur,
+   0 0 4 black 8%. The "on" half is 70×48 r24 in black 10% at 4; text 10
+   regular -0.2, primary #141410 / secondary #84827E; icons Login 24 and
+   ID Cards 16. Sits with the + : same parent, bottom 96px, z 6. */
+.ut2-btog {
+  position: absolute; left: 20px; bottom: 96px; z-index: 6;
+  width: 148px; height: 56px; box-sizing: border-box; padding: 4px; gap: 0;
+  display: flex; border-radius: 300px;
+  background: rgba(255, 255, 255, .5); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  box-shadow: 0 0 4px rgba(0, 0, 0, .08);
+}
+.ut2-btog button {
+  position: relative; width: 70px; height: 48px; flex: 0 0 70px; border: 0; padding: 0;
+  border-radius: 24px; background: none; cursor: pointer; color: #84827E;
+}
+.ut2-btog button.on { background: rgba(11, 11, 10, .1); color: #141410; }
+.ut2-btog .ic { position: absolute; left: 50%; top: 6px; width: 24px; height: 24px; margin-left: -12px; display: flex; align-items: center; justify-content: center; }
+.ut2-btog .ic svg { display: block; }
+.ut2-btog .l {
+  position: absolute; left: 0; right: 0; top: 32px; text-align: center;
+  font: 400 10px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.2px;
+}
+/* Figma 9564:67265 — Folders side, Vault toggle. Header "My ID cards" 16
+   medium -0.32 (as the Vaults header); with no ID card yet: "?" 40 white r300
+   with the toolbar shadow instead of ⓘ + search, a 1px divider card (full
+   width less 20 a side, 417 high, r20) with the title 24/1.1 centred 189
+   wide at 153 and the secondary button 32 high r100 at 229 (14 -0.28, 16 a
+   side), 32 of white under it, then the FAQ. No + fab and no count row. */
+.ut2-toggle #icL1 .blank-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif !important;
+  font-size: 16px !important; font-weight: 500 !important; line-height: 1.2 !important; letter-spacing: -0.32px !important;
+}
+.ut2-fq, .ut2-fe { display: none; }
+/* Christine, 20 Oct: 2 Tabs' empty Identities tab gets the same empty state */
+.ut2-after:not(.ut2-toggle) #idcardScreen.empty #icL1 .blank-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif !important;
+  font-size: 16px !important; font-weight: 500 !important; line-height: 1.2 !important; letter-spacing: -0.32px !important;
+}
+.ut2-after #idcardScreen.empty .ut2-fq {
+  display: flex; align-items: center; justify-content: center; flex: 0 0 40px; width: 40px; height: 40px; padding: 0; border: 0;
+  border-radius: 300px; background: #fff; color: #141410; cursor: pointer; box-shadow: 0 0 8px rgba(0, 0, 0, .08), 0 8px 16px rgba(0, 0, 0, .1);
+}
+.ut2-after #idcardScreen.empty #icL1 .blank-head .ich-btn,
+.ut2-after #idcardScreen.empty #icL1 .blank-head .vt-bar-btn,
+.ut2-after #idcardScreen.empty #icL1 .ut2-sub[data-sub="cards"],
+.ut2-after #idcardScreen.empty #icL1 .ic-count-row,
+.ut2-after #idcardScreen.empty #icL1 .ic-cards,
+.ut2-after #idcardScreen.empty #icL1 .ic-fab { display: none !important; }
+.ut2-after #idcardScreen.empty .ut2-fe {
+  display: block; position: relative; height: 417px; margin: 15px 20px 32px; box-sizing: border-box;
+  border: 1px solid rgba(11, 11, 10, .15); border-radius: 20px; background: #fff; text-align: center;
+}
+.ut2-fe .t { position: absolute; left: 50%; top: 153px; width: 189px; margin-left: -94.5px; font-size: 24px; line-height: 1.1; color: #141410; }
+.ut2-fe .b {
+  position: absolute; left: 50%; top: 229px; transform: translateX(-50%); height: 32px; padding: 0 16px; box-sizing: border-box;
+  border: 1px solid rgba(11, 11, 10, .15); border-radius: 100px; background: #fff; color: #141410; cursor: pointer;
+  font: 400 14px/1.2 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.28px; white-space: nowrap;
+}
+/* Figma 9566:68966 — Folders with cards (Vault toggle): "+ Create a new
+   folder" 56 high r240, 1px #C4C2BC, 16 -0.32, + 16 with 4 gap, 12 under
+   the card stack; the round + fab, the ⓘ and the one-line sub go (the
+   design has the search button only, then "1 card"). */
+.ut2-fadd { display: none; }
+.ut2-toggle #idcardScreen:not(.empty) .ut2-fadd {
+  display: flex; align-items: center; justify-content: center; gap: 4px; width: calc(100% - 40px); height: 56px; margin: 12px 20px 44px; box-sizing: border-box;
+  border: 1px solid #C4C2BC; border-radius: 240px; background: #fff; color: #141410; cursor: pointer;
+  font: 400 16px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.32px;
+}
+.ut2-fadd svg { width: 16px; height: 16px; }
+/* the stack keeps a 420 floor for the empty wallet; with cards it is as tall as they are */
+.ut2-toggle #idcardScreen:not(.empty) #icCards { min-height: 0; }
+.ut2-toggle #idcardScreen:not(.empty) #icL1 .ic-fab,
+.ut2-toggle #icL1 .blank-head .ich-btn,
+.ut2-toggle #icL1 .ut2-sub[data-sub="cards"] { display: none !important; }
+
+/* on Folders the off half is the primary ink at 40% (Figma 9564:67265) */
+#icL1 .ut2-btog button:not(.on) { color: rgba(20, 20, 16, .4); }
+
+/* Figma 9561:66347 (Christine, 19 Oct): scrolling down, the tab bar and the
+   + leave (the build's body.nav-down) and the toggle slides down to stick in
+   the bottom-left corner — 40 from the foot (Figma 756 of 852). Same curve as
+   the build's fab; back up when you scroll up. */
+.ut2-btog { transition: transform .32s cubic-bezier(.32, .72, 0, 1); }
+body.nav-down .ut2-btog { transform: translateY(56px); }
+
+/* the + beside it goes back to a plain round + (the design's), so the two fit */
+.ut2-toggle .ic-fab.ut2-xfab { width: 56px !important; padding: 0 !important; gap: 0; justify-content: center; }
+.ut2-toggle .ic-fab.ut2-xfab .ut2-xfab-t { display: none; }
+
+/* 05 · Add an item, Figma 9546:61073 — rows instead of tiles.
+   Row 353×77 (here: full width minus 20px gutters), r16, 1px divider
+   rgba(11,11,10,.15) on white; "Hide my info" is bkgd_02 #1B1B18 with the
+   white-10% divider and #F3F1ED text. Icon 24 at 22px, label 16px −0.32 at 70px.
+   Import: 56px pill r300, same divider, 16px −0.16, pinned 34px from the foot. */
+.ut2-after #vtAdd .vt-add-grid,
+.ut2-after #d1jAdd .d1j-add-grid,
+.ut2-after #d1jAdd .d1j-add-import { display: none !important; }
+.ut2-add-list { position: absolute; top: 206px; left: 20px; right: 20px; z-index: 2; display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.ut2-add-row {
+  display: flex; align-items: center; gap: 24px; height: 77px; padding: 0 20px 0 22px;   /* six rows again since Bank moved into Others (21 Oct) */
+  box-sizing: border-box; border-radius: 16px; border: 1px solid rgba(11, 11, 10, .15);
+  background: #fff; color: #141410; cursor: pointer; text-align: left;
+  font: 400 16px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.32px;
+}
+.ut2-add-row .ic { flex: 0 0 24px; width: 24px; height: 24px; display: flex; }
+.ut2-add-row .ic svg { display: block; }
+/* Christine, 20 Oct: Create alias is a plain row like the rest (was dark #1B1B18); its mark is drawn light for the dark badge, so ink it here */
+.ut2-add-row.hide .ic svg path { fill: #141410; }
+.ut2-add-import {
+  position: absolute; left: 20px; right: 20px; bottom: 34px; z-index: 2;
+  height: 56px; border-radius: 300px; border: 1px solid rgba(11, 11, 10, .15); background: #fff;
+  display: flex; align-items: center; justify-content: center; gap: 11px; cursor: pointer; color: #141410;
+  font: 400 16px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.16px;
+}
+.ut2-add-import svg { width: 24px; height: 24px; flex: 0 0 24px; }
+/* a tile's tray is taken without being shown (Hide my info / Contact pick for you) */
+.ut2-autopick #nqPick, .ut2-autopick #nqDim,
+.ut2-autopick .d1j-tray, .ut2-autopick .d1j-tray-scrim { visibility: hidden !important; transition: none !important; }
+.ut2-choice .sub { margin: -4px 20px 12px; font-size: 14px; color: var(--ut2-grey); }
+
+/* Activity (Christine, 20 Oct): no stat tiles; "See breakdown" sits on the
+   "Actions taken to protect you" line instead (ut2.js addBreakdownLink) */
+.ut2-after #avTiles { display: none !important; }
+.ut2-after .av-hero-label.ut2-bdrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.ut2-after .ut2-bdlink {
+  flex: 0 0 auto; cursor: pointer; color: #141410;
+  font-size: 14px; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+}
+
+/* Alias filter tab (20 Oct): our own list replaces the build's while it is on */
+.ut2-alist { display: none; }
+html.ut2-aonly #vtL2Body { display: none !important; }
+html.ut2-aonly .ut2-alist { display: block; }
+.ut2-aempty { padding: 56px 20px; text-align: center; color: #84827E; font-size: 16px; letter-spacing: -0.32px; }
+.ut2-aempty p { margin: 0 0 16px; }
+.ut2-aempty-go {
+  display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px; border: 0; border-radius: 240px;
+  background: #141410; color: #F3F1ED; font: inherit; font-size: 16px; cursor: pointer;
+}
+.ut2-aempty-go svg { width: 20px; height: 20px; }
+
+/* Contact (20 Oct): one form for name, email and phone; the frame of the
+   build's Add password page */
+.ut2-con {
+  position: absolute; inset: 0; z-index: 9050; background: #fff; overflow-y: auto;
+  transform: translateX(100%); transition: transform .36s cubic-bezier(.32,.72,0,1);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; color: #141410;
+  padding-top: 64px;
+}
+.ut2-con.on { transform: none; }
+.ut2-con-back {
+  position: absolute; left: 20px; top: 64px; width: 40px; height: 40px; border-radius: 50%; border: 0;
+  background: #fff; box-shadow: 0 0 8px rgba(0,0,0,.08), 0 8px 16px rgba(0,0,0,.1); color: #141410;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+}
+.ut2-con-back svg { width: 22px; height: 22px; }
+.ut2-con h2 {
+  margin: 56px 20px 20px; font: 400 26px/1.2 ui-serif, "New York", Simula, Georgia, "Times New Roman", serif; letter-spacing: -0.26px;
+}
+.ut2-con.form .row {
+  display: flex; align-items: center; gap: 16px; height: 70px; padding: 0 20px;
+  border-bottom: 1px solid #E0DDD6; font-size: 16px; letter-spacing: -0.32px;
+}
+.ut2-con.form .row span { flex: 0 0 auto; }
+.ut2-con.form .row input {
+  flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: none; text-align: right;
+  font: inherit; color: #141410; padding: 0;
+}
+.ut2-con.form .row input::placeholder { color: #84827E; }
+.ut2-con.form .band { height: 8px; background: #F3F1ED; }
+.ut2-con-save {
+  display: block; width: calc(100% - 40px); height: 56px; margin: 24px 20px; border: 0; border-radius: 240px;
+  background: #0B0B0A; color: #fff; font: inherit; font-size: 16px; letter-spacing: -0.32px; cursor: pointer;
+}
+.ut2-con-save:disabled { background: #E0DDD6; color: #84827E; cursor: default; }
+.ut2-con.det .hd { text-align: center; padding: 40px 20px 24px; }
+.ut2-con.det .big {
+  display: inline-flex; width: 72px; height: 72px; border-radius: 50%; align-items: center; justify-content: center;
+  font-size: 30px; color: #141410;
+}
+.ut2-con.det h2 { margin: 12px 0 4px; }
+.ut2-con.det .hd p { margin: 0; color: #84827E; font-size: 14px; }
+.ut2-con.det .row {
+  display: flex; align-items: center; gap: 12px; min-height: 70px; padding: 0 20px; border-top: 1px solid #E0DDD6;
+  font-size: 16px; letter-spacing: -0.32px;
+}
+.ut2-con.det .row span { color: #84827E; width: 56px; flex: none; }
+.ut2-con.det .row b { flex: 1 1 auto; font-weight: 400; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ut2-con.det .row .cp {
+  flex: none; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #F3F1ED; color: #141410;
+  font: inherit; font-size: 14px; cursor: pointer;
+}
+.vt-av.raw .ut2-letter { font-size: 17px; color: #141410; line-height: 1; }
+.vt-av.raw:has(.ut2-letter) { display: inline-flex; align-items: center; justify-content: center; }
+
+/* the toggle stays off an item's own page (vtL3 / vtL4 sit under z6) */
+#vaultsScreen .vt-pane.push.open ~ .ut2-btog { opacity: 0; pointer-events: none; }
+
+/* 1 Tab (20 Oct): All is one A–Z list with no section heads (ut2.js flatAll);
+   Edit's select mode gets the build's own list back */
+.ut2-flist { display: none; }
+html.ut2-flat #vtL2:not(.selecting) #vtL2Body { display: none !important; }
+html.ut2-flat #vtL2:not(.selecting) .ut2-flist { display: block; }
+.ut2-flatsec { padding-top: 8px; }
+/* 1 Tab: section heads back on (Christine, 21 Oct, Figma 9631:82531) — was hidden with the flat list */
+
+/* Create a new folder / identity (20 Oct) — 02_Main R3 FD-02 name sheet and
+   EV-02 bulk select. The build's create flow runs hidden underneath. */
+html.ut2-ghostcc #icCreate { visibility: hidden !important; }
+.ut2-ns { position: absolute; inset: 0; z-index: 9060; pointer-events: none; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; color: #141410; }
+.ut2-ns.on { pointer-events: auto; }
+.ut2-ns .dim { position: absolute; inset: 0; background: rgba(0,0,0,.4); opacity: 0; transition: opacity .3s; }
+.ut2-ns.on .dim { opacity: 1; }
+.ut2-ns .sh { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 16px 16px 0 0; overflow: hidden;
+  transform: translateY(100%); transition: transform .36s cubic-bezier(.32,.72,0,1); }
+.ut2-ns.on .sh { transform: none; }
+.ut2-ns .hd { padding: 40px 20px 20px; font-size: 24px; line-height: 1.1; border-bottom: 1px solid #E0DDD6; }
+.ut2-ns .fld { padding: 20px; }
+.ut2-ns input { display: block; width: 100%; height: 56px; box-sizing: border-box; padding: 0 24px; border: 0; outline: 0; border-radius: 240px;
+  background: #F3F1ED; color: #141410; font: inherit; font-size: 16px; letter-spacing: -0.32px; }
+.ut2-ns input::placeholder { color: #84827E; }
+.ut2-ns .cta { display: flex; gap: 16px; padding: 16px 20px 32px; }
+.ut2-ns .cta button { height: 56px; border-radius: 240px; font: inherit; font-size: 16px; letter-spacing: -0.32px; cursor: pointer; }
+.ut2-ns .c { flex: 0 0 172px; border: 1px solid #C4C2BC; background: #fff; color: #141410; }
+.ut2-ns .k { flex: 1 1 0; border: 0; background: #0B0B0A; color: #fff; }
+.ut2-ns .k:disabled { background: #E0DDD6; color: #84827E; cursor: default; }
+.ut2-bp { position: absolute; inset: 0; z-index: 9055; background: #fff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; color: #141410;
+  transform: translateY(100%); transition: transform .38s cubic-bezier(.32,.72,0,1); }
+.ut2-bp.on { transform: none; }
+.ut2-bp .tb { height: 120px; }
+.ut2-bp .pl { position: absolute; top: 64px; height: 40px; padding: 0 16px; border: 0; border-radius: 240px; background: #fff; color: #141410; cursor: pointer;
+  font: inherit; font-size: 14px; letter-spacing: -0.14px; box-shadow: 0 0 8px rgba(0,0,0,.08), 0 8px 16px rgba(0,0,0,.1); }
+.ut2-bp .pl.all { left: 20px; }
+.ut2-bp .pl.save { right: 20px; background: #0B0B0A; color: #fff; }
+.ut2-bp .pl.save:disabled { background: #fff; color: #C4C2BC; cursor: default; }
+.ut2-bp .ttl { position: absolute; left: 130px; right: 130px; top: 64px; height: 40px; line-height: 40px; text-align: center; font-size: 16px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-bp { display: flex; flex-direction: column; }
+.ut2-bp .tb { position: relative; flex: 0 0 120px; }
+.ut2-bp .sr { flex: 0 0 auto; padding: 16px 20px 4px; }
+.ut2-bp .sb { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 240px; background: #F3F1ED; color: #84827E; }
+.ut2-bp .sb svg { width: 20px; height: 20px; flex: 0 0 20px; }
+.ut2-bp .sb input { flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: none; font: inherit; font-size: 16px; letter-spacing: -0.16px; color: #141410; -webkit-appearance: none; }
+.ut2-bp .sb input::placeholder { color: #84827E; }
+.ut2-bp .tbs { flex: 0 0 auto; display: flex; overflow-x: auto; border-bottom: 1px solid #E0DDD6; scrollbar-width: none; }
+.ut2-bp .tbs::-webkit-scrollbar { display: none; }
+.ut2-bp .tab { position: relative; flex: 0 0 auto; min-width: 72px; padding: 14px 14px 13px; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 16px; line-height: 1.3; letter-spacing: -0.16px; color: #84827E; white-space: nowrap; }
+.ut2-bp .tab.on { color: #141410; }
+.ut2-bp .tab.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: #141410; }
+.ut2-bp .ls { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.ut2-bp .row[hidden] { display: none; }
+.ut2-bp .ls .none { margin: 32px 20px; text-align: center; color: #84827E; font-size: 16px; }
+.ut2-bp .row { display: flex; align-items: center; gap: 12px; height: 80px; padding: 0 20px; border-bottom: 1px solid #E0DDD6; cursor: pointer; }
+.ut2-bp .cb { flex: 0 0 32px; width: 32px; height: 32px; border-radius: 80px; background: #E0DDD6; display: grid; place-items: center; transition: background .12s; }
+.ut2-bp .cb svg { width: 16px; height: 16px; opacity: 0; transition: opacity .12s; }
+.ut2-bp .row.on .cb { background: #0B0B0A; }
+.ut2-bp .row.on .cb svg { opacity: 1; }
+.ut2-bp .row .vt-av { flex: 0 0 40px; }
+.ut2-bp .tx { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ut2-bp .tx b { font-weight: 400; font-size: 16px; letter-spacing: -0.32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-bp .tx i { font-style: normal; font-size: 14px; color: #84827E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 22 · onboarding options (20 Oct). inside: Home keeps only the journey card;
+   the alias card sits in the Vault where the banner was. outside: the Vault
+   shows only its one-line description, in both Tabs versions. */
+html.ut2-intro-inside #d1jCardGuard { display: none !important; }
+html.day1 .ut2-vcard.d1j-card { width: auto; margin: 0 20px 16px; }
+/* Christine, 20 Oct: the Vault's one-line description shows in every version, the alias card or not */
+.ut2-after .ut2-sub[data-sub="vault"] { display: none !important; }   /* 21 Oct: behind the ? beside the title instead (.ut2-vq) */
+
+/* 1 Tab · folder list (20 Oct, Figma 9603:70649): ID cards are Vault rows,
+   Folders is a list of folder cards. The wallet stays in the DOM (Day 01
+   reads its cards from there) but is not shown. */
+html.ut2-foldlist #icL1 .ic-count-row, html.ut2-foldlist #icL1 #icCards, html.ut2-foldlist #icL1 .ic-cards,
+html.ut2-foldlist #icL1 .ic-fab, html.ut2-foldlist #icL1 .ut2-fe, html.ut2-foldlist #icL1 .ut2-fadd,
+html.ut2-foldlist #icL1 .ut2-fq, html.ut2-foldlist #icL1 .ut2-sub { display: none !important; }
+.ut2-flv { display: none; }
+html.ut2-foldlist .ut2-flv { display: block; padding: 21px 20px 25px; }
+.ut2-flv .cnt { font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410; margin-bottom: 21px; }
+.ut2-flv .fl { display: flex; flex-direction: column; gap: 8px; }
+.ut2-flv .fc { position: relative; display: block; width: 100%; height: 140px; border: 0; border-radius: 20px; background: #F3F1ED; text-align: left; cursor: pointer;
+  font: 400 16px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; color: #141410; padding: 0; }
+.ut2-flv .fc .nm { position: absolute; left: 16px; top: 16px; right: 100px; letter-spacing: -0.32px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ut2-flv .fc .ct { position: absolute; right: 16px; top: 16px; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; }
+.ut2-flv .fc .avs { position: absolute; left: 16px; top: 92px; display: flex; align-items: center; }
+.ut2-flv .fc .av { width: 32px; height: 32px; margin-right: -9.6px; border-radius: 50%; box-shadow: 0 0 0 1.6px #F3F1ED; overflow: hidden; display: flex; }
+.ut2-flv .fc .av .vt-av, .ut2-flv .fc .av .av-rule { width: 32px !important; height: 32px !important; flex: 0 0 32px; }
+.ut2-flv .fc .av svg { max-width: 100%; }
+.ut2-flv .fc .more { margin-left: 16px; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; }
+.ut2-flv .fc .hint { position: absolute; left: 16px; bottom: 16px; font-size: 14px; color: #84827E; letter-spacing: -0.28px; }
+.ut2-flv .add { display: block; width: 100%; height: 56px; margin-top: 21px; border: 1px solid #C4C2BC; border-radius: 240px; background: #fff; color: #141410; cursor: pointer;
+  font: 400 16px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.32px; }
+.ut2-idav { display: inline-flex !important; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto; }
+.ut2-idrow { font: inherit; }
+.ut2-con.fold h2 { margin-bottom: 4px; }
+.ut2-con.fold .fsub { margin: 0 20px 16px; color: #84827E; font-size: 14px; }
+.ut2-con.fold .frow { display: flex; align-items: center; gap: 12px; width: 100%; height: 80px; padding: 0 20px; border: 0; border-bottom: 1px solid #E0DDD6; background: #fff; text-align: left; cursor: pointer; font: inherit; color: #141410; }
+.ut2-con.fold .frow .tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ut2-con.fold .frow b { font-weight: 400; font-size: 16px; letter-spacing: -0.32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-con.fold .frow i { font-style: normal; font-size: 14px; color: #84827E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-con.fold .fempty { margin: 24px 20px; color: #84827E; font-size: 16px; }
+.ut2-pin svg { width: 22px; height: 22px; }
+#icDetailStar[aria-pressed="true"] svg, .ut2-pin[aria-pressed="true"] svg { fill: currentColor; }
+
+/* Activity (20 Oct, later): no total / Today pill / See breakdown at the top;
+   four state tabs (All · Inbox · Urgent · Transactions) share the width */
+.ut2-after .av-hero-label, .ut2-after .av-hero { display: none !important; }
+#avStickTabs.ut2-four .av-st { flex: 1 1 auto; min-width: 0; text-align: center; padding-left: 6px; padding-right: 6px; white-space: nowrap; }
+.ut2-avempty { padding: 80px 20px 120px; text-align: center; color: #84827E; font-size: 16px; letter-spacing: -0.32px; background: #fff; }
+.ut2-avempty[hidden] { display: none; }
+
+.ut2-add-row .ic img { display: block; width: 24px; height: 24px; }
+
+/* Others (21 Oct): Day 30's page, in the frame of Day 01's (Bank account first) */
+.ut2-oth { position: absolute; inset: 0; z-index: 9050; background: #fff; color: #141410; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  transform: translateX(100%); transition: transform .36s cubic-bezier(.32,.72,0,1); }
+.ut2-oth.on { transform: none; }
+.ut2-oth .bar { position: absolute; left: 20px; right: 20px; top: 64px; height: 40px; display: flex; align-items: center; gap: 16px; }
+.ut2-oth .bk { width: 40px; height: 40px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 8px rgba(0,0,0,.08), 0 8px 16px rgba(0,0,0,.1);
+  display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; color: #141410; }
+.ut2-oth .bk svg { width: 22px; height: 22px; }
+.ut2-oth .tt { font-size: 16px; letter-spacing: -0.32px; }
+.ut2-oth .rows { position: absolute; left: 0; right: 0; top: 120px; bottom: 120px; overflow-y: auto; }
+.ut2-oth .row { display: flex; align-items: center; gap: 20px; width: 100%; height: 80px; padding: 0 20px; border: 0; border-bottom: 1px solid #E0DDD6; background: #fff;
+  text-align: left; cursor: pointer; font: inherit; font-size: 16px; letter-spacing: -0.32px; color: #141410; }
+.ut2-oth .row.sel { background: #F3F1ED; }
+.ut2-oth .row .ic { flex: 0 0 24px; width: 24px; height: 24px; display: flex; }
+.ut2-oth .row .ic svg, .ut2-oth .row .ic img { display: block; width: 24px; height: 24px; }
+.ut2-oth .add { position: absolute; left: 20px; right: 20px; bottom: 32px; height: 56px; border: 0; border-radius: 240px; background: #0B0B0A; color: #fff;
+  font: inherit; font-size: 16px; letter-spacing: -0.32px; cursor: pointer; }
+.ut2-oth .add:disabled { background: #E0DDD6; color: #84827E; cursor: default; }
+#d1jOth .d1j-oth-row[data-oth="ut2bank"] .av svg { width: 24px; height: 24px; }
+
+/* the ? beside "Vault(s)" — same 16px mark as the one beside "My ID cards" */
+.ut2-vq { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin: 0 0 0 8px; padding: 0; border: 0;
+  background: none; color: #141410; cursor: pointer; vertical-align: middle; position: relative; top: -2px; }
+.ut2-vq::before { content: ""; position: absolute; inset: -14px; }
+.ut2-vq svg { width: 16px; height: 16px; display: block; }
+.ut2-after #vtL2Title { display: flex; align-items: center; }
+
+/* 21 Oct: the Folders side's own + (opens Add an item) — the Vault's black round + */
+#icL1 .ut2-fplus { background: var(--ut2-black); color: #fff; }
+#icL1 .ut2-fplus svg { color: #fff; }
+
+/* 21 Oct, Figma 9636:86141 — 2 Tabs: the card tab's "Group aliases by situation"
+   pill goes; "Create a new [name]" sits under the cards as an Add-an-item row */
+.ut2-frow { display: none; }
+html.ut2-after:not(.ut2-toggle) #idcardScreen:not(.empty) .ut2-frow { display: flex; width: calc(100% - 40px); margin: 12px 20px 44px; }
+html.ut2-after:not(.ut2-toggle) #icL1 .ic-fab { display: none !important; }
+
+/* 21 Oct, Figma 9639:86478 — 2 Tabs: "Create a new [name]" flow.
+   CIC-02 name page · EIC-07 "Add to …" page · ALIAS pick sheet. */
+.ut2-nid { position: absolute; inset: 0; z-index: 9058; pointer-events: none; overflow: hidden;
+  font: 400 16px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.32px; color: #141410; }
+.ut2-nid.on { pointer-events: auto; }
+.ut2-nid .pg { position: absolute; inset: 0; background: #fff; transform: translateX(100%); transition: transform .38s cubic-bezier(.32, .72, 0, 1); }
+.ut2-nid.on .p1 { transform: none; }
+.ut2-nid.two .p1 { transform: translateX(-30%); }
+.ut2-nid.two .p2 { transform: none; }
+.ut2-nid .x { position: absolute; left: 20px; top: 64px; width: 40px; height: 40px; padding: 8px; box-sizing: border-box; border: 0; border-radius: 300px;
+  background: #fff; box-shadow: 0 0 8px rgba(0, 0, 0, .08); color: #141410; cursor: pointer; }
+.ut2-nid .x svg { width: 24px; height: 24px; display: block; }
+.ut2-nid h2 { position: absolute; left: 20px; right: 20px; top: 150px; margin: 0; font: 400 32px/1.1 ui-serif, 'New York', 'Simula', Georgia, serif; letter-spacing: -0.64px; }
+.ut2-nid .fld { position: absolute; left: 20px; right: 20px; top: 211px; height: 146px; border-radius: 16px; background: #F3F1ED; overflow: hidden; }
+.ut2-nid textarea { display: block; width: 100%; height: 100%; box-sizing: border-box; padding: 23px 20px; border: 0; outline: 0; resize: none; background: transparent;
+  font: inherit; letter-spacing: -0.32px; color: #141410; caret-color: #E8642C; }
+.ut2-nid textarea::placeholder { color: rgba(0, 0, 0, .4); }
+.ut2-nid .pills { position: absolute; left: 0; right: 0; top: 373px; display: flex; gap: 8px; padding: 0 20px; overflow-x: auto; scrollbar-width: none; }
+.ut2-nid .pills::-webkit-scrollbar { display: none; }
+.ut2-nid .pills button { flex: 0 0 auto; height: 40px; padding: 0 15px; border: 0; border-radius: 240px; background: #F3F1ED; color: #141410; font: inherit; letter-spacing: -0.32px; white-space: nowrap; cursor: pointer; }
+.ut2-nid .go { position: absolute; left: 20px; right: 20px; height: 56px; border: 0; border-radius: 240px; background: #0B0B0A; color: #fff; font: inherit; letter-spacing: -0.32px; cursor: pointer; }
+.ut2-nid .go:disabled { opacity: .2; cursor: default; }
+.ut2-nid .p1 .go { top: 469px; }
+.ut2-nid .p2 .go { bottom: 32px; }
+.ut2-nid .bar .tt { position: absolute; left: 50%; top: 84.5px; transform: translate(-50%, -50%); width: 259px; text-align: center; }
+.ut2-nid .rows { position: absolute; left: 0; right: 0; top: 120px; }
+.ut2-nid .row { display: flex; align-items: center; gap: 40px; min-height: 72px; padding: 20px; box-sizing: border-box; border-bottom: 1px solid rgba(11, 11, 10, .15); }
+.ut2-nid .row .l { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ut2-nid .row .l b { font-weight: 400; }
+.ut2-nid .row .l i { font-style: normal; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #84827E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ut2-nid .ch { flex: 0 0 auto; height: 32px; padding: 0 16px; border: 1px solid rgba(11, 11, 10, .15); border-radius: 100px; background: #fff; color: #141410;
+  font: 400 14px/1.2 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.28px; cursor: pointer; white-space: nowrap; }
+.ut2-nid .dim { position: absolute; inset: 0; background: rgba(0, 0, 0, .4); opacity: 0; pointer-events: none; transition: opacity .3s; }
+.ut2-nid .dim.on { opacity: 1; pointer-events: auto; }
+.ut2-nid .sh { position: absolute; left: 0; right: 0; bottom: 0; max-height: calc(100% - 56px); min-height: 493px; background: #fff; border-radius: 16px 16px 0 0;
+  display: flex; flex-direction: column; transform: translateY(100%); transition: transform .38s cubic-bezier(.32, .72, 0, 1); }
+.ut2-nid .sh.on { transform: none; }
+.ut2-nid .sh .hd { flex: 0 0 auto; padding: 32px 20px 16px; font-size: 24px; line-height: 1.1; letter-spacing: 0; }
+.ut2-nid .sh .ls { flex: 1 1 auto; overflow-y: auto; padding: 12px 0 40px; }
+.ut2-nid .sh .band { padding: 8px 20px; background: #F3F1ED; font-size: 12px; line-height: 1.3; letter-spacing: 0; text-transform: uppercase; }
+.ut2-nid .sh .it, .ut2-nid .sh .gen { display: flex; align-items: center; gap: 12px; width: 100%; height: 80px; padding: 20px; box-sizing: border-box; border: 0;
+  border-bottom: 1px solid rgba(11, 11, 10, .15); background: #fff; color: #141410; text-align: left; font: inherit; letter-spacing: -0.32px; cursor: pointer; }
+.ut2-nid .sh .gen { gap: 20px; }
+.ut2-nid .sh .av { flex: 0 0 40px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+.ut2-nid .sh .av .vt-av { width: 40px; height: 40px; }
+.ut2-nid .sh .gen .ic { flex: 0 0 32px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+.ut2-nid .sh .gen .ic svg path { fill: #141410; }
+.ut2-nid .sh .t { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ut2-nid .sh .t b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ut2-nid .sh .t i { font-style: normal; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #84827E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the drawn keyboard (z 30 in the build) has to sit over this page */
+html.ut2-nidon .kbd { z-index: 9059 !important; }
+/* 21 Oct: several at once — a round checkbox on each row (as the pick list), Add at the foot */
+.ut2-nid .sh .it .cb { flex: 0 0 32px; width: 32px; height: 32px; border-radius: 80px; background: #E0DDD6; display: grid; place-items: center; transition: background .12s; }
+.ut2-nid .sh .it .cb svg { width: 16px; height: 16px; opacity: 0; transition: opacity .12s; }
+.ut2-nid .sh .it.on .cb { background: #0B0B0A; }
+.ut2-nid .sh .it.on .cb svg { opacity: 1; }
+.ut2-nid .sh .gen .ic { margin-left: 44px; }
+.ut2-nid .sh .ls { padding-bottom: 12px; }
+.ut2-nid .sh .ft { flex: 0 0 auto; padding: 12px 20px 32px; border-top: 1px solid rgba(11, 11, 10, .08); }
+.ut2-nid .sh .ok { display: block; width: 100%; height: 56px; border: 0; border-radius: 240px; background: #0B0B0A; color: #fff; font: inherit; letter-spacing: -0.32px; cursor: pointer; }
+.ut2-nid .sh .ok:disabled { opacity: .2; cursor: default; }
+
+/* 21 Oct, Figma 9644:86479 — 1 Tab · Folder list: folder button top right of
+   the Vault (no Items | Folders toggle), Folders page, folder page */
+html.ut2-foldlist .ut2-btog { display: none !important; }
+.ut2-vfold { display: none; }
+html.ut2-after #vtL2Bar .ut2-vfold {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 40px; width: 40px; height: 40px; padding: 0; margin-left: 8px;
+  border: 0; border-radius: 60px; background: #fff; color: #141410; box-shadow: 0 0 4px rgba(0, 0, 0, .08); cursor: pointer;
+}
+html.ut2-after #vtL2Bar .ut2-vfold svg { width: 20px; height: 20px; display: block; }
+.ut2-con.flist, .ut2-con.fpage { padding-top: 0; font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; }
+.ut2-con .fl-back { box-shadow: 0 0 8px rgba(0, 0, 0, .08); }
+.ut2-con .fl-back svg { width: 24px; height: 24px; }
+.ut2-con .fl-tt { position: absolute; left: 76px; top: 84.5px; transform: translateY(-50%); width: 259px; }
+.ut2-con .fl-edit { position: absolute; right: 20px; top: 64px; height: 40px; padding: 0 16px; border: 0; border-radius: 300px; background: #fff;
+  box-shadow: 0 0 8px rgba(0, 0, 0, .08); color: #141410; font: 400 14px/1.2 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.28px; cursor: pointer; }
+.ut2-con.flist .fl-cnt { margin: 152px 20px 8px; }
+.ut2-con.flist .fl-cards { display: flex; flex-direction: column; gap: 8px; padding: 0 20px 40px; }
+.ut2-con.flist .fl-card { position: relative; display: block; width: 100%; height: 104px; box-sizing: border-box; border: 1px solid rgba(11, 11, 10, .15); border-radius: 16px;
+  background: #fff; text-align: left; cursor: pointer; color: #141410; font: inherit; }
+.ut2-con.flist .fl-card b { position: absolute; left: 20px; top: 32px; right: 20px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-con.flist .fl-card i { position: absolute; left: 20px; top: 55px; right: 20px; font-style: normal; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #84827E; }
+.ut2-con.flist .fl-new { width: 100%; }
+.ut2-con.fpage h2 { margin: 152px 20px 0; font: 400 28px/1.1 ui-serif, 'New York', 'Simula', Georgia, serif; letter-spacing: 0; }
+.ut2-con.fpage .fsub { margin: 8px 20px 0; color: #141410; font-size: 16px; }
+.ut2-con.fpage .fl-tabs { display: flex; margin-top: 40px; overflow-x: auto; scrollbar-width: none; box-shadow: inset 0 -1px 0 rgba(11, 11, 10, .15); }
+.ut2-con.fpage .fl-tabs::-webkit-scrollbar { display: none; }
+.ut2-con.fpage .fl-tabs .tab { flex: 0 0 auto; padding: 16px 20px; border: 0; border-bottom: 1px solid transparent; background: none;
+  color: #84827E; font: inherit; letter-spacing: -0.32px; white-space: nowrap; cursor: pointer; }
+.ut2-con.fpage .fl-tabs .tab.on { color: #141410; border-bottom-color: #0B0B0A; }
+.ut2-con.fpage .frow { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 80px; padding: 20px; box-sizing: border-box; border: 0;
+  border-bottom: 1px solid rgba(11, 11, 10, .15); background: #fff; text-align: left; cursor: pointer; font: inherit; color: #141410; }
+.ut2-con.fpage .frow[hidden] { display: none; }
+.ut2-con.fpage .frow .vt-av { flex: 0 0 40px; }
+.ut2-con.fpage .frow .tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ut2-con.fpage .frow b { font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-con.fpage .frow i { font-style: normal; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #84827E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-con.fpage .fempty { margin: 24px 20px; color: #84827E; }
+
+/* 21 Oct, Figma 9646:87446 — the saved item's avatar: empty ring → lock → its icon (ut2.js flipAv) */
+.ut2-flip { position: relative; backface-visibility: hidden; will-change: transform; }
+.ut2-flip.ut2-flip-empty { border-radius: 999px !important; background: transparent !important; box-shadow: inset 0 0 0 1px currentColor !important; }
+.ut2-flip.ut2-flip-empty > :not(.ut2-flip-lock) { opacity: 0 !important; }
+.ut2-flip-lock { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; border-radius: 999px;
+  background: color-mix(in srgb, currentColor 12%, transparent); color: inherit; }
+.ut2-flip-lock svg { width: 46%; height: 46%; display: block; }
+.ut2-flip.ut2-flip-on .ut2-flip-lock { display: flex; }
+.ut2-flip.ut2-flip-on { box-shadow: none !important; }
+#nqDetail .ut2-flip.ut2-flip-empty, #d1jDetAv.ut2-flip.ut2-flip-empty { color: rgba(128, 128, 128, .45); }
+#nqDetail .ut2-flip.ut2-flip-on, #d1jDetAv.ut2-flip.ut2-flip-on { color: inherit; }
+
+/* 21 Oct — 1 Tab · ID cards: the toggle's Folders shows the real folders
+   (html.ut2-ivf), the top-right ID card button shows the card wallet
+   (html.ut2-ivc: back button, no toggle) — ut2.js cardView */
+.ut2-fl2, .ut2-icback { display: none; }
+html.ut2-ivf #icL1Scroll > :not(.ut2-fl2):not(.vt-faq),
+html.ut2-ivf #icL1 .blank-head .ich-btn, html.ut2-ivf #icL1 .blank-head .vt-bar-btn, html.ut2-ivf #icL1 .ut2-fq { display: none !important; }
+html.ut2-ivf #icL1Scroll > .ut2-fl2 { display: block; padding: 8px 0 40px; font: 400 16px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.32px; color: #141410; }
+.ut2-fl2 .fl-cnt { margin: 0 20px 8px; }
+.ut2-fl2 .fl-cards { display: flex; flex-direction: column; gap: 8px; padding: 0 20px; }
+.ut2-fl2 .fl-card { position: relative; display: block; width: 100%; height: 104px; box-sizing: border-box; border: 1px solid rgba(11, 11, 10, .15); border-radius: 16px;
+  background: #fff; text-align: left; cursor: pointer; color: #141410; font: inherit; }
+.ut2-fl2 .fl-card b { position: absolute; left: 20px; top: 32px; right: 20px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-fl2 .fl-card i { position: absolute; left: 20px; top: 55px; right: 20px; font-style: normal; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #84827E; }
+.ut2-fl2 .fl-new { width: 100%; }
+html.ut2-ivc #icL1 .ut2-btog, html.ut2-ivc #icL1 .ut2-fplus { display: none !important; }
+html.ut2-ivc #icL1 .blank-head .ut2-icback { display: flex; align-items: center; justify-content: center; flex: 0 0 40px; width: 40px; height: 40px; margin-right: 12px; padding: 0;
+  border: 0; border-radius: 300px; background: #fff; box-shadow: 0 0 8px rgba(0, 0, 0, .08); color: #141410; cursor: pointer; }
+html.ut2-ivc #icL1 .blank-head .ut2-icback svg { width: 24px; height: 24px; }
+
+/* 21 Oct, Figma 9603:79269 — Day 01: "What's vault" tray over the Vault on its first open (ut2.js vaultTray) */
+.ut2-vtray { position: absolute; inset: 0; z-index: 9062; pointer-events: none; }
+.ut2-vtray.on { pointer-events: auto; }
+.ut2-vtray .dim { position: absolute; inset: 0; background: rgba(0, 0, 0, .45); opacity: 0; transition: opacity .3s; }
+.ut2-vtray.on .dim { opacity: 1; }
+.ut2-vtray .vtc { position: absolute; left: 20px; right: 20px; bottom: 34px; margin: 0; cursor: default;
+  transform: translateY(calc(100% + 60px)); transition: transform .42s cubic-bezier(.32, .72, 0, 1); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; }
+.ut2-vtray.on .vtc { transform: none; }
+
+/* 21 Oct, Figma 9659:87447 — the Items | Folders toggle, icons only: 93×47
+   r300 glass (white 50%, 0 0 8 black 8%), two 40 circles at 4 / 49, the one
+   you are on filled black 10%, icons 20 #141410. Centred on the + beside it. */
+.ut2-btog { width: 93px; height: 47px; padding: 4px; gap: 5px; bottom: 100px; box-shadow: 0 0 8px rgba(0, 0, 0, .08), 0 8px 16px rgba(0, 0, 0, .1); }
+.ut2-btog button { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 24px; color: #141410; }
+.ut2-btog button.on { background: rgba(11, 11, 10, .1); }
+.ut2-btog .ic { left: 10px; top: 10px; width: 20px; height: 20px; margin: 0; }
+.ut2-btog .ic svg { width: 20px; height: 20px; }
+.ut2-btog .l { display: none; }
+#icL1 .ut2-btog button:not(.on) { color: #141410; }
+
+/* 21 Oct — Create a new [name], step 2: pick the NEW aliases to make (RECOMMENDED · PAYMENT) */
+.ut2-nid .rows .band { padding: 8px 20px; background: #F3F1ED; font-size: 12px; line-height: 1.3; letter-spacing: 0; text-transform: uppercase; }
+.ut2-nid .nrow { display: flex; align-items: center; gap: 12px; width: 100%; height: 80px; padding: 20px; box-sizing: border-box; border: 0;
+  border-bottom: 1px solid rgba(11, 11, 10, .15); background: #fff; color: #141410; text-align: left; font: inherit; letter-spacing: -0.32px; cursor: pointer; }
+.ut2-nid .nrow .ic { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 999px; background: #F3F1ED; display: flex; align-items: center; justify-content: center; }
+.ut2-nid .nrow .ic svg, .ut2-nid .nrow .ic img { width: 24px; height: 24px; display: block; }
+.ut2-nid .nrow .l { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ut2-nid .nrow .l b { font-weight: 400; }
+.ut2-nid .nrow .l i { font-style: normal; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #84827E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-nid .nrow .cb { flex: 0 0 32px; width: 32px; height: 32px; border-radius: 80px; background: #E0DDD6; display: grid; place-items: center; transition: background .12s; }
+.ut2-nid .nrow .cb svg { width: 16px; height: 16px; opacity: 0; transition: opacity .12s; }
+.ut2-nid .nrow.on .cb { background: #0B0B0A; }
+.ut2-nid .nrow.on .cb svg { opacity: 1; }
+
+/* UserTest_V2_2Tabs, 21 Oct (Figma 9706:62637) — identity creation flow:
+   story bar toolbar, "I wanna use the identity for", "Add items manually" */
+.ut2-nid .tb3 { position: absolute; left: 20px; right: 20px; top: 64px; display: flex; align-items: center; gap: 17px; z-index: 1; }
+.ut2-nid .tb3 .story { flex: 1 1 auto; display: flex; gap: 4px; }
+.ut2-nid .tb3 .story i { flex: 1 1 0; height: 4px; background: #F3F1ED; }
+.ut2-nid .tb3 .story i.on { background: #0B0B0A; }
+.ut2-nid .tb3 .x, .ut2-nid .tb3 .bk3 { position: static; flex: 0 0 40px; width: 40px; height: 40px; padding: 8px; box-sizing: border-box; border: 0; border-radius: 300px;
+  background: #fff; box-shadow: 0 0 8px rgba(0, 0, 0, .08); color: #141410; cursor: pointer; }
+.ut2-nid .tb3 svg { width: 24px; height: 24px; display: block; }
+.ut2-nid.v3 h2 { top: 152px; width: 273px; }
+.ut2-nid.v3 .fld { top: 243px; }
+.ut2-nid.v3 .pills { top: 405px; }
+.ut2-nid.v3 .p2 h2 { width: 235px; }
+.ut2-nid.v3 .p2 .rows { top: 314px; border-top: 1px solid rgba(11, 11, 10, .15); bottom: 105px; overflow-y: auto; }
+.ut2-nid .row.r3 { gap: 16px; }
+.ut2-nid .row.r3 .bs { flex: 0 0 auto; display: flex; gap: 8px; }
+.ut2-nid .more3 { display: block; width: 100%; padding: 20px 32px; border: 0; background: none; color: #141410; text-align: center; cursor: pointer;
+  font: 400 12px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: 0; }
+
+/* UserTest_V2_2Tabs, 21 Oct (Figma 9706:64459) — identity page: flat, on its colour */
+.ut2-after #icDetailCard .ic-card.detail {
+  width: 100% !important; max-width: none !important; min-width: 0 !important; height: auto !important; aspect-ratio: auto !important; flex: 1 1 100% !important; transform: none !important; background: transparent !important; box-shadow: none !important;
+  border-radius: 0 !important; overflow: visible !important; color: #141410 !important; padding: 0 !important; margin: 0 !important;
+  --card-ink: #141410; --card-risk: #141410; --card-accent: #141410;
+}
+.ut2-after #icDetailCard .ic-card.detail::before, .ut2-after #icDetailCard .ic-card.detail::after { display: none !important; }
+.ut2-after #icDetailCard .uv-under, .ut2-after #icDetailCard .uv-shade, .ut2-after #icDetailCard .uv-glow { display: none !important; }
+.ut2-after #icDetailCard .ic-card-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px 20px 0; margin: 0; }
+.ut2-after #icDetailCard .ic-card-title { font: 400 24px/1.1 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: 0; color: #141410 !important; }
+.ut2-after #icDetailCard .ic-card-risk { font: 400 14px/1.2 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.28px; text-align: right; color: #141410 !important; }
+.ut2-after #icDetailCard .ic-card-art { position: relative !important; inset: auto !important; width: 189px !important; height: 121px !important; margin: 0 auto !important;
+  background-size: contain !important; background-position: center !important; background-repeat: no-repeat !important; opacity: 1 !important; filter: none !important; transform: none !important; }
+.ut2-after #icDetailCard { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
+.ut2-after #icDetailCard .ic-card-art { margin-top: 24px !important; }
+/* rows in bands (Figma 9706:64459): the box is black 5% over the colour, each
+   row wears the colour, a new band starts 8px down; lines inside a band only */
+.ut2-after #icDetailCard .ic-card-rows { position: relative !important; inset: auto !important; margin: 24px 0 0 !important; padding: 0 !important;
+  display: flex !important; flex-direction: column; background: rgba(11, 11, 10, .05) !important; }
+.ut2-after #icDetailCard .ic-card-row, .ut2-after #icDetailCard .ut2-idrow {
+  display: flex !important; align-items: center; gap: 16px; min-height: 61px; padding: 20px !important; box-sizing: border-box; margin: 0 !important;
+  background: var(--ut2-idbg, transparent) !important; position: relative;
+  border: 0 !important; border-bottom: 1px solid rgba(11, 11, 10, .1) !important; color: #141410 !important; cursor: pointer;
+  font: 400 16px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.32px; }
+.ut2-after #icDetailCard .ic-card-row.extra { display: flex !important; }
+.ut2-after #icDetailCard .ut2-idrow.more { display: none !important; }
+.ut2-after #icDetailCard .ic-card-rows.ut2-open .ut2-idrow.more { display: flex !important; }
+.ut2-after #icDetailCard .ut2-gs { margin-top: 8px !important; }
+.ut2-after #icDetailCard .ut2-gl { border-bottom: 0 !important; }
+.ut2-after #icDetailCard .ut2-idrow:not(.more) { cursor: default; }
+.ut2-after #icDetailCard .ic-card-k { flex: 0 0 auto; color: #141410 !important; opacity: 1 !important; font: inherit !important; }
+.ut2-after #icDetailCard .ic-card-v { flex: 1 1 auto; min-width: 0; text-align: right; color: #141410 !important; font: inherit !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* card row: "Card", the card's name over its last four, the card art (40) */
+.ut2-after #icDetailCard .ut2-cardrow { padding: 12px 20px !important; min-height: 64px; gap: 12px; }
+.ut2-after #icDetailCard .ut2-cardrow .ic-card-k[data-l] { font-size: 0 !important; }
+.ut2-after #icDetailCard .ut2-cardrow .ic-card-k[data-l]::before { content: attr(data-l); font: 400 16px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: -0.32px; }
+.ut2-after #icDetailCard .ut2-cardrow .ic-card-v, .ut2-after #icDetailCard .ut2-cardrow .ic-card-chip { display: none !important; }
+.ut2-after #icDetailCard .ut2-cv { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.ut2-after #icDetailCard .ut2-cv b { font-weight: 400; font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-after #icDetailCard .ut2-cv i { font-style: normal; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; }
+.ut2-after #icDetailCard .ut2-cav { flex: 0 0 40px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin: -10px 0; }
+.ut2-after #icDetailCard .ut2-cardrow .ut2-cav { margin: 0; }
+.ut2-after #icDetailCard .ut2-cav > * { flex: none; }
+.ut2-after #icDetailCard .ut2-idrow .ic-card-v { flex: 1 1 auto; }
+.ut2-after #icDetailCard .ic-card-see { display: none !important; }
+.ut2-after #icDetailCard .ut2-idsee { display: block; width: 100%; padding: 20px 32px; margin: 0; border: 0; background: var(--ut2-idbg, transparent);
+  color: #141410; font: 400 12px/1.3 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: 0; text-align: center; cursor: pointer; }
+/* Figma 9706:64459 — toolbar order: bookmark, share, Edit */
+.ut2-after .ic-top-bar:has(#icDetailStar) > *:nth-child(n+3) { order: 2; }
+.ut2-after .ic-top-bar:has(#icDetailStar) > #icDetailStar { order: 1; }
+.ut2-after .ic-top-bar:has(#icDetailStar) > .ic-btn.pill { order: 3; }
+
+/* 21 Oct — Phone / Email / Payment card forms of our own (openAddForm), with
+   the Password form's keyboard bar: your own value | Hide my phone / email /
+   card. The drawn keyboard (291) has to rise over the page, as it does for the
+   identity flow. */
+html.ut2-afon .kbd { z-index: 9059 !important; }
+.ut2-con.af { padding-bottom: 40px; }
+.ut2-con.af.kb { padding-bottom: 320px; }
+.ut2-con.af .row.tap { width: 100%; background: none; border-top: 0; border-left: 0; border-right: 0; text-align: left; font: inherit; color: #141410; cursor: pointer; }
+.ut2-con.af .row.tap span { color: #141410; }
+.ut2-con.af .row.fwd .col { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.ut2-con.af .row.fwd .fk { font-size: 16px; }
+.ut2-con.af .row.fwd .fv { font-size: 14px; color: #84827E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-con.af .ut2-tgl { flex: none; width: 51px; height: 31px; border-radius: 16px; border: 0; background: #E0DDD6; position: relative; cursor: pointer; padding: 0; transition: background .2s; }
+.ut2-con.af .ut2-tgl i { position: absolute; left: 2px; top: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .18); transition: transform .2s; }
+.ut2-con.af .ut2-tgl.on { background: #141410; }
+.ut2-con.af .ut2-tgl.on i { transform: translateX(20px); }
+/* the alias, once minted: the field reads as made, not typed */
+.ut2-con.af.alias .row[data-r="value"] input, .ut2-con.af.alias .row[data-r="exp"] input, .ut2-con.af.alias .row[data-r="cvc"] input { color: #141410; }
+.ut2-con.af.alias .row[data-r="value"] span::after { content: 'Alias'; display: inline-flex; align-items: center; height: 16px; padding: 0 5px; margin-left: 8px; border-radius: 4px;
+  background: #d9d9d9; color: #000; font: 510 10px/1 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; text-transform: uppercase; vertical-align: middle; }
+/* the bar on the keyboard: 56 on #d3d6dd, split by a 1px rule (the build's .nq-sug) */
+.ut2-hbar { position: absolute; left: 0; right: 0; bottom: 291px; height: 56px; z-index: 9060; display: flex; align-items: center; background: #d3d6dd; }
+.ut2-hbar[hidden] { display: none; }
+.ut2-hbar .b { flex: 1 1 0; height: 100%; border: 0; background: none; font: inherit; font-size: 15px; letter-spacing: -0.3px; color: #141410; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; }
+.ut2-hbar .b:active { background: rgba(20, 20, 16, .08); }
+.ut2-hbar .x { width: 1px; height: 24px; background: rgba(20, 20, 16, .28); flex: none; }
+/* how to use it — after a new alias */
+.ut2-how .vtc .val { position: relative; margin: 16px 16px 0; padding: 12px 16px; border-radius: 12px; background: rgba(255, 255, 255, .08); color: #F3F1ED; font-size: 16px; letter-spacing: -0.32px; word-break: break-all; }
+.ut2-how .vtc p { margin-top: 12px; }
+.ut2-how .vtc .ok { position: relative; display: block; width: calc(100% - 32px); height: 48px; margin: 20px 16px 16px; border: 0; border-radius: 240px; background: #F3F1ED; color: #141410; font: inherit; font-size: 16px; letter-spacing: -0.32px; cursor: pointer; }
+.ut2-how .vtc { height: auto; background: #141410; padding-bottom: 0; }
+.ut2-how .vtc::before { display: none; }
+html.ut2-vtrayon .ut2-mark { visibility: hidden; }   /* 21 Oct: the Day 01 Vault tray first, the tour's marks after */
+/* 21 Oct (Figma 9712:65151 / 65550) — a generated row: the value, 16px, then a 24 reroll; the Forward to row under a generated email */
+.ut2-nid .row.r3.made { gap: 8px; }
+.ut2-nid .row.r3.made .gv { flex: 0 1 auto; min-width: 0; text-align: right; font-size: 16px; letter-spacing: -0.32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-nid .row.r3.made .rr3 { flex: 0 0 24px; width: 24px; height: 24px; padding: 0; border: 0; background: none; color: #141410; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.ut2-nid .row.r3.made .rr3 svg { width: 22px; height: 22px; }
+.ut2-nid .row.fwd3 { gap: 24px; min-height: 64px; }
+.ut2-nid .row.fwd3 .l .fk { order: -1; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #84827E; }
+.ut2-nid .row.fwd3 .l b { font-weight: 400; font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-nid .tg3 { flex: 0 0 64px; width: 64px; height: 28px; border: 0; border-radius: 16px; background: #C4C2BC; position: relative; padding: 0; cursor: pointer; transition: background .2s; }
+.ut2-nid .tg3 i { position: absolute; left: 2px; top: 2px; width: 39px; height: 24px; border-radius: 12px; background: #fff; transition: transform .2s; }
+.ut2-nid .tg3.on { background: #008924; }
+.ut2-nid .tg3.on i { transform: translateX(21px); }
+
+/* ═══ 21 Oct — alias look (Figma 9666:97473 / 97589) + the avatar spin on open ═══ */
+.ut2-after .vt-av.ut2-lg { border-radius: 50% !important; overflow: hidden !important; display: inline-flex !important; align-items: center; justify-content: center; }
+.ut2-after .vt-av.ut2-lg > img { display: none !important; }
+.ut2-mk { display: block; width: 100%; height: 100%; background: #FF550C; }
+.ut2-after .vt-av.ut2-sv > svg { width: 100%; height: 100%; display: block; }
+/* the lock face of the saved flip: orange disc, black padlock (9712:65932) */
+.ut2-flip-lock { background: #FF550C !important; color: #141410 !important; }
+.ut2-flip-lock svg { width: 50% !important; height: 50% !important; }
+/* the spin: two faces on the Y axis; the back one is the colours swapped */
+.ut2-after .ut2-spinav { perspective: 420px; background: transparent !important; box-shadow: none !important; overflow: visible !important; }
+.ut2-spin { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
+.ut2-f { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.ut2-f.b { transform: rotateY(180deg); }
+.ut2-face { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.ut2-face.bare { border-radius: 0; overflow: visible; }
+.ut2-face.bare img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.ut2-face.mk > svg { width: 53%; height: 53%; display: block; }
+.ut2-face.mk.made > svg { width: 40%; height: auto; }
+.ut2-face.sv > svg { width: 100%; height: 100%; display: block; }
+#d1jDetAv .ut2-face.mk > svg { width: 53%; height: 53%; }
+/* alias item page, all dark (97589): page #141410, blocks #1b1b18, 12px between */
+.ut2-after #vtL3.vt-dark #vtL3Scroll { background: #141410 !important; }
+.ut2-after #vtL3.vt-dark .vt-hero, .ut2-after #vtL3.vt-dark .cg-sec.flush, .ut2-after #vtL3.vt-dark .cg-sec.flush .cg-row, .ut2-after #vtL3.vt-dark .lgm-row, .ut2-after #vtL3.vt-dark .lgm-see { background: #1b1b18 !important; }
+.ut2-after #vtL3.vt-dark .vt-bar { background: #1b1b18 !important; }
+.ut2-after #vtL3.vt-dark .vt-bar-btn { background: rgba(255, 255, 255, .05) !important; color: #F3F1ED !important; }
+.ut2-after #vtL3.vt-dark .cg-gap { background: #141410 !important; height: 12px !important; }
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush), .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) * { background-color: transparent; }
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) { background: #1b1b18 !important; color: #F3F1ED !important; }
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .cg-sec-head, .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .vt-search-row, .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .cg-tabs { background: #1b1b18 !important; }
+.ut2-after #vtL3.vt-dark .cg-sec-title { color: #F3F1ED !important; }
+.ut2-after #vtL3.vt-dark .vt-ic-btn, .ut2-after #vtL3.vt-dark .vt-search-open { background: rgba(255, 255, 255, .05) !important; color: #F3F1ED !important; }
+.ut2-after #vtL3.vt-dark .vt-search-open input { color: #F3F1ED; }
+.ut2-after #vtL3.vt-dark .cg-tabs { border-bottom-color: rgba(255, 255, 255, .1) !important; }
+.ut2-after #vtL3.vt-dark .cg-tabs > * { color: rgba(255, 255, 255, .6) !important; }
+.ut2-after #vtL3.vt-dark .cg-tabs > .on, .ut2-after #vtL3.vt-dark .cg-tabs > [aria-selected="true"] { color: #F3F1ED !important; border-color: #fff !important; }
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .vt-row, .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .av-row, .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) [class*="-row"] { background: #1b1b18 !important; border-color: rgba(255, 255, 255, .1) !important; }
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .vt-row-title, .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .av-row-title, .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) [class*="-title"] { color: #F3F1ED !important; }
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .vt-row-desc, .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .av-row-sub, .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) [class*="-sub"], .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) [class*="-desc"], .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) [class*="date"] { color: rgba(255, 255, 255, .6) !important; }
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .cg-empty, .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) [class*="empty"] { color: rgba(255, 255, 255, .6) !important; }
+.ut2-l3t { margin: 16px 20px 0; font: 400 24px/1.1 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; color: #F3F1ED; letter-spacing: 0; }
+.ut2-after #vtL3.vt-dark .vt-hero.logo-only { padding-bottom: 24px; }
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .cg-h { color: #F3F1ED !important; }
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .cg-s, .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .cg-when { color: rgba(255, 255, 255, .6) !important; }
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .cg-row { border-color: rgba(255, 255, 255, .1) !important; }
+/* dark brand marks on the dark alias page turn white, as the build's top does */
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .vt-av.pic.mark[style*="Hinge"], .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .vt-av.pic.mark[style*="Apple"],
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .vt-av.pic.mark[style*="Uber"], .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .vt-av.pic.mark[style*="Nike"],
+.ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .vt-av.pic.mark[style*="Notion"], .ut2-after #vtL3.vt-dark .cg-sec:not(.flush) .vt-av.pic.mark[style*="Medium"] { filter: brightness(0) invert(1); }
+/* 21 Oct — the phone menu (two-finger long press): the dark tray's shape, three rows */
+.ut2-menu .vtc { height: auto; background: #141410; padding-bottom: 16px; }
+.ut2-menu .vtc::before { display: none; }
+.ut2-menu .mrows { position: relative; margin: 16px 16px 0; display: flex; flex-direction: column; gap: 8px; }
+.ut2-menu .mrow { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 14px 16px; border: 0; border-radius: 12px; background: rgba(255, 255, 255, .08); color: #F3F1ED; text-align: left; font: inherit; cursor: pointer; }
+.ut2-menu .mrow b { font-weight: 400; font-size: 16px; letter-spacing: -0.32px; }
+.ut2-menu .mrow i { font-style: normal; font-size: 14px; letter-spacing: -0.28px; color: rgba(255, 255, 255, .6); }
+.ut2-menu .mrow:active { background: rgba(255, 255, 255, .14); }
+
+/* ═══ 21 Oct, round 7 ═══ */
+/* the opened identity keeps its colour: the flier's dark face never cuts in (the page is flat, on the colour, so there is nothing black to arrive at) */
+.ut2-after .ic-fly .ic-fly-layer.dark { opacity: 0 !important; }
+/* the Vault form once an alias is minted: all dark, as the alias page is (Figma 9714:76147) */
+.ut2-con.af.alias { background: #141410 !important; color: #F3F1ED; }
+.ut2-con.af.alias .ut2-con-back { background: rgba(255, 255, 255, .08); color: #F3F1ED; box-shadow: none; }
+.ut2-con.af.alias h2 { color: #F3F1ED; }
+.ut2-con.af.alias .row { background: #1b1b18; border-bottom-color: rgba(255, 255, 255, .1); color: #F3F1ED; }
+.ut2-con.af.alias .row input, .ut2-con.af.alias .row[data-r="value"] input, .ut2-con.af.alias .row[data-r="exp"] input, .ut2-con.af.alias .row[data-r="cvc"] input { color: #F3F1ED !important; }
+.ut2-con.af.alias .row input::placeholder { color: rgba(255, 255, 255, .6); }
+.ut2-con.af.alias .row.tap span, .ut2-con.af.alias .row.fwd .fk { color: #F3F1ED; }
+.ut2-con.af.alias .row.fwd .fv { color: rgba(255, 255, 255, .6); }
+.ut2-con.af.alias .band { background: #141410; }
+.ut2-con.af.alias .ut2-tgl { background: #C4C2BC; }
+.ut2-con.af.alias .ut2-tgl.on { background: #008924; }
+.ut2-con.af.alias .ut2-con-save { background: #F3F1ED; color: #141410; }
+.ut2-con.af.alias .ut2-con-save:disabled { background: rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .5); }
+.ut2-con.af.alias .row[data-r="value"] span::after { background: #F3F1ED; color: #141410; }
+/* the reroll beside a minted value: 24, same arrow as the identity flow */
+.ut2-con.af .rr { display: none; flex: 0 0 24px; width: 24px; height: 24px; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; align-items: center; justify-content: center; }
+.ut2-con.af.alias .row[data-r="value"] .rr { display: flex; }
+.ut2-con.af .rr svg { width: 22px; height: 22px; }
+.ut2-con.af .rr.spin svg { transition: transform .34s; transform: rotate(360deg); }
+/* the alias tray (Figma 9714:74830): light sheet, 24px head, three 80px rows, Got it */
+.ut2-how2 .vtc { height: auto; left: 0; right: 0; bottom: 0; border-radius: 16px 16px 0 0; background: #F3F1ED; color: #141410; padding: 0 0 12px; cursor: default; }
+.ut2-how2 .vtc::before { display: none; }
+.ut2-how2 .vtc h3 { margin: 0; padding: 32px 20px 16px; background: #fff; font: 400 24px/1.1 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; letter-spacing: 0; color: #141410; }
+.ut2-how2 .vtc .x { display: none; }
+.ut2-how2 .hrow { display: flex; align-items: center; gap: 12px; height: 80px; padding: 20px; box-sizing: border-box; background: #fff; }
+.ut2-how2 .hrow .av { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 12px; background: #141410; color: #F3F1ED; display: flex; align-items: center; justify-content: center; }
+.ut2-how2 .hrow .av svg { width: 24px; height: 24px; display: block; }
+.ut2-how2 .hrow .av .b2 { font: 600 10.5px/1 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; padding: 3px 4px; border: 1.5px solid #F3F1ED; border-radius: 2px; letter-spacing: 0; }
+.ut2-how2 .hrow .tx { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0; }
+.ut2-how2 .hrow b { font-weight: 400; font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-how2 .hrow i { font-style: normal; font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #84827E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ut2-how2 .foot { background: #fff; padding: 10px 10px 22px; }
+.ut2-how2 .ok { display: block; width: 100%; height: 56px; border: 0; border-radius: 240px; background: #0B0B0A; color: #fff; font: inherit; font-size: 16px; letter-spacing: -0.32px; cursor: pointer; }

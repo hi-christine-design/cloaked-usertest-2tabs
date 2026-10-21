@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+  * { margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+  canvas { display: block; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// Celebration burst — two concentric rings of radial bars that merge and separate.
+// Ported from p5.js sketch to vanilla Canvas for embedding.
+// Accepts ?count=N&color=HEX via URL params.
+
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var barCount = parseInt(params.get('count')) || 20;
+  var barColor = '#' + (params.get('color') || 'FF550C');
+
+  var CFG = {
+    midRadius: 0.236,   // fraction of canvas size
+    maxSpread: 0.069,
+    barLength: 0.139,
+    baseSpeed: 0.08,
+    mergePeriod: 2.2,
+    mergeHold: 2.2,
+    thickness: 0.017     // fraction of canvas size
+  };
+
+  var canvas = document.getElementById('c');
+  var ctx = canvas.getContext('2d');
+  var size = 0;
+  var startTime = performance.now() / 1000;
+  var dpr = window.devicePixelRatio || 1;
+
+  function resize() {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    size = Math.min(w, h);
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function mergeS(t) {
+    var raw = (1 + Math.cos(2 * Math.PI * t / CFG.mergePeriod)) / 2;
+    var hold = CFG.mergeHold;
+    return (Math.tanh((raw * 2 - 1) * hold) / Math.tanh(hold) + 1) / 2;
+  }
+
+  function draw() {
+    var w = canvas.width / dpr;
+    var h = canvas.height / dpr;
+    ctx.clearRect(0, 0, w, h);
+
+    var now = performance.now() / 1000 - startTime;
+    var step = (2 * Math.PI) / barCount;
+    var base = now * CFG.baseSpeed;
+    var delay = 0.01; // 10ms stagger per bar
+
+    var midR = CFG.midRadius * size;
+    var spread = CFG.maxSpread * size;
+    var barLen = CFG.barLength * size;
+    var thick = CFG.thickness * size;
+
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.fillStyle = barColor;
+
+    // Inner ring
+    ctx.save();
+    ctx.rotate(base);
+    for (var i = 0; i < barCount; i++) {
+      var s = mergeS(now - i * delay);
+      var r = midR - s * spread;
+      ctx.save();
+      ctx.rotate(i * step);
+      ctx.translate(r, 0);
+      ctx.fillRect(-barLen / 2, -thick / 2, barLen, thick);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // Outer ring — interleaved by half a step
+    ctx.save();
+    ctx.rotate(base + step / 2);
+    for (var i = 0; i < barCount; i++) {
+      var s = mergeS(now - i * delay);
+      var r = midR + s * spread;
+      ctx.save();
+      ctx.rotate(i * step);
+      ctx.translate(r, 0);
+      ctx.fillRect(-barLen / 2, -thick / 2, barLen, thick);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    ctx.restore();
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(draw);
+
+  // Allow parent to update count dynamically
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.action === 'setCount') {
+      barCount = e.data.count || barCount;
+    }
+    if (e.data && e.data.action === 'setColor') {
+      barColor = e.data.color || barColor;
+    }
+  });
+})();
+</script>
+</body>
+</html>

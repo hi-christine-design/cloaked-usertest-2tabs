@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script>
+/* Christine, 21 Oct: on a phone the launcher's three columns don't fit — the
+   start page (m.html, Figma 9714:69420) takes over. ?desktop=1 keeps this one. */
+(function () { try { if (Math.min(screen.width, innerWidth) < 760 && !/[?&]desktop=1/.test(location.search)) location.replace('m.html'); } catch (e) {} })();
+</script>
+<title>Identity Round 2 · 2 Tabs</title>
+<style>
+  /* Layout and values from Figma Identity—WIP 9473:52370 (16 Oct 2026).
+     Controls (segments, prev / next, replay) are not in the frame yet; they
+     reuse the frame's own pieces: the selection pill (white = on,
+     white 15% = off), 14px body, 1px white-10% divider. */
+  :root {
+    --bg: #000;
+    --panel: #141410;              /* banner/text_primary */
+    --text-1: #f3f1ed;             /* global/text/primary (dark) */
+    --text-2: rgba(255,255,255,.6);/* global/text/secondary (dark) */
+    --line: rgba(255,255,255,.1);  /* Line 1886 */
+    --on: #fff;                    /* selection/selection-on-container */
+    --off: rgba(255,255,255,.15);  /* selection/selection-off-container */
+    --ink: #0b0b0a;                /* check glyph */
+    --hover: rgba(255,255,255,.04);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    display: flex; background: var(--bg); color: var(--text-1);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', 'Helvetica Neue', sans-serif;
+    font-size: 12px; line-height: 1.2; letter-spacing: -0.24px;   /* 12px body (Christine, 16 Oct): reads lighter than the frame’s 14px */
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  .t2 { color: var(--text-2); }
+  .rule { height: 1px; background: var(--line); flex: 0 0 1px; width: 100%; }
+
+  /* ── Figma 9566:69873 (Christine, 19 Oct): controls at the foot of the
+     left panel, the checklist on the right with the picked row opening
+     into Where / After / Why; everything 10px. ── */
+  body { font-size: 10px; line-height: 1.3; letter-spacing: 0; }
+  .left {
+    width: 358px; min-width: 358px; height: 100vh; background: var(--panel);
+    display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;
+  }
+  .title { padding: 24px 24px 0; font-size: 20px; line-height: 1.2; letter-spacing: .1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* controls: label left, square segments right, 0.5px rules between */
+  .controls { display: flex; flex-direction: column; gap: 11px; padding: 0 0 24px; }
+  .controls .rule { height: .5px; flex: 0 0 .5px; background: var(--line); }
+  .ctl { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 25px; letter-spacing: -0.2px; line-height: 1.2; }
+  .ctl > span, .count, .seg button { white-space: nowrap; }
+  .ctl[hidden], .rule[hidden] { display: none; }
+  .seg { display: inline-flex; gap: 5px; }
+  .seg button {
+    height: 24px; min-width: 54px; padding: 0 7.5px; border: .75px solid rgba(255,255,255,.2); border-radius: 0;
+    color: var(--text-2); letter-spacing: -0.2px; transition: background .15s, color .15s;
+  }
+  .seg button:hover { color: var(--text-1); }
+  .seg button.on { background: var(--text-1); border-color: var(--text-1); color: #141410; }
+
+  /* ── phone ── */
+  .stage { flex: 1; min-width: 0; position: relative; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .phone {
+    width: 390px; height: 844px; border-radius: 56px; overflow: hidden; overflow: clip; clip-path: inset(0 round 56px); contain: paint; isolation: isolate; will-change: transform; background: #fff;
+    flex: 0 0 auto; transform-origin: center;
+  }
+  .phone iframe { display: block; width: 390px; height: 844px; border: 0; clip-path: inset(0); }
+  .loading {
+    position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
+    color: var(--text-2); font-size: 10px; opacity: 0; transition: opacity .2s; white-space: nowrap;
+  }
+  .loading.on { opacity: 1; }
+
+  /* ── right panel: the checklist ── */
+  .right {
+    width: 358px; min-width: 358px; height: 100vh; background: var(--panel);
+    display: flex; flex-direction: column;
+  }
+  .check { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; padding: 0 0 24px; }
+  .check::-webkit-scrollbar { display: none; }
+  .check .rule { flex: 0 0 1px; }
+  .check .ttl { padding: 20px 20px 16px; color: var(--text-2); }
+  .check .lab { flex: 0 0 auto; padding: 24px 20px 10px; color: var(--text-2); }
+  .check .grp { flex: 0 0 auto; padding: 28px 20px 12px; }
+  .check .grp .gt { display: flex; gap: 8px; color: var(--text-1); font-size: 13px; line-height: 1.25; letter-spacing: -0.2px; }
+  .check .grp .gn { flex: 0 0 auto; color: var(--text-2); }
+  .check .grp .gw { margin-top: 6px; padding-left: 24px; color: var(--text-2); }
+  .check .grp.plain { padding-top: 32px; }
+  .check .grp.plain .gt { color: var(--text-2); font-size: 10px; }
+  .check .grp.plain .gw { padding-left: 0; }
+  .check .row .l { padding-left: 24px; }
+  .row {
+    flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; min-height: 40px; padding: 8px 20px; text-align: left; color: var(--text-2);
+    transition: background .15s;
+  }
+  .row:hover { background: var(--hover); }
+  .row.on { background: rgba(132,130,126,.2); min-height: 57px; }
+  .row .l { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .row .n { width: 24px; flex: 0 0 24px; color: var(--text-2); }
+  .row .x { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color .15s; }
+  .row:hover .x, .row.on .x { color: var(--text-1); }
+  .pill {
+    flex: 0 0 24px; width: 24px; height: 24px; border-radius: 60px; background: var(--off);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pill img { width: 18px; height: 18px; display: none; }
+  .row.done .pill { background: var(--on); }
+  .row.done .pill img { display: block; }
+
+  /* the picked row opens: #2a2a26, blocks 24 apart with 1px rules */
+  .det { flex: 0 0 auto; background: #2a2a26; display: flex; flex-direction: column; gap: 24px; padding: 0 0 24px; }
+  .det > .rule { flex: 0 0 1px; }
+  .blk { display: flex; flex-direction: column; gap: 8px; padding: 0 24px; }
+  .blk .k { color: var(--text-2); display: flex; align-items: center; gap: 8px; }
+  .blk p { line-height: 1.3; }
+  .blk p + p { margin-top: 6px; }
+  .blk .who { color: var(--text-2); }
+  .blk .seg button { height: 20px; min-width: 44px; }
+  .det .again {
+    align-self: flex-start; margin: 0 24px; height: 24px; padding: 0 10px; border: .75px solid rgba(255,255,255,.2);
+    color: var(--text-1); display: inline-flex; align-items: center; gap: 6px;
+  }
+  .det .again:hover { background: var(--hover); }
+  .det .again svg { width: 12px; height: 12px; }
+
+  @media (max-width: 1240px) {
+    .left, .right { width: 300px; min-width: 300px; }
+    .ctl { padding: 0 16px; }
+    .seg button { min-width: 0; }
+  }
+  @media (max-width: 960px) {
+    html, body { overflow: auto; height: auto; }
+    body { flex-direction: column; }
+    .left, .right { width: 100%; min-width: 0; height: auto; }
+    .stage { height: 92vh; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="left">
+  <div class="title">Identity Round 2 · 2 Tabs</div>
+
+  <div class="controls">
+    <div class="ctl"><span class="t2">Build</span>
+      <div class="seg" id="segDay"><button data-v="DayOne">Day 01</button><button data-v="Day30">Day 30</button></div></div>
+    <!-- 2 Tabs only (Christine, 21 Oct): no Tabs control; segCards kept hidden for the script -->
+    <div class="ctl" hidden><span class="t2">Tabs</span>
+      <div class="seg" id="segCards"><button data-v="tab">2 Tabs</button></div></div>
+    <!-- Christine, 21 Oct: Day 01 starts from the onboarding; this skips it (home at once) -->
+    <div class="rule" id="ruleSkip"></div>
+    <div class="ctl" id="ctlSkip"><span class="t2">Skip onboarding</span>
+      <div class="seg" id="segSkip"><button data-v="off">Off</button><button data-v="on">On</button></div></div>
+    <div class="rule" id="ruleFold"></div>
+    <div class="ctl" id="ctlFold"><span class="t2">Folders</span>
+      <div class="seg" id="segFold"><button data-v="cards">ID cards</button><button data-v="list">Folder list</button></div></div>
+    <div class="rule" id="ruleIdName"></div>
+    <div class="ctl" id="ctlIdName"><span class="t2">Tab name</span>
+      <div class="seg" id="segIdName"><button data-v="identity">Identity</button><button data-v="aliasid">Alias ID</button></div></div>
+  </div>
+</aside>
+
+<main class="stage">
+  <div class="phone"><iframe id="frame" title="Cloaked prototype"></iframe></div>
+  <div class="loading" id="loading">Opening the screen…</div>
+</main>
+
+<aside class="right">
+  <nav class="check" id="check"><div class="ttl">Checklist</div></nav>
+</aside>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────
+   Launcher for UserTest_V2. One checklist item = one slide. Picking one
+   loads the prototype on that screen (?ut2go=<id>) and the build's ut2.js
+   rings what changed. Before = the V2 build exactly as tested.
+   ───────────────────────────────────────────────────────────────────────── */
+/* Items and wording follow Notion "Identities — Prototype To-do"
+   (3fba1312280c81798c23daef2051cd48), 16 Oct 2026. done = built in this
+   prototype (has a Before / After and a ring); the rest only open the
+   screen they belong to. */
+/* Christine, 20 Oct: the checklist reads as a few conversation points, not
+   twenty bullets — each group is one thing to say, with the research line
+   that asks for it; the rows under it are the changes that answer it. */
+var GROUPS = {
+  rename: { n: '01', t: 'Rename “ID card”', why: '9 of 22 pushed back on the name. People liked the cards, not a separate tab.' },
+  alias:  { n: '02', t: 'Make aliases clear', why: '12 of 22 hit friction creating an alias. 5 of 22 weren’t sure if “Add” generates or uses real info.' },
+  guide:  { n: '03', t: 'More guidance', why: '6 of 22 mixed up alias, identity and Vault. 9 of 22 weren’t sure how an alias works once used.' },
+  fast:   { n: '04', t: 'Faster creation', why: 'Five screens is long. The “+” opened an empty identity.' },
+  same:   { n: '', t: 'Things we didn’t change', why: '' },
+  open:   { n: '', t: 'Still open', why: 'Not built yet, to decide, or Cloaked handles.' }
+};
+var SLIDES = [
+  { id: 'c1', group: 'rename', done: true, title: 'Rename “ID Card” (keep the cards)',
+    where: 'ID card tab · title · tab bar · help sheet · create flow',
+    before: '“ID card” on the tab, the title, the help sheet and the create flow.',
+    after: 'One name everywhere, set by Tabs on the left: 2 Tabs calls it Identity, 1 Tab (Toggle) calls it Folder.',
+    stat: '9 of 22 pushed back on the name',
+    quote: 'An ID card has my identification on it. An alias is the opposite of that.', who: 'Cade',
+    note: 'Cover art and onboarding videos still say “ID card”. The text is part of the image.' },
+  { id: 'v20', group: 'rename', done: true, plain: true, title: 'ID cards only group; aliases are made in the Vault',
+    where: 'ID card tab › Create a new [Name] (under the cards) › step 2 · Vault › + › Generate an alias',
+    before: 'Aliases can be made in two places, the Vault and the ID card flow. The ID card tab’s + and the “Creating your card” animation both say “new”.',
+    after: 'An ID card is for grouping. The + is gone: under the cards sits a “+ Create a new [Name]” row, like Add an item’s rows (21 Oct, Figma 9636:86141; was a “+ Group aliases by situation” pill). Its flow is Figma 9639:86478: “Name the [Name]” (field + purpose pills), then “Add to [Name]” — Phone · Email · Payment cards, each “+ Add” / “Change” opening your aliases of that kind or “Generate a … alias” — and Continue opens the new card. Step 2 goes straight to “Pick from your Vault”, the pick sheets say “New aliases are made in the Vault · Go to Vault”, and the card lands ready with no minting animation.',
+    stat: 'PS team, 16 Oct: making aliases in both places confuses people',
+    quote: 'Aliases have more than one job. Hiding you when you contact people, where the inbox matters. And logins, Apple “Hide my email” style: some people make one per site and end up with 100–200, others keep one for all marketing.',
+    who: 'So aliases can’t be situation-only, and the Vault is the one place to make them',
+    note: '05 (Generate an alias in the + menu) and 06 (How it works) now run in the Vault flow because of this.' },
+  { id: 'c3', group: 'alias', done: true, title: '“Generate” comes first',
+    where: 'Vault › +',
+    before: '“Add an email” first, the alias second.',
+    after: 'No Email / Phone tray any more: “Add an item” leads with “Create alias”, which makes the alias. Covered by “Create alias leads the + menu”.',
+    stat: '5 of 22 weren’t sure if “Add” generates or uses real info',
+    quote: 'I don’t think I’m adding it, I would think it’s generating.', who: 'Kristina W.' },
+  { id: 'c6', group: 'alias', done: true, title: 'Aliases are made on the ID card page',
+    where: '[Name] tab › Create a new [Name] (1 Tab: ID cards › Create a new ID card)',
+    before: 'Six tiles. The alias only shows up after you pick Email or Phone.',
+    after: 'Add an item is a list (Figma 9546:61073) — Phone · Email · Password · Payment card · Others — with no alias row (21 Oct). Aliases are made where they are grouped (Figma 9706:62637): Identities › Create a new identity → “I wanna use the identity for” (field + purpose pills) → “Add items manually”: Phone · Email · Payment cards, each with Generate (a new alias, at once) and + Add (from your Vault); Show more adds Bank Account, Secure notes, Address… (+ Add) → Continue opens the new identity.',
+    stat: '12 of 22 hit friction creating an alias',
+    quote: '‘Hide your identity with alias’ is easy to miss while managing passwords.', who: 'Jill C.',
+    note: 'Tiles are 36px shorter so Import stays on screen.' },
+  { id: 'v07', group: 'alias', done: true, day: 'Day30', title: 'Aliases look different (thumbnail + Alias tab)',
+    where: 'Vault · every row',
+    before: 'Your real number and an alias number look exactly the same in the list.',
+    after: 'Every alias wears a small black thumbnail on its avatar’s corner with the alias mark (20 Oct; was a black “Alias” text tag, Figma 9544:56508). Your own info has none, so the aliases stand out. An “Alias” tab beside All / Password / Phone… lists only aliases.',
+    stat: 'Adi R. couldn’t tell if a card held real info until he opened it',
+    quote: 'Why do I need to see my own phone number?', who: 'Cade',
+    note: 'Alias = black, the same colour rule the cards use. “Yours” tag dropped 19 Oct. Day 01 has only your own items, so this opens Day 30.' },
+  { id: 'c4', group: 'alias', done: true, title: 'Your own Phone and Email, rows of their own',
+    where: 'Vault › +',
+    before: '“Add an email” right next to “Create an alias email”. Same style, no label.',
+    after: 'No tray: your own number and address are the “Phone” and “Email” rows in “Add an item”, apart from “Create alias”. (21 Oct: back to two rows — the one-form “Contact” of 20 Oct was dropped). Covered by “Create alias leads the + menu”.',
+    stat: '5 of 22, same theme',
+    quote: 'Did this just give away my real email to a website?', who: 'Kristina W., after tapping “Add an email”' },
+  { id: 'v08', group: 'alias', done: true, day: 'Day30', title: 'Forward to, out in the open on the alias page',
+    where: 'Vault › an alias (Day 30: email “em11”)',
+    before: 'Nothing on an alias says where its mail or calls go: “Forward to” is hidden under See Details.',
+    after: 'On an alias’s own page “Forward to” (your real email or number, with its switch) sits right under the value. Only Temporary pause and Notes stay behind See Details. The Vault list stays as it was (20 Oct: the “Forwards to” line under each row moved here).',
+    stat: 'Few knew forwarding is a setting',
+    quote: 'There’s no visual indicator that something different is occurring.', who: 'Patrick C.',
+    note: 'Day 30 only. Day 01 has no aliases yet.' },
+  { id: 'c2', group: 'guide', done: true, title: 'One vocabulary + a “?” beside each title',
+    where: 'Vault tab · ID card tab · Day 01 search',
+    before: '“Vaults”, “Vault”, “Identity name” and “Create Identity” for overlapping things. No section says what it holds.',
+    after: 'Vault is what you saved. [Name] is a group for one situation. Alias is one email, phone or card Cloaked made. A “?” beside each title says so in one line (Vault: “Your saved logins, emails, phones and cards. Real ones and aliases.”).',
+    stat: '6 of 22 mixed up alias, identity and Vault',
+    quote: 'I wouldn’t have gone to the vault unless you told me.', who: 'Margaret B.' },
+  { id: 'c7', group: 'guide', done: true, title: 'After creating: “How it works” step',
+    where: 'Vault › + › Generate an alias › create',
+    before: 'The alias is created. Nothing says where its messages go.',
+    after: 'On the new alias’s page, a sheet slides up (Figma 9561:65463): messages come to you, sites only see the alias, login codes still arrive — dark icons (arrow out, hidden eye, 2FA) and one Got it button.',
+    stat: '9 of 22 weren’t sure how an alias works once used',
+    quote: 'Will 2FA codes still reach me if I switch my Apple email to an alias?', who: 'Kenneth M.',
+    note: 'Moved to the Vault with 20: aliases are made there now. The demo types a title and creates one for you.' },
+  { id: 'v22', group: 'guide', done: true, day: 'DayOne', plain: true, title: 'Onboarding stays on Home, outside the Vault',
+    where: 'Day 01 · Home and Vault',
+    before: 'The Vault opens straight onto the list. The only intro is a two-page dark one on the ID card tab (“Every email, phone number and signup hands out the real you” → “Be yourself, without exposing yourself”). Nothing says what the Vault is, where an alias’s messages go or what folders are for.',
+    after: 'Home keeps the “Be yourself without exposing yourself / Create your first alias” card, which opens the alias onboarding. The Vault has no intro or banner of its own, only its one-line description: “Your saved logins, emails, phones and cards. Real ones and aliases.”',
+    stat: 'PS team, 21 Oct', plain: true,
+    quote: 'The Vault intro page and the Inside-vault option (Home’s card moved into the Vault) were tried on 20 Oct and dropped: onboarding stays outside the Vault.', who: 'PS team' },
+  { id: 'v10', group: 'guide', done: true, title: 'Explain the keyword step; “why” is skippable',
+    where: 'Vault › + › Generate an alias › + Include special words · ID card tab › + (first step)',
+    before: 'The special-words box doesn’t say the words end up in the address. The ID card’s first step can’t be skipped.',
+    after: 'A line above the box: “These words go into your new address, like trip.river@cloaked.com.” The ID card’s first step has a Skip button.',
+    stat: '5 of 22 didn’t know why it asked', plain: true,
+    quote: 'Kristina W., Kenneth M. and James S. only understood once the words showed up in the address.', who: 'Justin B. found “why” intrusive; Cade wants it, so it stays, skippable' },
+  { id: 'v14', group: 'guide', done: true, day: 'DayOne', title: 'New opening copy on Home (Cloaked team)',
+    where: 'Day 01 Home · headline and the alias card',
+    before: '“Margaret, start here. Biggest difference.” Card: “Create alias / Hide your real ones”.',
+    after: '“Every sign up hands out the real you.” Card: “Be yourself without exposing yourself / Create your first alias”.',
+    stat: 'Cloaked team, 16 Oct', plain: true,
+    quote: 'The new hook felt stronger in the room.', who: 'Current copy reads as grammatically off',
+    note: 'Day 01 only. Day 30 Home has no opening copy.' },
+  { id: 'a1', group: 'guide', done: true, title: 'Activity: All · Inbox · Urgent · Transactions',
+    where: 'Activity (both days)',
+    before: 'Three stat tiles (Monitor data · Block spam · Use an alias) and a fourth “See breakdown” tile sit between the total and the list. The state tabs read All · Unread · Compromised (Day 30: Critical).',
+    after: 'Nothing above the tabs: no total, no Today pill, no stat tiles, no See breakdown (20 Oct). The tabs read All · Inbox · Urgent · Transactions — Transactions shows only payments (Day 01: “No transactions yet”).',
+    stat: '3 of Jack’s 10 were unclear on the main Activity tab', plain: true,
+    quote: 'The Cloaked team dislikes the Inbox tab; 7 of 10 want each alias’s activity in one place (see “Cut the Inbox tab?” under Still open).', who: 'Christine, 20 Oct' },
+  { id: 't11', group: 'fast', done: true, day: 'DayOne', title: 'First action = create; customize later',
+    where: 'Day 01 Home card · Vault › +',
+    before: 'The Cloaked team’s “+” opened an empty identity. Leo L. saw “Later” on onboarding but no “Create”.',
+    after: 'Creating comes first. The Home card says “Create your first alias”, the Vault’s + leads with “Generate an alias”, and Create lands on the finished alias (see “Creating opens the item’s page directly”). Changes come after, from Edit on the item page.',
+    stat: 'Cloaked team: “+” opens an empty identity, which confuses new users', plain: true,
+    quote: 'Leo L. saw “Later” but no “Create” on onboarding.', who: 'Covered by “Create alias leads the + menu”, the new opening copy and “Creating opens the item’s page directly”',
+    note: 'No change of its own. The ring shows the Home card’s new first action.' },
+  { id: 't13', group: 'fast', done: true, day: 'Day30', title: 'Fast path: one field first',
+    where: 'Day 30 · Vault › + › any create form (password, email, alias…)',
+    before: 'Every create form ends with an “ID card · Assign” row, one more thing to decide before you can save.',
+    after: 'That row waits behind “+ Add folder or tag”. Tap it and the Assign row appears; skip it and the form is just the item itself.',
+    stat: 'Five screens is long for experienced users', plain: true,
+    quote: 'Nathan S. found the “+” flow slower than today’s autofill.', who: 'Fewer fields on screen first',
+    note: 'Day 01’s forms never had this row. The ID card row is the build’s “folder for anything”, so it carries the folder/tag label here.' },
+  { id: 'v21', group: 'fast', done: true, plain: true, title: 'Creating opens the item’s page directly',
+    where: 'Vault › + › any item › Create / Continue',
+    before: 'After you create something, a full-colour “Your email is created!” page plays an animation, then asks for Custom avatar or Done.',
+    after: 'No in-between page. Create goes straight to the finished item’s own page, the same page Done used to open. Aliases then get the “How your alias works” sheet there.',
+    stat: 'PS team, 18 Oct',
+    quote: 'The saved page and its motion are one more stop before the thing you made.',
+    who: 'Covers every creation: alias email and phone, password, card, bank, others',
+    note: '“Custom avatar” lived only on that page, so it drops out of this step. The demo creates an alias called “Newsletters”.' },
+  { id: 'v09', group: 'same', kept: true, noCheck: true, status: 'Not changed', title: 'Risk level',
+    detail: ['Home already explains the risk level, so this round leaves it as the build has it.', 'Research: 6 of 22 confused by risk level. Kristina W.: “Okay, great, now what?”'] },
+  { id: 't15', group: 'open', tab: 'home', status: 'To do', title: 'Home: horizontal card carousel, most active identity on top',
+    detail: ['Pinned is right, the vertical stack is wrong. Apple Pay style.', 'Up to 3 shown one by one, 4+ stack. The top card shows texts, emails and pending actions.'] },
+  { id: 't16', group: 'open', tab: 'home', status: 'To do', title: 'Home: show the risk strip; every widget field is tappable',
+    detail: ['The widget buries the risk “math.”', 'Rippling: username, password, code from one tap.'] },
+  { id: 't17', group: 'open', tab: 'vaults', status: 'To do', title: 'Paste a URL → identity is generated',
+    detail: ['Today: create email, wait for logo, delete default name, rename, repeat.'] },
+  { id: 't18', group: 'open', tab: 'idcard', status: 'To do', title: 'Unused identities auto-demote after ~30 days',
+    detail: ['E.g. Cancun trip, apartment hunting.', 'Users agree: 6 of 22 want an easy way to retire one.'] },
+  { id: 'd4', group: 'open', tab: 'activity', status: 'To decide', title: 'Cut the Inbox tab? (keep activity per alias)',
+    detail: ['Cloaked team dislikes the Inbox tab.', '7 of Jack’s 10 want each alias’s activity in one place; 3 of 10 unclear on the main Activity tab.', 'Cloaked is splitting Activity into two tabs.'] },
+  { id: 'd5', group: 'open', tab: 'vaults', status: 'To decide', title: 'Accounts vs People split: does it conflict with Folders?',
+    detail: ['Replaces password / phone / email categories.', 'Cloaked team: “No tags + categories + folders + vaults all at once.”'] },
+  { id: 'k3', group: 'open', tab: 'idcard', status: 'Cloaked handles', noCheck: true, title: 'MyCloaked ID onboarding',
+    detail: ['David wants to retest the same cohort once it is live.'] }
+];
+var NAMES = { identity: 'Identity', folder: 'Folder', aliasid: 'Alias ID', idcard: 'ID card' };
+var S = { i: 0, day: 'Day30', mode: 'after', name: 'identity', cards: 'tab', intro: 'inside', fold: 'cards', idname: 'identity', skip: 'off' };
+try { var saved = JSON.parse(localStorage.getItem('ut2-launcher-2tabs') || 'null'); if (saved) Object.assign(S, saved); } catch (e) {}
+if (!NAMES[S.name]) S.name = 'identity';
+/* Christine, 19 Oct: always open with nothing picked, on the plain prototype;
+   picking a row plays its flow, picking it again unpicks it (S.i = -1) */
+S.i = -1;
+function curS() { return S.i >= 0 ? SLIDES[S.i] : null; }
+
+var $ = function (id) { return document.getElementById(id); };
+var frame = $('frame'), slide = $('slide'), loading = $('loading'), check = $('check');
+var esc = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+
+/* checklist rows, grouped like the Notion page */
+var lastGroup = null;
+SLIDES.forEach(function (s, i) {
+  if (s.group !== lastGroup) {
+    lastGroup = s.group;
+    var G = GROUPS[s.group] || { n: '', t: s.group, why: '' };
+    var g = document.createElement('div'); g.className = 'grp' + (G.n ? '' : ' plain');
+    g.innerHTML = '<div class="gt">' + (G.n ? '<span class="gn">' + G.n + '</span>' : '') + '<span>' + esc(G.t) + '</span></div>' +
+      (G.why ? '<div class="gw">' + esc(G.why) + '</div>' : '');
+    check.appendChild(g);
+    var r0 = document.createElement('div'); r0.className = 'rule'; check.appendChild(r0);
+  }
+  var b = document.createElement('button');
+  b.className = 'row' + (s.done ? ' done' : '') + (s.noCheck ? ' nocheck' : ''); b.dataset.i = i;
+  b.title = s.title;
+  b.innerHTML = '<span class="l"><span class="x">' + esc(s.title) + '</span></span>' +
+    (s.noCheck ? '' : '<span class="pill"><img src="assets/launcher/check.svg" alt=""></span>');
+  b.addEventListener('click', function () { if (i === S.i) unpick(); else go(i); });
+  check.appendChild(b);
+  var r = document.createElement('div'); r.className = 'rule'; check.appendChild(r);
+});
+
+function seg(id, key) {
+  $(id).addEventListener('click', function (e) {
+    var c = curS();
+    var b = e.target.closest('button');
+    if (!b || (S[key] === b.dataset.v && !(key === 'cards' && !S.cardsPicked && c && c.cards))) return;
+    if (key === 'cards') S.cardsPicked = true;   /* a pick beats slide 19's default */
+    S[key] = b.dataset.v; paint(); load();
+  });
+}
+seg('segDay', 'day'); seg('segCards', 'cards'); seg('segFold', 'fold'); seg('segIdName', 'idname'); seg('segSkip', 'skip');
+/* Day 01 opens on its onboarding (the build's welcome flow) unless Skip onboarding is on; Day 30 has none */
+function introQ(day) { return day === 'DayOne' && S.skip === 'on' ? '&intro=0' : ''; }
+
+function cardsOf(s) { return 'tab'; }   /* 2 Tabs only */
+/* Christine, 20 Oct: the Vault intro is the banner in both versions (no Page
+   option), and the name comes with Tabs — 1 Tab (Toggle) says Folder, 2 Tabs
+   Identity — so neither has a control of its own any more. */
+/* Christine, 20 Oct: two onboarding options — inside (Home's alias card moves
+   into the Vault and opens the intro) / outside (Home as it is, the Vault only
+   has its one-line description) */
+function introOf(s) { return 'outside'; }   /* Christine, 21 Oct: onboarding stays outside the Vault — no option */
+/* 1 Tab has two versions (20 Oct): Folders = the ID card wallet, or a folder list where ID cards are Vault items — then they are identities again */
+/* Christine, 21 Oct: 2 Tabs only — the second tab can be called “Alias ID” instead of Identity (row “Tab name”) */
+function nameOf(s) { return 'identity'; }   /* 2 Tabs version: always Identity (21 Oct) */   /* 21 Oct: 1 Tab has one version — ID cards top right, real folders in the toggle */
+function foldOf(s) { return ''; }   /* 21 Oct: the Folder list version is retired (code stays behind ut2fold=list) */
+
+function block(k, body) { return '<div class="blk"><div class="k">' + k + '</div>' + body + '</div><div class="rule"></div>'; }
+var det = document.createElement('div'); det.className = 'det';
+var AGAIN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.7h3.7"/></svg>';
+
+function paint() {
+  var s = curS();
+  var cur = { day: (s && s.day) || S.day, name: nameOf(s), cards: cardsOf(s), intro: introOf(s), fold: S.fold === 'list' ? 'list' : 'cards', idname: S.idname === 'aliasid' ? 'aliasid' : 'identity', skip: S.skip === 'on' ? 'on' : 'off' };   /* show the build actually loaded */
+  $('ctlSkip').hidden = $('ruleSkip').hidden = cur.day !== 'DayOne';   /* only Day 01 has an onboarding */
+  $('ctlFold').hidden = $('ruleFold').hidden = true;   /* 21 Oct: one 1 Tab version, no Folders control */
+  $('ctlIdName').hidden = $('ruleIdName').hidden = true;   /* no Tab name control in this version */
+  [['segDay', 'day'], ['segCards', 'cards'], ['segFold', 'fold'], ['segIdName', 'idname'], ['segSkip', 'skip']].forEach(function (p) {
+    $(p[0]).querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === cur[p[1]]); });
+  });
+  check.querySelectorAll('.row').forEach(function (b) { b.classList.toggle('on', +b.dataset.i === S.i); });
+  if (!s) {
+    if (det.parentNode) det.parentNode.removeChild(det);
+    try { localStorage.setItem('ut2-launcher-2tabs', JSON.stringify(S)); } catch (e) {}
+    return;
+  }
+  var fill = function (t) { return esc(t).replace(/\[Name\]/g, NAMES[nameOf(s)]); };
+  var html = '<div class="rule"></div>';
+  if (s.done) {
+    var modeSeg = '<div class="seg" id="segMode"><button data-v="before"' + (S.mode === 'before' ? ' class="on"' : '') + '>Before</button><button data-v="after"' + (S.mode === 'after' ? ' class="on"' : '') + '>After</button></div>';
+    html += block('Where', '<p>' + fill(s.where) + '</p>');
+    html += '<div class="blk"><div class="k">' + modeSeg + '</div><p>' + fill(S.mode === 'after' ? s.after : s.before) + '</p></div><div class="rule"></div>';
+    var qt = s.plain ? fill(s.quote) : '“' + fill(s.quote) + '”';
+    html += block('Why', '<p>' + fill(s.stat) + '</p><p>' + qt + '</p><p class="who">' + fill(s.who) + '</p>');
+    if (s.note) html += block('Note', '<p>' + fill(s.note) + '</p>');
+  } else {
+    html += block('Status', '<p>' + esc(s.status) + (s.kept ? ' · the prototype shows the build as it is' : ' · not in this prototype yet') + '</p>');
+    html += block('Detail', s.detail.map(function (d) { return '<p>' + fill(d) + '</p>'; }).join(''));
+  }
+  html += '<button class="again" type="button">' + AGAIN_SVG + '<span>Show again</span></button>';
+  det.innerHTML = html;
+  var row = check.querySelector('.row.on');
+  /* the row is followed by its rule; the panel goes between them */
+  if (row) row.parentNode.insertBefore(det, row.nextSibling);
+  var sm = $('segMode');
+  if (sm) sm.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b || S.mode === b.dataset.v) return;
+    S.mode = b.dataset.v; paint(); load();
+  });
+  det.querySelector('.again').onclick = load;
+  /* keep the picked row in view inside the list only (never the page) */
+  if (row) {
+    var top = row.offsetTop - check.offsetTop, bottom = top + row.offsetHeight + det.offsetHeight;
+    if (top < check.scrollTop + 40) check.scrollTop = Math.max(0, top - 40);
+    else if (bottom > check.scrollTop + check.clientHeight) check.scrollTop = Math.min(top - 40, bottom - check.clientHeight + 24);
+  }
+  try { localStorage.setItem('ut2-launcher-2tabs', JSON.stringify(S)); } catch (e) {}
+}
+
+var TABS = { a1: 'activity', c1: 'idcard', c2: 'vaults', c3: 'vaults', c4: 'vaults', c6: 'vaults', c7: 'vaults', v07: 'vaults', v08: 'vaults', v09: 'idcard', v10: 'vaults', v14: 'home', t11: 'home', t13: 'vaults', v20: 'idcard', v21: 'vaults', t19: 'vaults', v22: 'vaults' };
+var hideT;
+function load() {
+  var s = curS();
+  if (!s) {   /* nothing picked: the plain prototype, home, no ring */
+    frame.src = 'V2/' + S.day + '/app.html?skip=1&tab=home' + introQ(S.day) +
+      '&ut2=after&ut2name=' + nameOf(null) + '&ut2cards=' + cardsOf(null) + foldOf(null) + '&ut2intro=' + introOf(null) + '&v=20261021-ut97';
+    loading.textContent = 'Opening the prototype…';
+    loading.classList.add('on');
+    clearTimeout(hideT); hideT = setTimeout(function () { loading.classList.remove('on'); }, 2500);
+    return;
+  }
+  var day = s.day || S.day;   /* some changes only exist on one day */
+  frame.src = 'V2/' + day + '/app.html?skip=1&tab=' + (TABS[s.id] || s.tab || 'home') +
+    introQ(day) +
+    '&ut2=' + (s.done ? S.mode : 'after') + '&ut2name=' + nameOf(s) +
+    '&ut2cards=' + cardsOf(s) + foldOf(s) + '&ut2intro=' + introOf(s) +
+    (s.done ? '&ut2go=' + s.id : '') + '&v=20261021-ut97';
+  loading.textContent = (s.id === 'c7' || (s.id === 'v09' && (s.day || S.day) === 'DayOne')) ? 'Playing the flow…' : 'Opening the screen…';
+  loading.classList.add('on');
+  clearTimeout(hideT); hideT = setTimeout(function () { loading.classList.remove('on'); }, s.id === 'c7' ? 16000 : 2500);
+}
+window.addEventListener('message', function (e) { if (e.data && e.data.ut2 === 'ready') loading.classList.remove('on'); });
+
+function go(i) {
+  i = Math.max(0, Math.min(SLIDES.length - 1, i));
+  if (i === S.i && frame.src) return;
+  S.i = i; paint(); load();
+}
+function unpick() { S.i = -1; paint(); load(); }
+document.addEventListener('keydown', function (e) {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); go(S.i + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); go(S.i - 1); }
+  else if (e.key === 'Escape' && S.i >= 0) unpick();
+  else if ((e.key === 'b' || e.key === 'B') && curS() && curS().done) { S.mode = S.mode === 'after' ? 'before' : 'after'; paint(); load(); }
+});
+
+var phoneBox = document.querySelector('.phone');
+phoneBox.addEventListener('scroll', function () { phoneBox.scrollTop = 0; phoneBox.scrollLeft = 0; });
+var stage = document.querySelector('.stage');
+function fit() {
+  var cs = getComputedStyle(stage);
+  var w = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  var h = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  var sc = Math.max(.3, Math.min(1, h / 844, w / 390));
+  phoneBox.style.transform = sc < 1 ? 'scale(' + sc + ')' : 'none';
+}
+fit(); window.addEventListener('resize', fit);
+if (window.ResizeObserver) new ResizeObserver(fit).observe(stage);
+
+paint(); load();
+</script>
+</body>
+</html>

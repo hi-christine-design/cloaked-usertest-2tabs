@@ -1,0 +1,19 @@
+
+/* Photo-derived confirmation surfaces: solid AA ink, no translucent controls. */
+.photo-theme .d1j-gen.lit, #nqGen.photo-theme.done { background: var(--photo-ground) !important; }
+.photo-theme .d1j-gen.lit .d1j-h1, #nqGen.photo-theme.done .nq-gh { color: var(--photo-ink) !important; transition: none; }
+.photo-theme:has(.d1j-gen.lit) .d1j-x, #nqGen.photo-theme.done .nq-x,
+.photo-theme .d1j-gen.lit .d1j-cta.ghost, #nqGen.photo-theme.done .nq-btn.ghost {
+ color: var(--photo-ink) !important; background: var(--photo-ground) !important;
+ border: 1px solid var(--photo-ink) !important; opacity: 1;
+}
+.photo-theme .d1j-gen.lit .d1j-cta:not(.ghost), #nqGen.photo-theme.done .nq-btn.solid {
+ background: var(--photo-ink) !important; color: var(--photo-button-ink) !important;
+}
+.photo-theme .d1j-gen.lit .d1j-gname { color: #595959 !important; }
+.photo-theme .d1j-gav img, .nq-card-av.photo img, .nq-dav.photo img { object-fit: cover; width: 100%; height: 100%; filter: none !important; opacity: 1 !important; }
+.photo-theme button:focus-visible { outline: 3px solid var(--photo-ink); outline-offset: 3px; }
+/* Switch background and foreground together, avoiding low-contrast intermediate colours. */
+.photo-theme .d1j-gen.lit, #nqGen.photo-theme.done,
+.photo-theme .d1j-gen.lit .d1j-cta, .photo-theme:has(.d1j-gen.lit) .d1j-x,
+#nqGen.photo-theme.done .nq-btn, #nqGen.photo-theme.done .nq-x { transition: none !important; }

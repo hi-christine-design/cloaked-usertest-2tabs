@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cloaked — VPN widget</title>
+<style>
+  :root {
+    --text-primary: #141410;
+    --text-light: #f3f1ed;
+    --text-secondary: rgba(255,255,255,0.6);
+    --card: #ffffff;
+    --green: #008924;
+    --divider: rgba(11,11,10,0.15);
+    --dark: #0b0b0a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased; font-synthesis: none;
+  }
+  body { display: flex; justify-content: center; padding: 0; }
+
+  /* ===== VPN widget (interactive) ===== */
+  .vpn-row { width: 353px; display: flex; gap: 8px; }
+  .vpn { position: relative; background: var(--card); border-radius: 20px; overflow: hidden; flex: 0 0 auto; cursor: pointer; }
+  .vpn .vhead { position: relative; }
+  .veyebrow { position: absolute; left: 16px; top: 16px; font-weight: 510; font-size: 16px; line-height: 1.2; letter-spacing: -0.32px; color: var(--text-primary); }
+  .vtitle { position: absolute; left: 16px; font-weight: 400; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .vswitch { position: absolute; left: 16px; width: 72px; height: 32px; border-radius: 16px; background: rgba(11,11,10,0.15); cursor: pointer; transition: background .22s ease; z-index: 3; }
+  .vswitch .knob { position: absolute; top: 6px; left: 6px; width: 20px; height: 20px; border-radius: 50%; background: #0b0b0a; transition: transform .24s cubic-bezier(.4,0,.2,1), background .22s ease; }
+  .vswitch.on { background: #008924; }
+  .vswitch.on .knob { transform: translateX(39px); background: #fff; }
+  .vglobe { position: absolute; top: 16px; right: 16px; width: 140px; height: 140px; border-radius: 50%; overflow: hidden; background: #fff; }
+  .vglobe::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px #c4c2bc; pointer-events: none; transition: box-shadow .35s ease; }
+  .vpn.is-connected .vglobe::after { box-shadow: inset 0 0 0 1px rgba(255,85,12,0.5); }
+  .vglobe iframe { width: 140px; height: 140px; border: 0; display: block; transform: scale(1.45); transform-origin: center; pointer-events: none; }
+  .vtitle.connecting { font-size: 20px !important; letter-spacing: -0.2px; }
+  .vloc { display: flex; align-items: center; justify-content: space-between; height: 69px; padding: 0 20px; border-top: 1px solid var(--divider); }
+  .vloc span { font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: var(--text-primary); }
+  .vloc .right { display: flex; align-items: center; gap: 12px; }
+  .vloc .flag { width: 28px; height: 20px; border-radius: 3px; overflow: hidden; display: inline-flex; }
+  .vloc .flag img { width: 100%; height: 100%; object-fit: cover; }
+  /* size variants */
+  .vpn.s { width: 173px; }
+  .vpn.s .vhead { height: 200px; }
+  .vpn.s .vswitch { top: 152px; }
+  .vpn.s .vglobe, .vpn.s .vloc { display: none; }
+  .vpn.s .vtitle { top: 51px; font-size: 48px; line-height: 1.1; letter-spacing: -0.96px; }
+  .vpn.s.is-on .vtitle { top: 42px; font-size: 32px; line-height: 1; letter-spacing: 0.16px; }
+  .vpn.m { width: 353px; }
+  .vpn.m .vhead { height: 172px; }
+  .vpn.m .vswitch { top: 124px; }
+  .vpn.m .vtitle { top: 50px; font-size: 32px; line-height: 1; letter-spacing: 0.16px; }
+  .vpn.m .vloc { display: none; }
+  .vpn.l { width: 353px; }
+  .vpn.l .vhead { height: 173px; }
+  .vpn.l .vswitch { top: 124px; }
+  .vpn.l .vtitle { top: 50px; font-size: 32px; line-height: 1; letter-spacing: 0.16px; }
+
+  /* Data removal — Small (paired beside VPN in S mode) */
+  .drs { width: 173px; height: 200px; background: var(--card); border-radius: 20px; position: relative; flex: 0 0 173px; }
+  .drs .drs-label { position: absolute; left: 16px; top: 16px; font-weight: 510; font-size: 16px; line-height: 1.2; letter-spacing: -0.32px; color: var(--text-primary); }
+  .drs .drs-num { position: absolute; left: 16px; top: 47px; font-size: 48px; line-height: 1.1; letter-spacing: -0.96px; color: var(--text-primary); }
+  .drs .drs-bars { position: absolute; left: 16px; top: 116px; width: 141px; display: flex; flex-direction: column; gap: 12px; }
+  .drs .drs-bars div { height: 4px; border-radius: 2px; }
+</style>
+</head>
+<body>
+  <div class="vpn-row" id="vpnRow">
+    <!-- Data removal small — shown only in S mode -->
+    <div class="drs" id="drSmall" style="display:none">
+      <div class="drs-label">Data removal</div>
+      <div class="drs-num">25</div>
+      <div class="drs-bars">
+        <div style="background:#00c876;width:141px"></div>
+        <div style="background:#ffd447;width:141px"></div>
+        <div style="background:#e172eb;width:103px"></div>
+        <div style="background:#0067ff;width:77px"></div>
+        <div style="background:#003677;width:31px"></div>
+      </div>
+    </div>
+    <!-- VPN card -->
+    <div class="vpn m" id="vpn">
+      <div class="vhead">
+        <div class="veyebrow">VPN</div>
+        <div class="vtitle" data-timer>Off</div>
+        <div class="vswitch" data-toggle role="switch" aria-checked="false" tabindex="0"><span class="knob"></span></div>
+        <div class="vglobe"><iframe data-globe src="globe.html?embed=1&dash=1" title="VPN globe" scrolling="no"></iframe></div>
+      </div>
+      <div class="vloc"><span>Location</span><div class="right"><span data-locname>New York</span><span class="flag"><img data-locflag src="flags/us.svg" alt=""></span></div></div>
+    </div>
+  </div>
+
+<script>
+/* ---- VPN widget size from ?size= URL param (s | m | l, default m) ---- */
+(function(){
+  const params=new URLSearchParams(location.search);
+  const sz=(params.get('size')||'m').toLowerCase();
+  const vpn=document.getElementById('vpn'), drSmall=document.getElementById('drSmall');
+  function setSize(s){
+    if(!['s','m','l'].includes(s)) s='m';
+    vpn.classList.remove('s','m','l'); vpn.classList.add(s);
+    drSmall.style.display = s==='s' ? '' : 'none';
+  }
+  setSize(sz);
+})();
+
+/* ---- on/off bridge to the embedded globe (toggle stays live at every size) ---- */
+(function(){
+  const vpn=document.getElementById('vpn');
+  const toggle=vpn.querySelector('[data-toggle]'), timer=vpn.querySelector('[data-timer]'),
+        iframe=vpn.querySelector('[data-globe]'), locName=vpn.querySelector('[data-locname]'),
+        locFlag=vpn.querySelector('[data-locflag]');
+  const cmd=a=>{try{iframe.contentWindow.postMessage({type:'vpn-cmd',action:a},'*');}catch(_){}};
+  function setOn(on){ toggle.classList.toggle('on',on); toggle.setAttribute('aria-checked',on?'true':'false'); vpn.classList.toggle('is-on',on); }
+  const flip=()=>cmd(toggle.classList.contains('on')?'disconnect':'connect');
+  toggle.addEventListener('click',e=>{ e.stopPropagation(); flip(); });
+  toggle.addEventListener('keydown',e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); flip(); }});
+  window.addEventListener('message',e=>{
+    const d=e.data||{}; if(e.source!==iframe.contentWindow) return;
+    if(d.type==='vpn-orange-done'){ vpn.classList.add('is-connected'); return; }
+    if(d.type!=='vpn-state') return;
+    const lit=!!d.connected||!!d.connecting; setOn(lit);
+    if(!d.connected || d.connecting) vpn.classList.remove('is-connected');
+    if(d.connecting){ timer.classList.add('connecting'); timer.textContent='Connecting…'; }
+    else { timer.classList.remove('connecting'); timer.textContent = d.connected ? (d.time||'00:00:00') : 'Off'; }
+    if(d.loc) locName.textContent=d.loc;
+    if(d.cc)  locFlag.src='flags/'+d.cc+'.svg';
+  });
+  const kick=()=>cmd('disconnect');
+  iframe.addEventListener('load',()=>{ kick(); setTimeout(kick,300); setTimeout(kick,900); });
+})();
+</script>
+</body>
+</html>
