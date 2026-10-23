@@ -96,7 +96,7 @@
   /* V2.2's storyline (Figma 9896:138728): four pages — the vault's kinds, your things in it, the alias, where it all lands */
   /* round 51 (Christine): V2.2 = &ut2vonb=n3 — no + and no kinds: the list of your things with their logos from the start,
      and no "Save them here" page (straight on to the alias). The four-page story above is now V2.1 (&ut2vonb=n2). */
-  var LOGOS = (location.search.match(/[?&]ut2vonb=([^&]*)/) || [])[1] === 'n3';
+  var LOGOS = true;   /* round 55 (Christine): V2.1 retired — n, n2 and n3 all open the logos-first V2; the four-page path stays below, unused */
   if (PAGED) COPY = LOGOS ? [COPY[0], COPY[1], COPY[2]] : [COPY[0], '<h1>Keep it all here, ready when you need it</h1>', COPY[1], COPY[2]];
   var KIND = LOGOS ? [1, 2, 3] : [0, 1, 2, 3];   /* page → its art's pose */
   var NS = COPY.length, LAST = NS - 1;
