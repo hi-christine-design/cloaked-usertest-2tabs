@@ -390,10 +390,10 @@ var VONB = [
         'Learn more opens the scrolling page: One vault for everything that’s yours online · Sign up without giving away your real info · Stay private when you meet new people · A virtual card for subscriptions · Get started.'] },
   { v: 'n2', t: 'V2.1 · Scroll pages', tag: 'Figma 9896:138728',
     p: ['The tray is the story’s first beat: the glow, the +, the five kinds turning into your things (Learn more as before).',
-        'Four pages, scrolled like V1 — the title and art come up, then the art plays (and loops) once it lands: A password manager that protects all of you · Save them here and use them when you need · Share an alias, not your real info · Calls, messages, emails, transactions all happen here — then FAQs, as in V1.'] },
+        'Four pages, scrolled like V1 — the title and art come up, then the art plays (and loops) once it lands: One vault for everything that’s yours · Keep it all here, ready when you need it · Share an alias, not your real info · Calls, texts, emails and payments — all in one place — then FAQs, as in V1.'] },
   { v: 'n3', t: 'V2.2 · Logos first', tag: 'Figma 9896:138728',
     p: ['No + and no kinds: the tray shows your things with their logos straight away, rising one by one on a loop.',
-        'Three pages: A password manager that protects all of you (the logo list) · Share an alias, not your real info · Calls, messages, emails, transactions all happen here — then FAQs.'] }
+        'Three pages: One vault for everything that’s yours (the logo list) · Share an alias, not your real info · Calls, texts, emails and payments — all in one place — then FAQs.'] }
 ];
 var vonbEl = $('vonb');
 VONB.forEach(function (o) {
@@ -416,7 +416,7 @@ $('rtabs').addEventListener('click', function (e) {
 /* the Vault, its onboarding raised at once (ut2vonbgo) */
 function loadVonb() {
   frame.src = 'V2/' + S.day + '/app.html?skip=1&tab=vaults' + (S.day === 'DayOne' ? '&intro=0' : '') +
-    '&ut2=after&ut2name=' + UT2_NAME + '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO + '&ut2vonb=' + S.vonb + '&ut2vonbgo=1&v=20261023-ut142';
+    '&ut2=after&ut2name=' + UT2_NAME + '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO + '&ut2vonb=' + S.vonb + '&ut2vonbgo=1&v=20261023-ut143';
   loading.textContent = 'Opening the Vault onboarding…';
   loading.classList.add('on');
   clearTimeout(hideT); hideT = setTimeout(function () { loading.classList.remove('on'); }, 2500);
@@ -492,7 +492,7 @@ function load() {
   var s = curS();
   if (!s) {   /* nothing picked: the plain prototype, home, no ring */
     frame.src = 'V2/' + S.day + '/app.html?skip=1&tab=home' + introQ(S.day) +
-      '&ut2=after&ut2name=' + UT2_NAME + '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO + '&ut2vonb=' + S.vonb + '&v=20261023-ut142';
+      '&ut2=after&ut2name=' + UT2_NAME + '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO + '&ut2vonb=' + S.vonb + '&v=20261023-ut143';
     loading.textContent = 'Opening the prototype…';
     loading.classList.add('on');
     clearTimeout(hideT); hideT = setTimeout(function () { loading.classList.remove('on'); }, 2500);
@@ -503,7 +503,7 @@ function load() {
     introQ(day) +
     '&ut2=' + (s.done ? S.mode : 'after') + '&ut2name=' + UT2_NAME +
     '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO +
-    (s.done ? '&ut2go=' + s.id : '') + '&ut2vonb=' + S.vonb + '&v=20261023-ut142';
+    (s.done ? '&ut2go=' + s.id : '') + '&ut2vonb=' + S.vonb + '&v=20261023-ut143';
   loading.textContent = (s.id === 'c7' || (s.id === 'v09' && (s.day || S.day) === 'DayOne')) ? 'Playing the flow…' : 'Opening the screen…';
   loading.classList.add('on');
   clearTimeout(hideT); hideT = setTimeout(function () { loading.classList.remove('on'); }, s.id === 'c7' ? 16000 : 2500);

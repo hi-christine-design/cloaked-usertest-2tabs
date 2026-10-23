@@ -74,15 +74,15 @@
   }
   function initial(c, bg) { return '<span class="vtn-av" style="background:' + bg + ';display:flex;align-items:center;justify-content:center;color:#141410;font-size:21px;line-height:1">' + c + '</span>'; }
   var ACTS = {
-    phone: [act(img('assets/Avatar/avatar-image/Ellipse%2098.png'), 'June', esc('Hey, it’s Sam — about Saturday, are we still on for 7?'), '<span class="vtn-r s">Voicemail</span>', true),
+    phone: [act(img('assets/Avatar/avatar-image/Ellipse%2098.png'), 'June', esc('Hey, it’s June — about Saturday, are we still on for 7?'), '<span class="vtn-r s">Voicemail</span>', true),
             act(img('assets/Avatar/avatar-image/Ellipse%2098-1.png'), 'Melissa', IN + 'New York, NY', '<span class="vtn-r">Call</span>'),
-            act(img(logo('Lululemon.png')), 'Lululemon', esc('Your order is placed. This is your order'), '<span class="vtn-r">' + SMS + '</span>')],
+            act(img(logo('Lululemon.png')), 'Lululemon', esc('Your order is confirmed. We’ll text you when it ships.'), '<span class="vtn-r">' + SMS + '</span>')],
     email: [act(img(logo('Airbnb.svg')), 'Airbnb', esc('Welcome to Airbnb, start your first trip…'), ''),
             act(img('assets/Avatar/Game.png'), 'New games', esc('We just launched a new version today!'), ''),
             act(img(logo('New York Time.svg')), 'The New York Times', esc('Your account is activated!'), '')],
-    card: [act(initial('C', '#A2BF7A'), 'Casa del Mar Resort', 'Travel to Cancun .3802', '<span class="vtn-r amt">$525.60</span>'),
-           act(img(logo('Lyft.svg')), 'Lyft', 'Travel to Cancun .3802', '<span class="vtn-r amt">$25.12</span>'),
-           act(img(logo('Delta.png')), 'Delta', 'Travel to Cancun .3802', '<span class="vtn-r amt">$325.24</span>')]
+    card: [act(initial('C', '#A2BF7A'), 'Casa del Mar Resort', 'Hotel in Cancun .3802', '<span class="vtn-r amt">$525.60</span>'),
+           act(img(logo('Lyft.svg')), 'Lyft', 'Ride to JFK .3802', '<span class="vtn-r amt">$25.12</span>'),
+           act(img(logo('Delta.png')), 'Delta', 'Flight to Cancun .3802', '<span class="vtn-r amt">$325.24</span>')]
   };
   var actsH = ['phone', 'email', 'card'].map(function (k) { return '<div class="vtn-acts" data-k="' + k + '">' + ACTS[k].join('') + '</div>'; }).join('');
 
@@ -90,14 +90,14 @@
      V2.2 (&ut2vonb=n2, Christine 23 Oct): like Yuan's — each scene is a page you scroll to,
      its words and its art come up with it, and the art plays once it has landed. */
   var PAGED = true;   /* round 44 (Christine): V2.2 only — V2.1 retired; &ut2vonb=n now opens V2.2 too. The fixed-title path stays below, unused. */
-  var COPY = ['<h1>A password manager that protects all of you</h1><p>Use an alias email and a unique password for every sign-up. Reuse one alias across accounts, or create a fresh one each time</p>',
+  var COPY = ['<h1>One vault for everything that’s yours</h1><p>Keep your logins, cards and contact info in one place — and use an alias whenever you sign up.</p>',
               '<h1>Share an alias, not your real info</h1>',
-              '<h1>Calls, messages, emails, transactions all happen here</h1>'];
+              '<h1>Calls, texts, emails and payments — all in one place</h1>'];
   /* V2.2's storyline (Figma 9896:138728): four pages — the vault's kinds, your things in it, the alias, where it all lands */
   /* round 51 (Christine): V2.2 = &ut2vonb=n3 — no + and no kinds: the list of your things with their logos from the start,
      and no "Save them here" page (straight on to the alias). The four-page story above is now V2.1 (&ut2vonb=n2). */
   var LOGOS = (location.search.match(/[?&]ut2vonb=([^&]*)/) || [])[1] === 'n3';
-  if (PAGED) COPY = LOGOS ? [COPY[0], COPY[1], COPY[2]] : [COPY[0], '<h1>Save them here and use them when you need</h1>', COPY[1], COPY[2]];
+  if (PAGED) COPY = LOGOS ? [COPY[0], COPY[1], COPY[2]] : [COPY[0], '<h1>Keep it all here, ready when you need it</h1>', COPY[1], COPY[2]];
   var KIND = LOGOS ? [1, 2, 3] : [0, 1, 2, 3];   /* page → its art's pose */
   var NS = COPY.length, LAST = NS - 1;
   var ART = '<div class="vtn-art">' +
@@ -107,11 +107,11 @@
       '<div class="vtn-trio alias">' + aliasH + '</div>' +
       '<div class="vtn-head">' + headH + '</div><i class="vtn-line"></i>' + actsH +
     '</div>';
-  /* round 48 (Christine): FAQs at the end, as V1 (Yuan's) has them — her cards and classes */
+  /* round 48 (Christine): FAQs at the end, as V1 has them — its cards and classes. Round 54: Vault questions (copy review) */
   function faqCard(tag, q) { return '<div class="vt-faq-card" onclick="if (window.icToast) icToast(\'Article\')"><div class="vt-faq-tag">' + esc(tag) + '</div><div class="vt-faq-q">' + esc(q) + '</div><div class="vt-faq-arrow">&rarr;</div></div>'; }
   var FAQ = '<section class="vtn-faqsec"><div class="vti-faq vtn-faq"><h1 class="vti-faq-h">FAQs</h1><div class="vt-faq-cards">' +
-    faqCard('Managing My Stuff', 'Your Guide to Online Dating Privacy in 2024') + faqCard('Managing My Stuff', 'How Cloaked Protects Daters in Online Dating') +
-    faqCard('Results & Updates', 'Will my info show up on new sites later?') + faqCard('Results & Updates', 'When is the next scan?') + '</div></div></section>';
+    faqCard('Getting started', 'What’s an alias, and when should I use one?') + faqCard('Getting started', 'Can I import passwords from another manager?') +
+    faqCard('Security', 'Who can see what’s in my vault?') + faqCard('Aliases', 'What happens when someone calls my alias number?') + '</div></div></section>';
   var page = document.createElement('div');
   page.className = 'vtn' + (PAGED ? ' paged' : ''); page.id = 'vtnPage'; page.setAttribute('aria-hidden', 'true');
   page.innerHTML =
