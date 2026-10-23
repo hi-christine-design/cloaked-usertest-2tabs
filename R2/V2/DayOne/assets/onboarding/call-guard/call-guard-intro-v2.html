@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Call Guard — Intro V2</title>
+<script>if(window.self!==window.top)document.documentElement.classList.add('embedded');</script>
+<script>
+/* Whose number and whose address this page is about. The DOOR decides — call
+   guard opens on the number, email guard on the address, the Home tile on both
+   — and the app passes the same strings its vault rows show, so the row you
+   tapped and the page it opens cannot disagree about your own number.
+   Defaults to both, so the page is still right opened on its own. */
+window.CG_USER = (function () {
+  var q = new URLSearchParams(location.search);
+  var num = q.get('num') || '523-256-2345';
+  var mail = q.get('mail') || 'Margaret611@gmail.com';
+  var val = (q.get('val') || 'both').toLowerCase();
+  if (val !== 'phone' && val !== 'email') val = 'both';
+  return { num: num, mail: mail, val: val,
+           one: val === 'email' ? mail : num,
+           lines: val === 'phone' ? [num] : val === 'email' ? [mail] : [mail, num] };
+})();
+/* ...and when the door is the address, the page says so. There is no separate
+   email-guard intro in these builds — the Gmail row borrows this one — and with
+   an email address in the middle of it, a bar reading "Call guard" over a button
+   reading "Turn on call guard" reads as a bug rather than as a stand-in.
+   The body copy is still the CALL story ("before your phone ever rings"): that
+   is writing, not a label, and it is not mine to invent. */
+document.addEventListener('DOMContentLoaded', function () {
+  if (window.CG_USER.val !== 'email') return;
+  var t = document.querySelector('.brand-left');
+  if (t) t.textContent = 'Email guard';
+  var c = document.querySelector('.btn-primary');
+  if (c) c.textContent = 'Start Email Guard';
+});
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* STK Bureau Serif — drop the font file into assets/ and adjust the filename below */
+  @font-face{
+    font-family:'STK Bureau Serif';
+    src:url('assets/STKBureauSerif-Light.woff2') format('woff2'),
+        url('assets/STKBureauSerif-Light.otf') format('opentype');
+    font-weight:300;
+    font-display:swap;
+  }
+  :root{
+    --teal:#0E0F11;
+    --teal-deep:#003538;
+    --ink:#EAF2EF;
+    --ink-dim:rgba(234,242,239,.72);
+    --accent:#8FD9D2;
+    --amber:#E8A33D;
+    --serif:ui-serif, 'New York', 'Source Serif 4', Georgia, serif;
+    --sans:-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif;
+    --nav-ease:cubic-bezier(.4,0,.2,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:#000;
+    font-family:var(--sans);
+    display:flex;justify-content:center;align-items:center;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- Stage (phone viewport) ---------- */
+  .stage{
+    position:relative;
+    width:min(430px,100vw);
+    height:100dvh;
+    max-height:100dvh;
+    overflow:hidden;
+    background:var(--teal); /* darkens progressively on scroll via JS */
+  }
+  @media (min-width:500px){
+    /* desktop: fixed iPhone-size frame (393x852) — never shrinks with the window */
+    html,body{height:auto;min-height:100%}
+    body{background:#101013}
+    .stage{
+      flex:none;width:393px;height:852px;max-height:none;
+      margin:24px auto;border-radius:44px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,.14),
+        0 0 0 12px #1b1c20,
+        0 0 0 13px rgba(255,255,255,.07),
+        0 40px 100px rgba(0,0,0,.7);
+    }
+  }
+
+  /* ---------- Scene backgrounds (scroll away with their own section) ---------- */
+  .scene-bg{
+    position:absolute;left:50%;top:50%;
+    width:1200px;height:1200px;max-width:none;
+    transform:translate(-50%,-50%);
+    mix-blend-mode:lighten;
+    pointer-events:none;
+  }
+  #intro{overflow:hidden}
+  #wall{overflow:hidden;justify-content:flex-start;padding-top:186px}
+  #wall .body{margin-top:48px}
+  #wall .reveal:not(.cue){position:relative;z-index:1}
+  #wall .cue{z-index:1}
+  .viz{
+    position:absolute;left:50%;top:62%;
+    width:940px;height:940px;max-width:none;
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:absolute;top:0;left:0;right:0;z-index:20;
+    display:flex;align-items:center;justify-content:flex-end;
+    /* 64, not 36: the app's floating back disc is top:64 and 40 tall, so its
+       centre is 84, and a title starting at 36 sat ~40px above it. Same top the
+       Identity intro's bar uses. Yuan, 24 Aug: "title 太偏上了，应该跟back
+       button齐平". */
+    padding:calc(env(safe-area-inset-top,0px) + 64px) 20px 12px;
+    pointer-events:none;
+  }
+  .brand{
+    font-family:var(--sans);font-size:20px;font-weight:500;color:var(--ink);
+  }
+  .brandwrap{display:flex;align-items:center;gap:10px}
+  /* The bar's title. `.brand` has been in this file since it was written with
+     nothing using it — this is what it was for. Yuan, 24 Aug: "你不需要start
+     over button，所以就是back button with call guard title next to it".
+     Left-aligned and taking the bar's slack, so the pill on the right keeps
+     its place. Embedded, the 48px clears the host's floating back disc, which
+     is drawn in the app rather than here — the same trick the Identity intro
+     uses for its own title. */
+  .topbar .brand-left{
+    flex:1;text-align:left;font-size:16px;font-weight:510;letter-spacing:-.32px;
+    /* As tall as the 40px controls that share this bar, so the title centres
+       where a button would even when it is alone in here — which it is as soon
+       as Start Over is hidden. Padding alone left it 11px high. */
+    min-height:40px;display:flex;align-items:center;
+  }
+  /* 68, not 48: the app's floating back disc is 40px at left 20, so its right edge is at 60 and a 48px inset put the title 12px UNDER it — Yuan, 27 Aug: "guard的back button跟title重合了，可以把title往右边移吗". 68 leaves an 8px gap at the bar's own 20px scale. */
+html.embedded .topbar .brand-left{padding-left:68px}
+  /* Skip is the launcher's way to jump to the final page — worth keeping when
+     this page stands on its own. Embedded there is nothing to skip to
+     (?page=final already opens there) and the app supplies the way out, so the
+     bar is the title and the back button, nothing else. */
+  html.embedded .skip{display:none}
+  .backbtn{
+    pointer-events:auto;display:flex;align-items:center;justify-content:center;
+    width:36px;height:36px;border-radius:50%;color:var(--ink);text-decoration:none;
+    background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.12);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  }
+  .backbtn svg{width:16px;height:16px}
+  .skip{
+    pointer-events:auto;
+    font-family:var(--sans);font-size:13px;font-weight:500;color:var(--ink);
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.14);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-radius:999px;padding:9px 16px;cursor:pointer;
+    transition:background .25s, opacity .5s var(--nav-ease), transform .5s var(--nav-ease);
+  }
+  .skip:hover{background:rgba(255,255,255,.18)}
+
+  /* ---------- Scroller ---------- */
+  .scroller{
+    position:absolute;inset:0; /* no z-index: keeps blend modes compositing against the stage bg */
+    background:var(--teal); /* scene visuals lighten-blend against this; darkens on scroll via JS */
+    overflow-y:scroll;overflow-x:hidden;
+    scroll-snap-type:y mandatory;
+    scroll-behavior:smooth;
+    scrollbar-width:none;
+  }
+  .scroller::-webkit-scrollbar{display:none}
+  section{
+    height:100%;
+    scroll-snap-align:start;
+    scroll-snap-stop:always;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    text-align:center;
+    padding:96px 30px 130px;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* ---------- Scene 1 : auto-playing transition (one page, two states) ---------- */
+  .morph-group{
+    position:absolute;left:30px;right:30px;top:50%;
+    opacity:0;
+    transform:translateY(calc(-50% + 34px));
+    filter:blur(12px);
+    display:flex;flex-direction:column;align-items:center;
+    transition:transform 1.2s cubic-bezier(.55,0,.12,1), opacity 1s var(--nav-ease), filter 1s var(--nav-ease);
+  }
+  #intro.in .morph-group{opacity:1;transform:translateY(-50%);filter:blur(0)}
+  #intro.played .morph-group{opacity:1;transform:translateY(calc(-50% - 95px))}
+    .l2{display:block}
+  .morph-ext{
+    opacity:0;transform:translateY(16px);display:block;margin-top:34px;line-height:1.28;
+    filter:blur(10px);
+    transition:opacity 1s var(--nav-ease) .45s, transform 1s var(--nav-ease) .45s, filter 1s var(--nav-ease) .45s;
+  }
+  #intro.played .morph-ext{opacity:1;transform:translateY(0);filter:blur(0)}
+  .morph-quote{
+    position:absolute;left:40px;right:40px;top:62%;
+    opacity:0;transform:translateY(36px);
+    filter:blur(10px);
+    transition:opacity 1s var(--nav-ease) .7s, transform 1s var(--nav-ease) .7s, filter 1s var(--nav-ease) .7s;
+  }
+  #intro.played .morph-quote{opacity:1;transform:translateY(0);filter:blur(0)}
+  .morph-cue{
+    opacity:0;transform:translate(-50%,36px);
+    transition:opacity .9s var(--nav-ease) .95s, transform .9s var(--nav-ease) .95s, background .25s;
+  }
+  #intro.played .morph-cue{opacity:1;transform:translate(-50%,0)}
+
+  /* ---------- Type ---------- */
+  .label{
+    font-size:13px;font-weight:500;color:#EE6B41;
+    letter-spacing:.02em;margin-bottom:14px;
+  }
+  h1{
+    font-family:var(--serif);font-weight:300;
+    font-size:clamp(26px,7.4vw,32px);
+    line-height:1.2;color:var(--ink);
+    letter-spacing:-.01em;
+    max-width:320px;
+    text-wrap:balance;
+  }
+  .body{
+    font-size:16px;line-height:1.5;color:var(--ink-dim);
+    max-width:320px;margin-top:20px;
+  }
+  .quote{max-width:280px;margin:0 auto}
+  .quote p{
+    font-size:16px;font-weight:400;line-height:1.5;color:var(--ink);
+  }
+  .quote cite{
+    display:block;font-style:normal;font-size:12px;color:var(--ink-dim);margin-top:8px;
+  }
+  .number{color:var(--accent);font-family:var(--serif);font-size:26px;letter-spacing:.02em;margin-top:44px}
+
+  /* ---------- per-character blur stagger (headlines) ---------- */
+  .word{display:inline-block;white-space:nowrap}
+  .ch{
+    display:inline-block;
+    opacity:0;transform:translateY(12px);filter:blur(8px);
+    transition:opacity .6s var(--nav-ease), transform .6s var(--nav-ease), filter .6s var(--nav-ease);
+  }
+  #intro.in .morph-group h1 .ch:not(.che){opacity:1;transform:none;filter:blur(0)}
+  #intro.played .morph-group h1 .che{opacity:1;transform:none;filter:blur(0)}
+  #wall.inview h1 .ch, #final.inview h1 .ch{opacity:1;transform:none;filter:blur(0)}
+
+  /* scroll cue chip */
+  .cue{
+    position:absolute;bottom:118px;left:50%;transform:translateX(-50%);
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:var(--sans);font-size:13px;font-weight:500;color:var(--ink);
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.12);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-radius:999px;padding:11px 18px;cursor:pointer;
+    transition:background .25s;
+  }
+  .cue:hover{background:rgba(255,255,255,.18)}
+  .cue svg{opacity:.8;animation:bob 2.2s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
+
+  /* ---------- Reveal transitions (sections 2 & 3) ---------- */
+  .reveal{
+    opacity:0;transform:translateY(34px);
+    filter:blur(10px);
+    transition:opacity .9s var(--nav-ease), transform .9s var(--nav-ease), filter .9s var(--nav-ease);
+  }
+  section.inview .reveal{opacity:1;transform:translateY(0);filter:blur(0)}
+  section.inview .reveal:nth-child(1){transition-delay:.05s}
+  section.inview .reveal:nth-child(2){transition-delay:.18s}
+  section.inview .reveal:nth-child(3){transition-delay:.32s}
+  section.inview .reveal:nth-child(4){transition-delay:.46s}
+  .cue.reveal{transform:translate(-50%,34px)}
+  section.inview .cue.reveal{transform:translate(-50%,0)}
+
+  /* ---------- Final screen ---------- */
+  .final{align-items:center;text-align:center;padding:130px 26px 130px;justify-content:flex-start}
+  .final h1{max-width:320px}
+  .final .body{margin-top:14px;max-width:300px}
+  .viz3{
+    position:absolute;left:50%;top:calc(55% + 10px);
+    width:440px;height:440px;max-width:none;
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+  }
+  .actions{
+    /* The bottom edge, flush with Cloaked Pay's CTA (.v2cta, bottom:32px) —
+       Yuan, 24 Aug. This used to be 108-118px, and v1's comment said what that
+       was: "32px above the bottom nav". The 32 belonged to the NAV, not to the
+       frame. On the last page the nav no longer returns (.stage.at-end, below),
+       so this row owns the bottom edge and takes the 32 for itself. */
+    position:absolute;left:20px;right:20px;bottom:32px;
+    display:flex;gap:12px;justify-content:center;z-index:1;
+  }
+  .btn{
+    font-family:var(--sans);font-size:15px;font-weight:500;
+    border-radius:999px;height:56px;padding:0 14px;cursor:pointer;
+    white-space:nowrap;
+    flex:0 0 calc(50% - 6px);min-width:0;
+    display:inline-flex;align-items:center;justify-content:center;
+    transition:transform .2s, background .25s;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn-ghost{
+    color:var(--ink);background:transparent;
+    border:1px solid rgba(255,255,255,.28);
+  }
+  .btn-ghost:hover{background:rgba(255,255,255,.08)}
+  .btn-video{
+    position:relative;
+    padding-left:56px;padding-right:16px;
+    justify-content:center;
+  }
+  .btn-video .play{
+    position:absolute;left:8px;top:50%;transform:translateY(-50%);
+    width:40px;height:40px;padding:15px;color:#fff;opacity:.95;z-index:1;
+  }
+  .btn-video .thumb{
+    position:absolute;left:8px;top:50%;transform:translateY(-50%);
+    width:40px;height:40px;border-radius:50%;
+    object-fit:cover;display:block;filter:brightness(.55);
+  }
+  .btn-primary{
+    /* White, not teal — Yuan, 24 Aug. This is Cloaked Pay's own primary
+       (.btn.onbrand: #fff on the dark intro), so the two intros end on the same
+       button instead of on two different accents. Ink is --teal, the ground
+       colour, which is what the rest of the app puts on white. */
+    color:#0E0F11;background:#fff;border:none;
+  }
+  .btn-primary:hover{background:#EAF2EF}
+  /* ...and it does not respond, because it has nowhere to go (see the markup).
+     pointer-events rather than `disabled`: no press state promising something,
+     and the pill keeps the white the design asks for. */
+  .btn-primary{pointer-events:none;cursor:default}
+
+  /* ---------- Bottom nav ---------- */
+  .bottomnav{
+    position:absolute;left:20px;right:20px;z-index:20;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 16px);
+    display:flex;justify-content:space-between;align-items:center;
+    background:rgba(30,32,35,.42);
+    border:1px solid rgba(255,255,255,.12);
+    backdrop-filter:blur(24px) saturate(1.7);-webkit-backdrop-filter:blur(24px) saturate(1.7);
+    border-radius:999px;padding:8px 14px;
+    transition:transform .5s var(--nav-ease), opacity .5s var(--nav-ease), background 1s var(--nav-ease);
+  }
+  .stage.dark .bottomnav{background:rgba(30,32,35,.42)}
+  .stage.nav-hidden .bottomnav{transform:translateY(120px);opacity:0}
+  /* ...and on the last page it stays away. The CTA row owns the bottom edge
+     there now (32px, flush with Cloaked Pay's), so a nav returning 700ms after
+     you arrive would sit underneath it. `at-end` was already being toggled on
+     .stage by the IntersectionObserver on #final and had no rule anywhere in
+     any of these files; this is it. The `settle` timer still removes
+     `nav-hidden` at the end — harmlessly, because this decides. */
+  .stage.at-end .bottomnav{transform:translateY(120px);opacity:0;pointer-events:none}
+  .navitem{
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    font-size:9.5px;font-weight:500;color:rgba(234,242,239,.6);
+    padding:8px 10px;border-radius:999px;cursor:pointer;min-width:52px;
+  }
+  .navitem svg{width:19px;height:19px;stroke:currentColor}
+  .navitem.active{
+    color:var(--ink);
+    background:rgba(255,255,255,.12);
+  }
+</style>
+
+<!-- ── ?page=final ─────────────────────────────────────────────────────────
+     The Cloaked app opens this file as a deep link from the protection-journey
+     page: "Block spam calls and emails" is meant to land on the RESULT, not on
+     the scan-result hook. With the param, scenes 1 and 2 are dropped so #final
+     is the first and only snap section; with no param nothing below matches and
+     the file plays exactly as it always did. The class goes on <html> from the
+     head script below, before first paint, so the intro never flashes. -->
+<style>
+  html.embedded .bottomnav{display:none!important}
+  html.page-final #intro, html.page-final #wall { display:none !important; }
+  /* the last page is black in the design; shade() derives the colour from
+     scroll progress, and with one section there is nothing left to scroll */
+  html.page-final .stage, html.page-final .scroller { background-color:#000 !important; }
+</style>
+<script>
+  (function () {
+    if (new URLSearchParams(location.search).get('page') !== 'final') return;
+    document.documentElement.classList.add('page-final');
+    /* The reveals ride on .inview, which the file's IntersectionObserver sets
+       once #final crosses 55% of the scroller. It does fire here — #final is
+       the whole viewport — but only after the observer is created further down
+       the file, and a hidden #intro means nothing else will ever nudge it. So
+       the revealed state is also asserted directly: cheap, idempotent, and it
+       cannot leave the page blank if the observer is ever changed. */
+    function reveal() {
+      var f = document.getElementById('final'), s = document.getElementById('stage');
+      if (f) f.classList.add('inview');
+      if (s) s.classList.add('dark', 'at-end');
+      var sc = document.getElementById('scroller');
+      if (sc) sc.scrollTop = 0;
+    }
+    document.addEventListener('DOMContentLoaded', function () { reveal(); requestAnimationFrame(reveal); });
+  })();
+</script>
+</head>
+<body>
+<div class="stage" id="stage">
+
+  <header class="topbar">
+    <div class="brand brand-left">Call guard</div>
+    <button class="skip" id="skip">Skip intro</button>
+  </header>
+
+  <main class="scroller" id="scroller">
+
+    <!-- Scene 1 · one page, auto-playing transition (hook → stakes) -->
+    <section id="intro">
+      <div class="morph-group">
+        <p class="label">Scan Result</p>
+        <h1>512-835-5416 is<span class="l2">exposed in 33 sites.</span>
+          <span class="morph-ext">That would explain the spam calls you’ve been getting.</span>
+        </h1>
+      </div>
+      <blockquote class="quote morph-quote">
+        <p>“Americans lost a record $16.6 billion to scams and cybercrime in 2024”</p>
+        <cite>— FBI Internet Crime Complaint Center</cite>
+      </blockquote>
+      <button class="cue morph-cue" data-next="wall">Our solution
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </section>
+
+    <!-- Scene 2 · why blocking fails -->
+    <section id="wall">
+      <canvas class="viz" id="viz"></canvas>
+      <p class="label reveal">Our solution</p>
+      <h1 class="reveal">The fix isn’t a wall. We answer unknown callers for you.</h1>
+      <p class="body reveal">Every unknown caller is checked before your phone ever rings.</p>
+      <button class="cue reveal" data-next="final">The result
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </section>
+
+    <!-- Scene 3 · the answer -->
+    <section class="final" id="final">
+      <canvas class="viz3" id="viz3"></canvas>
+      <p class="label reveal">The result</p>
+      <h1 class="reveal">Let the Important<br>things go through</h1>
+      <p class="body reveal">We screen the strangers.<br>You pick who matters.</p>
+      <div class="actions reveal">
+        <button class="btn btn-ghost btn-video"><img class="thumb" src="assets/Video thumbnail.png" alt=""><svg class="play" viewBox="0 0 12 12" fill="currentColor"><path d="M3 1.5 10.5 6 3 10.5z"/></svg>Learn more</button>
+        <!-- No handler on purpose. It used to be onclick="location.href='Set up
+             V1.html'", and that file is not beside this one — the embedded copy
+             sits in a build's assets folder with nothing but its own assets/ —
+             so tapping it navigated the overlay's iframe to a missing file and
+             left a blank page with no way back. Yuan, 24 Aug: "这个button不用
+             tappable". Inert via CSS rather than `disabled`, which would grey
+             out a pill the design wants white. -->
+        <button class="btn btn-primary" type="button">Start Call Guard</button>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bottomnav">
+    <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Home</div>
+    <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Exposure</div>
+    <div class="navitem active"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.9Z"/></svg>Guard</div>
+    <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>Phone</div>
+    <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><path d="M16 14.5h2.5"/></svg>Wallet</div>
+  </nav>
+
+</div>
+
+<script>
+  const stage    = document.getElementById('stage');
+  const scroller = document.getElementById('scroller');
+  const intro    = document.getElementById('intro');
+  const sections = [...document.querySelectorAll('section')];
+
+  /* ----- Per-character blur→clear stagger for headlines ----- */
+  function splitChars(root){
+    if(!root) return;
+    const walk = node => {
+      [...node.childNodes].forEach(n => {
+        if(n.nodeType === 3){
+          const frag = document.createDocumentFragment();
+          let word = null;
+          for(const ch of n.textContent){
+            if(/\s/.test(ch) || ch === ' '){ word = null; frag.appendChild(document.createTextNode(ch)); }
+            else{
+              if(!word){ word = document.createElement('span'); word.className = 'word'; frag.appendChild(word); }
+              const s = document.createElement('span'); s.className = 'ch'; s.textContent = ch; word.appendChild(s);
+            }
+          }
+          n.replaceWith(frag);
+        } else if(n.nodeType === 1 && n.tagName !== 'BR'){ walk(n); }
+      });
+    };
+    walk(root);
+    let i = 0, je = 0;
+    root.querySelectorAll('.ch').forEach(s => {
+      const ext = !!s.closest('.morph-ext');
+      let d;
+      if(ext){ s.classList.add('che'); d = 0.5 + je * 0.025; je++; }
+      else   { d = Math.min(i * 0.02, 1.1); i++; }
+      s.style.transitionDelay = d.toFixed(2) + 's';
+    });
+  }
+  splitChars(document.querySelector('#intro h1'));
+  splitChars(document.querySelector('#wall h1'));
+  splitChars(document.querySelector('#final h1'));
+
+  /* ----- Scene 1 : auto-playing sequence — scan result → your phone keeps ringing ----- */
+  setTimeout(() => intro.classList.add('in'), 300);
+  setTimeout(() => intro.classList.add('played'), 2300);
+
+  /* ----- Background darkens progressively as you scroll : #006166 → #000 ----- */
+  const C0 = [14, 15, 17]; // near-black
+  function shade(){
+    const max = scroller.scrollHeight - scroller.clientHeight;
+    const p = max ? scroller.scrollTop / max : 0;
+    const k = 1 - Math.min(1, p * 1.1);
+    const c = `rgb(${C0.map(v => Math.round(v * k)).join(',')})`;
+    stage.style.backgroundColor = c;
+    scroller.style.backgroundColor = c;
+  }
+  shade();
+
+  /* ----- Nav hide on scroll up, show on scroll down ----- */
+  let lastY = 0, ticking = false, settle, atEnd = false;
+  scroller.addEventListener('scroll', () => {
+    clearTimeout(settle);
+    /* nav returns after 5s of no scrolling — but quickly (700ms) on the last page */
+    settle = setTimeout(() => stage.classList.remove('nav-hidden'), atEnd ? 700 : 5000);
+    intro.classList.add('in','played');      // scrolling early also completes scene 1
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      shade();
+      const y = scroller.scrollTop;
+      if (y > lastY + 4 && y > 40) stage.classList.add('nav-hidden');   // scrolling forward → hide
+      else if (y < lastY - 4)      stage.classList.remove('nav-hidden'); // scrolling back → show
+      if (y <= 10) stage.classList.remove('nav-hidden');
+      lastY = y;
+      ticking = false;
+    });
+  }, {passive:true});
+
+  /* ----- Content reveal transitions (sections 2 & 3) ----- */
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      e.target.classList.toggle('inview', e.isIntersecting);
+      if (e.target.id === 'final'){
+        atEnd = e.isIntersecting;
+        stage.classList.toggle('dark',   e.isIntersecting);
+        stage.classList.toggle('at-end', e.isIntersecting);
+        skip.textContent = atEnd ? 'Start Over' : 'Skip intro';
+        if (atEnd){ clearTimeout(settle); settle = setTimeout(() => stage.classList.remove('nav-hidden'), 700); }
+      }
+    });
+  }, {root: scroller, threshold: 0.55});
+  sections.forEach(s => io.observe(s));
+
+  /* ----- Cue chips & skip ----- */
+  document.querySelectorAll('.cue').forEach(c =>
+    c.addEventListener('click', () =>
+      document.getElementById(c.dataset.next).scrollIntoView({behavior:'smooth'})));
+  const skip = document.getElementById('skip');
+  skip.addEventListener('click', () =>
+    document.getElementById(atEnd ? 'intro' : 'final').scrollIntoView({behavior:'smooth'}));
+
+  /* ===== Scene 2 background : data visualization (from assets/BKGD 2.html)
+     Adapted: transparent background + fixed phone number ===== */
+  (function runEngine(canvas, cfg){
+  const ctx=canvas.getContext('2d');
+  /* The backing store is capped by a PIXEL BUDGET, not by devicePixelRatio
+     alone. The scene-2 canvas is 940x940 CSS on a 393-wide frame — .stage clips
+     it, so about a third of it is ever visible — and at DPR 2 that is an
+     1880x1880 surface, 3.5 megapixels, redrawn every frame. Measured: capping
+     it took the intro from 8.5fps to 15.9. The budget only bites on an
+     oversized canvas; the 440x440 one below stays at full DPR, so this costs
+     resolution on exactly the surface that could spare it. */
+  const PX_BUDGET=1.1e6;
+  function dprFor(w,h){
+    return Math.min(window.devicePixelRatio||1, 2, Math.sqrt(PX_BUDGET/Math.max(1,w*h)));
+  }
+  let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+  let cx=0,cy=0,R3=0,t=0;
+  const CAM=820,F=820;
+  const FAM='"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,sans-serif';
+  let FS=44;
+  const PD=1.7, STAG=0.22, NARROW=0.94, WIDE=1.06;   /* subtle width wave — matches the final page's number */
+  const SPEED=0.5;   // global slow-down of the whole animation
+  let storm=0.1, stormTarget=0.1, stormTimer=40, load=0, coh=0;
+  const M=()=>cfg.main.join(','), IM=()=>cfg.impact.join(',');
+
+  const OW=720, OH=150;
+  const txt=document.createElement('canvas'), tctx=txt.getContext('2d');
+  const mk=document.createElement('canvas'),  mctx=mk.getContext('2d');
+  const scv=document.createElement('canvas'), scx=scv.getContext('2d');
+  /* ...and the buffer the bloom is computed in, a quarter of scv on each axis.
+     See the composite at the end of the sphere pass. */
+  const bcv=document.createElement('canvas'), bcx=bcv.getContext('2d');
+  function sizeOff(){ txt.width=OW*DPR; txt.height=OH*DPR; tctx.setTransform(DPR,0,0,DPR,0,0); mk.width=OW*DPR; mk.height=OH*DPR; mctx.setTransform(DPR,0,0,DPR,0,0); }
+  sizeOff();
+
+  function resize(){
+    /* `||canvas.width` was a trap: a hidden canvas reports clientWidth 0, so
+       this fell back to the BACKING width — already W*DPR — and every resize
+       multiplied the buffer again. Two resizes while hidden reached 3760x3760. */
+    W=canvas.clientWidth||W||2; H=canvas.clientHeight||H||2;
+    DPR=dprFor(W,H);
+    canvas.width=W*DPR; canvas.height=H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    scv.width=W*DPR; scv.height=H*DPR; scx.setTransform(DPR,0,0,DPR,0,0);
+    /* the bloom buffer, a quarter of the offscreen on each axis */
+    bcv.width=Math.max(1,Math.round(W*DPR/4)); bcv.height=Math.max(1,Math.round(H*DPR/4));
+    cx=W/2; cy=H/2; R3=Math.min(W,H)*0.32;
+    layoutPhone();
+  }
+
+  /* the same door's value — one line here, because this scene is a call ringing */
+  let phone=(window.CG_USER?window.CG_USER.one:'512 835-5416'), chars=[], cw=[], numW=0;
+  function layoutPhone(){
+    chars=phone.split('');
+    mctx.setTransform(DPR,0,0,DPR,0,0);
+    mctx.font='300 44px '+FAM;
+    const w44=chars.map(c=>mctx.measureText(c).width);
+    const sum44=w44.reduce((a,b)=>a+b,0)||1;
+    FS=Math.min(26, 44*Math.min(1,(2*R3*0.72)/(sum44*WIDE)));   // sized & weighted like the final page's number
+    cw=w44.map(w=>w*FS/44);
+    numW=cw.reduce((a,b)=>a+b,0);
+  }
+
+  function proj(x,y,z){const dz=CAM-z;if(dz<=1)return null;const s=F/dz;return {x:cx+x*s,y:cy+y*s,s:s};}
+  function unitDir(){let x=Math.random()*2-1,y=Math.random()*2-1,z=Math.random()*2-1;const m=Math.hypot(x,y,z)||1;return [x/m,y/m,z/m];}
+  function cross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
+
+  const attackers=[], sparks=[], numlit=[], ripples=[];
+  const speck=[];
+  for(let i=0;i<150;i++){ speck.push({x:Math.random()*OW, y:OH/2+(Math.random()-0.5)*78, r:0.8+Math.random()*2.4, a:0.4+Math.random()*0.5}); }
+
+  const PI2=Math.PI*2, ring=[];
+  const LAT=22;
+  for(let ri=0;ri<LAT;ri++){
+    const lat=-Math.PI/2+(ri+0.5)/LAT*Math.PI, cl=Math.cos(lat), sl=Math.sin(lat);
+    const cols=Math.max(5,Math.round(42*cl));
+    for(let ci=0;ci<cols;ci++){
+      const lon=ci/cols*PI2+Math.random()*0.04;
+      const dir=[cl*Math.cos(lon),sl,cl*Math.sin(lon)];
+      ring.push({dir,cx:dir[0],cy:dir[1],cz:dir[2],dust:false,rr:1,ph:Math.random()*PI2,bw:0.6+Math.random()*0.6,off:0,v:0,hit:0});
+    }
+  }
+  for(let k=0;k<1600;k++){
+    const u=Math.random()*PI2, vv=Math.acos(2*Math.random()-1), rr=0.32+0.66*Math.random();
+    const dir=[Math.sin(vv)*Math.cos(u),Math.cos(vv),Math.sin(vv)*Math.sin(u)];
+    ring.push({dir,cx:dir[0],cy:dir[1],cz:dir[2],dust:true,rr,ph:Math.random()*PI2,bw:0.5+0.6*Math.random(),off:0,v:0,hit:0});
+  }
+  const neb=[{o:0},{o:2.1},{o:4.2}];
+
+  function drawShield(){
+    const mc=M();
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    for(const nb of neb){
+      const nx=cx+Math.sin(t*0.004+nb.o)*R3*0.5, ny=cy+Math.cos(t*0.0035+nb.o*1.3)*R3*0.45, rr=R3*0.95;
+      const g=ctx.createRadialGradient(nx,ny,2,nx,ny,rr);
+      g.addColorStop(0,'rgba('+mc+',0.05)'); g.addColorStop(1,'rgba('+mc+',0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(nx,ny,rr,0,PI2); ctx.fill();
+    }
+    ctx.restore();
+
+    for(let i=ripples.length-1;i>=0;i--){ if(ripples[i].age>150) ripples.splice(i,1); else ripples[i].age+=SPEED; }
+
+    const spin=t*0.004, cs=Math.cos(spin), ss=Math.sin(spin), tlt=0.42, ct=Math.cos(tlt), st=Math.sin(tlt);
+    scx.clearRect(0,0,W,H); scx.globalCompositeOperation='lighter';
+    for(const p of ring){
+      p.v += -p.off*0.09; p.v *= 0.82; p.off += p.v; p.hit *= 0.90;
+      let x=p.dir[0], y=p.dir[1], z=p.dir[2];
+      const x1=x*cs+z*ss, z1=-x*ss+z*cs;
+      const y2=y*ct - z1*st, z2=y*st + z1*ct;
+      p.cx=x1; p.cy=y2; p.cz=z2;
+      let rip=0, ripBr=0;
+      for(const rp of ripples){
+        let dt=x1*rp.nx+y2*rp.ny+z2*rp.nz; dt=dt<-1?-1:dt>1?1:dt;
+        const ang=Math.acos(dt), front=rp.age*0.020, d=ang-front;
+        const env=Math.exp(-(d*d)/0.05), decay=Math.max(0,1-rp.age/130);
+        rip += R3*0.08*decay*env; ripBr += env*decay*0.55;
+      }
+      const baseFrac=p.dust?p.rr:1.0;
+      const restR=R3*baseFrac, tightR=R3*0.82*baseFrac;
+      const rad=restR+(tightR-restR)*coh + p.off + rip + Math.sin(t*0.016+p.ph)*(R3*0.03)*(1-coh);
+      const a=proj(x1*rad,y2*rad,z2*rad); if(!a) continue;
+      const depth=Math.max(0.3,Math.min(1.7,a.s));
+      const facing=(z2+1)/2, fF=z2>0?1:0.45;
+      const tw=0.4+0.6*(0.5+0.5*Math.sin(t*0.3+p.ph));
+      const br=(0.30+0.4*coh)*p.bw*tw*fF + 0.25*coh*facing + p.hit + ripBr*fF;
+      if(br<0.02) continue;
+      scx.fillStyle='rgba('+mc+','+Math.min(1,br)+')';
+      const s=(p.dust?1.3:1.7)*depth*(0.9+0.2*coh);
+      scx.fillRect(a.x,a.y,s,s);
+    }
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    /* The bloom, computed small. This used to be a full-resolution Gaussian —
+       ctx.filter='blur(6px)' across the whole offscreen, 1880x1880 at DPR 2,
+       every frame — and on its own it measured about a third of the frame
+       budget. A blur is a low-pass filter, so it does not need the pixels: the
+       glow goes into a quarter-size buffer and is stretched back, and the 4x
+       upscale IS the blur. A sixteenth of the work for the same soft halo. */
+    bcx.clearRect(0,0,bcv.width,bcv.height);
+    bcx.drawImage(scv,0,0,bcv.width,bcv.height);
+    ctx.globalAlpha=0.5; ctx.drawImage(bcv,0,0,W,H);
+    ctx.globalAlpha=1; ctx.drawImage(scv,0,0,W,H);
+    ctx.restore();
+  }
+
+  function spawn(){
+    const u=unitDir();
+    const dist=R3*(2.4+Math.random()*1.6);
+    const sp=0.9+Math.random()*1.8;
+    return {x:u[0]*dist,y:u[1]*dist,z:u[2]*dist,vx:-u[0]*sp,vy:-u[1]*sp,vz:-u[2]*sp,
+            digit:String(Math.floor(Math.random()*10)), rot:Math.random()*6.2832, rv:(Math.random()-0.5)*0.12, fsv:0.75+Math.random()*0.5};
+  }
+  for(let i=0;i<2;i++)attackers.push(spawn());
+
+  function explode(px,py,pz){
+    load=Math.min(1.8, load+0.09);
+    const m=Math.hypot(px,py,pz)||1;
+    const n=[px/m,py/m,pz/m];
+    ripples.push({nx:n[0],ny:n[1],nz:n[2],age:0});
+    numlit.push({x:px,y:py,z:pz,life:1});
+    const a=Math.abs(n[2])<0.9?[0,0,1]:[0,1,0];
+    let t1=cross(n,a);const tm=Math.hypot(...t1)||1;t1=[t1[0]/tm,t1[1]/tm,t1[2]/tm];
+    const t2=cross(n,t1);
+    const cnt=10+Math.floor(Math.random()*6);
+    for(let i=0;i<cnt;i++){
+      const ang=Math.random()*Math.PI*2;
+      const tan=(0.6+Math.random()*1.4), out=(0.2+Math.random()*0.8);
+      sparks.push({x:px,y:py,z:pz,
+        vx:(t1[0]*Math.cos(ang)+t2[0]*Math.sin(ang))*tan+n[0]*out,
+        vy:(t1[1]*Math.cos(ang)+t2[1]*Math.sin(ang))*tan+n[1]*out,
+        vz:(t1[2]*Math.cos(ang)+t2[2]*Math.sin(ang))*tan+n[2]*out,
+        life:1,size:1.1+Math.random()*1.1});
+    }
+  }
+
+  function buildMask(time){
+    mctx.setTransform(DPR,0,0,DPR,0,0);
+    mctx.globalCompositeOperation='source-over';
+    mctx.clearRect(0,0,OW,OH);
+    mctx.fillStyle='#fff';
+    mctx.textAlign='center'; mctx.textBaseline='middle';
+    mctx.font='300 '+FS+'px '+FAM;
+    const n=chars.length, total=(n-1)*STAG+PD/2;
+    const activity=0.8+0.2*Math.min(1,coh*1.6);
+    const sx=new Array(n), adv=new Array(n); let sum=0;
+    for(let i=0;i<n;i++){
+      const lt=((time - i*STAG)%total+total)%total;
+      const bump=lt<PD ? (1-Math.cos(6.2832*lt/PD))/2 : 0;
+      const wv=NARROW+(WIDE-NARROW)*bump;
+      sx[i]=1+(wv-1)*activity; adv[i]=cw[i]*sx[i]; sum+=adv[i];
+    }
+    let x=OW/2 - sum/2;
+    for(let i=0;i<n;i++){
+      const cxc=x+adv[i]/2, y=OH/2;
+      mctx.save(); mctx.translate(cxc,y); mctx.scale(sx[i],1); mctx.fillText(chars[i],0,0); mctx.restore();
+      x+=adv[i];
+    }
+  }
+  function drawNumber(time){
+    tctx.setTransform(DPR,0,0,DPR,0,0);
+    tctx.globalCompositeOperation='source-over';
+    tctx.clearRect(0,0,OW,OH);
+    const m=cfg.main, lit=Math.min(1,coh*1.3);
+    const tg=[Math.min(255,m[0]+95),Math.min(255,m[1]+30),Math.min(255,m[2]+18)];
+    const cr=Math.round(m[0]+(tg[0]-m[0])*lit), cg=Math.round(m[1]+(tg[1]-m[1])*lit), cb=Math.round(m[2]+(tg[2]-m[2])*lit);
+    tctx.fillStyle='rgba('+cr+','+cg+','+cb+',1)';
+    tctx.fillRect(0,0,OW,OH);
+    buildMask(time);
+    tctx.globalCompositeOperation='destination-in';
+    tctx.drawImage(mk,0,0,OW,OH);
+    tctx.globalCompositeOperation='source-atop';
+    /* specks removed — clean number, no shadow texture */
+    const im=cfg.impact.join(',');
+    for(let i=numlit.length-1;i>=0;i--){
+      const f=numlit[i]; f.life-=0.022*SPEED;
+      if(f.life<=0){ numlit.splice(i,1); continue; }
+      const a=proj(f.x,f.y,f.z); if(!a) continue;
+      const lx=a.x-(cx-OW/2), ly=a.y-(cy-OH/2), rad=R3*0.9;
+      const g=tctx.createRadialGradient(lx,ly,0,lx,ly,rad);
+      g.addColorStop(0,'rgba('+im+','+(f.life*0.95)+')');
+      g.addColorStop(1,'rgba('+im+',0)');
+      tctx.fillStyle=g; tctx.fillRect(0,0,OW,OH);
+    }
+    tctx.globalCompositeOperation='source-over';
+    ctx.drawImage(txt, cx-OW/2, cy-OH/2, OW, OH);
+  }
+
+  function step(){
+    t+=SPEED;
+    ctx.clearRect(0,0,W,H);   // transparent background — sits on the page color
+
+    stormTimer-=SPEED;
+    if(stormTimer<=0){
+      stormTarget = Math.random()<0.5 ? (0.8+Math.random()*0.2) : (Math.random()*0.12);
+      stormTimer = 90+Math.floor(Math.random()*150);
+    }
+    storm += (stormTarget-storm)*0.05;
+    let rate=Math.max(0,storm-0.35)*0.28;
+    while(rate>0 && attackers.length<4){ if(Math.random()<rate) attackers.push(spawn()); rate-=1; }
+    load*=0.955;
+    const tc=Math.min(1,load); coh += (tc-coh)*(tc>coh?0.10:0.03);
+
+    const mc=M();
+    for(let i=attackers.length-1;i>=0;i--){
+      const p=attackers[i];
+      const d3=Math.hypot(p.x,p.y,p.z);
+      if(d3<=R3){ explode(p.x,p.y,p.z); attackers.splice(i,1); continue; }
+      p.x+=p.vx*SPEED;p.y+=p.vy*SPEED;p.z+=p.vz*SPEED;
+      const a=proj(p.x,p.y,p.z); if(!a){attackers.splice(i,1);continue;}
+      const depth=Math.max(0.3,Math.min(1.8,a.s));
+      const r=(1.4+0.5*p.fsv)*depth;
+      ctx.save();
+      ctx.fillStyle='rgba('+mc+',0.95)';
+      ctx.shadowColor='rgba('+mc+',0.9)'; ctx.shadowBlur=7*depth;
+      ctx.beginPath(); ctx.arc(a.x,a.y,r,0,6.2832); ctx.fill();
+      ctx.restore();
+    }
+
+    for(let i=sparks.length-1;i>=0;i--){
+      const s=sparks[i];
+      s.x+=s.vx*SPEED;s.y+=s.vy*SPEED;s.z+=s.vz*SPEED;
+      s.vx*=0.977;s.vy*=0.977;s.vz*=0.977;
+      s.life-=0.03*SPEED;
+      if(s.life<=0){sparks.splice(i,1);continue;}
+      const a=proj(s.x,s.y,s.z); if(!a){sparks.splice(i,1);continue;}
+      const al=Math.min(1, s.life*1.8);
+      ctx.fillStyle='rgba('+mc+','+al+')';
+      const dep=Math.max(0.3,Math.min(1.7,a.s));
+      const sz=s.size*dep;
+      ctx.fillRect(a.x,a.y,sz,sz);
+    }
+
+    drawShield();
+    drawNumber(t/60);
+    raf=requestAnimationFrame(step);
+  }
+
+  let raf=0;
+  resize();
+  if(typeof ResizeObserver!=='undefined'){ new ResizeObserver(()=>resize()).observe(canvas); }
+  window.addEventListener('resize',resize);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ resize(); raf=requestAnimationFrame(step); }));
+  })(document.getElementById('viz'), {"mode":"dark","main":[120,225,235],"impact":[215,250,255],"digitFS":15});
+
+  /* ===== Scene 3 background : pass-through viz (from assets/BKGD 3.html)
+     Adapted: fixed phone number ===== */
+  (function runViz(canvas, cfg){
+  const ctx=canvas.getContext('2d');
+  const P=cfg.P;
+  let fg=cfg.fg.slice(), bg=cfg.bg.slice(), accent=cfg.accent.slice();
+  let pierceCol=(cfg.pierceCol&&cfg.pierceCol.length)?cfg.pierceCol.slice():[92,230,160];
+  let userLayerCols=(cfg.layerCols&&cfg.layerCols.length)?cfg.layerCols.map(c=>c.slice()):null;
+  /* The backing store is capped by a PIXEL BUDGET, not by devicePixelRatio
+     alone. The scene-2 canvas is 940x940 CSS on a 393-wide frame — .stage clips
+     it, so about a third of it is ever visible — and at DPR 2 that is an
+     1880x1880 surface, 3.5 megapixels, redrawn every frame. Measured: capping
+     it took the intro from 8.5fps to 15.9. The budget only bites on an
+     oversized canvas; the 440x440 one below stays at full DPR, so this costs
+     resolution on exactly the surface that could spare it. */
+  const PX_BUDGET=1.1e6;
+  function dprFor(w,h){
+    return Math.min(window.devicePixelRatio||1, 2, Math.sqrt(PX_BUDGET/Math.max(1,w*h)));
+  }
+  let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+  let cx=0,cy=0,R3=0;
+  const CAM=820,F=820;
+  let t=0,heat=0,numT=0,act=0,shineTimer=0;
+  const SHINE_FRAMES=30;
+  const PD=1.3,STAG=0.12;
+  const FNT='44px "SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,sans-serif';
+  const CHARS='0123456789#*+';
+  const SEG=80;
+
+  let COL='120,205,230', HOT='180,228,242', gTop='#234',gMid='#eaf',gBot='#123', clearCol='0,0,0', bgLight=false, LAYERCOLS=[];
+  let PCOL='92,230,160', PHOT='180,255,220';
+  /* Yellow, because it is spam and it does not get in. Yuan, 24 Aug: "黄色的点
+     被挡在外面因为是spam". Was orange (238,126,42), which read as a third colour
+     beside the teal rather than as the other half of a pair. */
+  const WCOL='235,196,62', WHOT='255,235,150';   /* blocked (wall) dot — yellow */
+  function mix(c,target,a){return [Math.round(c[0]+(target[0]-c[0])*a),Math.round(c[1]+(target[1]-c[1])*a),Math.round(c[2]+(target[2]-c[2])*a)];}
+  function rgb(a){return 'rgb('+a[0]+','+a[1]+','+a[2]+')';}
+  function lum(c){return (0.2126*c[0]+0.7152*c[1]+0.0722*c[2])/255;}
+  function setColors(){
+    bgLight=lum(bg)>0.5;
+    clearCol=bg.join(',');
+    COL=fg.join(',');
+    if(bgLight){HOT=mix(fg,[0,0,0],0.35).join(',');gTop=rgb(mix(fg,[0,0,0],0.55));gMid=rgb(mix(fg,[0,0,0],0.15));gBot=rgb(mix(fg,[0,0,0],0.62));}
+    else{HOT=mix(fg,[255,255,255],0.6).join(',');gTop=rgb(mix(fg,[0,0,0],0.5));gMid=rgb(mix(fg,[255,255,255],0.85));gBot=rgb(mix(fg,[0,0,0],0.58));}
+    const auto=[accent.slice(), fg.slice(), mix(accent,fg,0.5), [150,120,235], mix(fg,[255,255,255],0.4), mix(accent,[255,90,60],0.5)];
+    LAYERCOLS = userLayerCols ? userLayerCols.map(c=>c.slice()) : auto;
+    PCOL=pierceCol.join(',');
+    /* 0.28 white on black made the pass dot read WHITE, and the one thing it
+       has to read as is blue — Yuan, 24 Aug: "蓝色的点pass through过去". Just
+       enough white to keep a hot core. */
+    PHOT=mix(pierceCol,[255,255,255],bgLight?0.12:0.14).join(',');
+  }
+  setColors();
+  const GLOW=()=>bgLight?'source-over':'lighter';
+  const FADE=()=>bgLight?0.5:P.fade;
+
+  const OW=680,OH=150;
+  const txt=document.createElement('canvas'),tctx=txt.getContext('2d');
+  const mk=document.createElement('canvas'),mctx=mk.getContext('2d');
+  function sizeOff(){txt.width=OW*DPR;txt.height=OH*DPR;tctx.setTransform(DPR,0,0,DPR,0,0);mk.width=OW*DPR;mk.height=OH*DPR;mctx.setTransform(DPR,0,0,DPR,0,0);}
+  sizeOff();
+
+  function resize(){
+    W=Math.max(2,canvas.clientWidth);H=Math.max(2,canvas.clientHeight);
+    DPR=dprFor(W,H);
+    canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+    cx=W/2;cy=H/2;R3=Math.min(W,H)*0.33;
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  let chars=[],cw=[],glyphTint=[];
+  /* The centre is one line or two — the number, the address, or both, decided by
+     the door (see CG_USER at the top of the file). Each row is measured and
+     scaled to fit the 680px board on its own: an address is about twice a phone
+     number's width and would otherwise run off the ends. */
+  const FAM3='"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,sans-serif';
+  const ROWH=64;
+  let LINES=(window.CG_USER&&window.CG_USER.lines)?window.CG_USER.lines.slice():['512 835-5416'];
+  let rows=[];
+  function layoutPhone(){
+    mctx.setTransform(DPR,0,0,DPR,0,0);
+    const n=LINES.length;
+    rows=LINES.map(function(s,r){
+      const ch=s.split('');
+      const fs=n>1?34:44;
+      mctx.font='300 '+fs+'px '+FAM3;
+      const w=ch.map(function(c){return mctx.measureText(c).width;});
+      let tw=0; for(let i=0;i<w.length;i++) tw+=w[i];
+      return {chars:ch, cw:w, fs:fs, sc:Math.min(1,(OW*0.9)/Math.max(1,tw)),
+              y:OH/2+(n>1?(r-(n-1)/2)*ROWH:0)};
+    });
+    /* overInk() and the hit ripples read the mask, not these — kept because the
+       wobble's phase count is per row now and the first row is the reference */
+    chars=rows[0].chars; cw=rows[0].cw;
+  }
+  layoutPhone();
+
+  function proj(x,y,z){const dz=CAM-z;if(dz<=1)return null;const s=F/dz;return {x:cx+x*s,y:cy+y*s,s:s};}
+  function unitDir(){let x=Math.random()*2-1,y=Math.random()*2-1,z=Math.random()*2-1;const m=Math.hypot(x,y,z)||1;return [x/m,y/m,z/m];}
+  function cross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
+  function basis(n){let up=Math.abs(n[1])<0.9?[0,1,0]:[1,0,0];let u=cross(n,up);const m=Math.hypot(u[0],u[1],u[2])||1;u=[u[0]/m,u[1]/m,u[2]/m];return [u,cross(n,u)];}
+
+  let projectile=null, cooldown=40;
+  let lastN=[0.3,0.6,0.74];
+  const ripples=[], blooms=[];
+  function spawnProjectile(){
+    let u=unitDir();
+    const dist=R3*4.2, sp=R3*P.attack*1.8;   /* spam attacks fast & aggressive */
+    projectile={x:u[0]*dist,y:u[1]*dist,z:u[2]*dist,vx:-u[0]*sp,vy:-u[1]*sp,vz:-u[2]*sp,
+      label:CHARS[Math.floor(Math.random()*CHARS.length)],rot:Math.random()*6.2832,vrot:(Math.random()-0.5)*0.08};
+  }
+  function blast(n){
+    heat=1;
+    lastN=n.slice();
+    blooms.push({n:n.slice(),age:0});
+    const L=1+Math.floor(Math.random()*Math.max(1,Math.round(P.layers)));
+    for(let i=0;i<L;i++){
+      const lifeMul = i===0 ? 1 : (1 + Math.random()*Math.max(0,P.lifeVar)*2.5);
+      const life=P.rippleLife*lifeMul;
+      const rad = i===0 ? P.ringSize : (P.ringSize + Math.random()*0.40);
+      const delay=Math.round(Math.random()*78);
+      ripples.push({n:n.slice(),age:-delay,life:life,rad:rad,
+                    col:(LAYERCOLS[i]||LAYERCOLS[LAYERCOLS.length-1]).slice()});
+    }
+  }
+
+  const PLABS=['Family','Delivery','Friend','Work'];let plab=0;
+  const piercers=[];
+  const hits=[];
+  const hitFlashes=[];
+  let numDW=0,numDH=0,numOX=0,numOY=0;
+  function shineNumber(){ shineTimer=SHINE_FRAMES; heat=1; }
+  function addHit(sx,sy){
+    let lx=OW/2, ly=OH/2;
+    if(numDW>0){ lx=(sx-numOX)/numDW*OW; ly=(sy-numOY)/numDH*OH; }
+    hits.push({x:lx,y:ly,age:0,life:SHINE_FRAMES});
+    hitFlashes.push({x:sx,y:sy,age:0,life:16});
+    shineNumber();
+  }
+  function drawHitFlash(f){
+    f.age++; const u=f.age/f.life; if(u>=1) return false;
+    const a=(1-u);
+    ctx.globalCompositeOperation=GLOW();
+    const r=3+u*18;
+    ctx.strokeStyle='rgba('+PHOT+','+(0.7*a)+')';
+    ctx.lineWidth=2*(1-u)+0.5;
+    ctx.beginPath();ctx.arc(f.x,f.y,r,0,6.2832);ctx.stroke();
+    const cr=12;
+    const g=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,cr);
+    g.addColorStop(0,'rgba(255,255,255,'+(0.95*a)+')');
+    g.addColorStop(0.45,'rgba('+PHOT+','+(0.85*a)+')');
+    g.addColorStop(1,'rgba('+PCOL+',0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(f.x,f.y,cr,0,6.2832);ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+    return true;
+  }
+
+  let mode='wall';
+  let modeTimer=0, waveLeft=0, waveDelay=0;
+  let wallLeft=Math.max(0,Math.round(P.wall||3));
+  function gotoPassOrWall(){
+    if(Math.round(P.pierce)>=1){ mode='gapToPass'; modeTimer=Math.round(P.phaseGap); }
+    else { wallLeft=Math.max(1,Math.round(P.wall)); cooldown=Math.round(P.gapMin+Math.random()*P.gapRand); }
+  }
+  function onWallResolved(){
+    wallLeft--;
+    if(wallLeft>0){ cooldown=Math.round(P.gapMin+Math.random()*P.gapRand); }
+    else { gotoPassOrWall(); }
+  }
+  function scheduler(){
+    if(mode==='wall'){
+      if(wallLeft<=0 && !projectile){ gotoPassOrWall(); }
+      return;
+    }
+    if(mode==='gapToPass'){ if(--modeTimer<=0){ mode='pass'; waveLeft=Math.max(0,Math.round(P.pierce)); waveDelay=0; } return; }
+    if(mode==='pass'){
+      if(waveLeft>0){ if(--waveDelay<=0){ piercers.push(makePiercer()); waveLeft--; waveDelay=Math.round(10+Math.random()*16); } }
+      else if(piercers.length===0){ mode='gapToWall'; modeTimer=Math.round(P.phaseGap); }
+      return;
+    }
+    if(mode==='gapToWall'){ if(--modeTimer<=0){ mode='wall'; wallLeft=Math.max(0,Math.round(P.wall)); cooldown=Math.round(P.gapMin+Math.random()*P.gapRand); } }
+  }
+  function makePiercer(){
+    let u=unitDir(), rg=0;
+    while(Math.abs(u[1])<0.35 && rg++<9) u=unitDir();   /* settle above/below the number */
+    const startD=R3*(2.2+Math.random()*3.0);
+    const sp=R3*P.attack*(0.45+Math.random()*0.25);   /* welcome callers drift in gently */
+    return {x:u[0]*startD,y:u[1]*startD,z:u[2]*startD,
+            vx:-u[0]*sp,vy:-u[1]*sp,vz:-u[2]*sp,
+            stopD:R3*(0.55+Math.random()*0.30),st:0,dt:0,
+            lab:PLABS[plab++%PLABS.length],
+            shined:false,life:0};
+  }
+  function overInk(sx,sy){
+    if(numDW<=0) return false;
+    const lx=(sx-numOX)/numDW*OW, ly=(sy-numOY)/numDH*OH;
+    if(lx<0||lx>OW||ly<0||ly>OH) return false;
+    try{ return mctx.getImageData(Math.round(lx*DPR),Math.round(ly*DPR),1,1).data[3]>40; }
+    catch(e){ return false; }
+  }
+  function drawPiercer(pp){
+    pp.life++;
+    if(pp.st===0){
+      pp.x+=pp.vx;pp.y+=pp.vy;pp.z+=pp.vz;
+      const dNow=Math.hypot(pp.x,pp.y,pp.z);
+      if(dNow<=pp.stopD){ pp.st=1; }                     /* through the wall - settle inside the ring */
+      else if(dNow>R3*5.2 && pp.life>10) return false;
+    } else {
+      pp.vx*=0.93;pp.vy*=0.93;pp.vz*=0.93;               /* glide to a stop */
+      pp.x+=pp.vx;pp.y+=pp.vy;pp.z+=pp.vz;
+      if(++pp.dt>=100) return false;                     /* fully dissolved */
+    }
+    const p=proj(pp.x,pp.y,pp.z);
+    if(!p) return false;
+    const depth=Math.max(0.3,Math.min(1.7,p.s));
+    const u=pp.st?pp.dt/100:0;
+    const fade=Math.pow(1-u,1.6);                        /* soft dissolve */
+    const spread=1+u*6.0;                                /* spreads outward as it fades */
+    ctx.globalCompositeOperation=GLOW();
+    if(pp.st===0){
+      const b=proj(pp.x-pp.vx*7,pp.y-pp.vy*7,pp.z-pp.vz*7);
+      if(b){const tg=ctx.createLinearGradient(p.x,p.y,b.x,b.y);
+        tg.addColorStop(0,'rgba('+PCOL+',0.5)');tg.addColorStop(1,'rgba('+PCOL+',0)');
+        ctx.strokeStyle=tg;ctx.lineWidth=1.8*depth;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.lineCap='butt';}
+    }
+    const rr=(2.6+2.4*depth)*spread;
+    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,rr);
+    g.addColorStop(0,'rgba('+PHOT+','+(0.85*fade).toFixed(3)+')');
+    g.addColorStop(0.5,'rgba('+PCOL+','+(0.55*fade).toFixed(3)+')');
+    g.addColorStop(1,'rgba('+PCOL+',0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,rr,0,6.2832);ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+    if(pp.st===1 && pp.lab){
+      const li=Math.min(1,u/0.18);                      /* fade in */
+      const lo=u>0.68?Math.max(0,1-(u-0.68)/0.32):1;    /* fade out */
+      let lb;                                           /* blur: soft -> sharp -> soft */
+      if(u<0.34) lb=7*(1-u/0.34);
+      else if(u>0.62) lb=7*((u-0.62)/0.38);
+      else lb=0;
+      ctx.filter='blur('+lb.toFixed(1)+'px)';
+      ctx.font='400 13px -apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillStyle='rgba(240,248,250,'+(0.95*li*lo).toFixed(3)+')';
+      ctx.fillText(pp.lab,p.x,p.y);
+      ctx.filter='none';
+    }
+    return true;
+  }
+
+  function drawRipple(rp){
+    rp.age++;
+    if(rp.age<0) return true;
+    const u=rp.age/rp.life;
+    if(u>=1) return false;
+    const n=rp.n, b=basis(n), ux=b[0], vx=b[1];
+    const RR=R3*(rp.rad||1);
+    const APEX=Math.PI;
+    const SPD=APEX/160;
+    const ar0=Math.min(APEX, rp.age*SPD);
+    const overall=(1-u)*(1-u);
+    const STEPS=28, BAND=0.5;
+    ctx.globalCompositeOperation=GLOW();ctx.lineCap='round';ctx.lineJoin='round';
+    for(let s=0;s<STEPS;s++){
+      const f=s/(STEPS-1);
+      const ar=ar0 - f*BAND;
+      if(ar<=0.004) continue;
+      const env=Math.sin((1-f)*Math.PI/2);
+      const a=overall*env*P.glow*0.5;
+      if(a<0.006) continue;
+      const frontFrac=ar0/Math.PI;
+      const whiteHead=Math.max(0,1-frontFrac/Math.max(0.02,P.whiteReach));
+      const wmix=Math.min(0.6, whiteHead*(1-f));
+      const col=mix(rp.col,[255,255,255],wmix);
+      const ca=Math.cos(ar),sa=Math.sin(ar);
+      ctx.beginPath();let started=false;
+      for(let k=0;k<=SEG;k++){const th=k/SEG*6.2832,ct=Math.cos(th),st=Math.sin(th);
+        const x=ca*n[0]+sa*(ct*ux[0]+st*vx[0]);
+        const y=ca*n[1]+sa*(ct*ux[1]+st*vx[1]);
+        const z=ca*n[2]+sa*(ct*ux[2]+st*vx[2]);
+        const p=proj(x*RR,y*RR,z*RR);if(!p){started=false;continue;}
+        if(started)ctx.lineTo(p.x,p.y);else{ctx.moveTo(p.x,p.y);started=true;}}
+      ctx.strokeStyle='rgba('+col.join(',')+','+Math.min(0.8,a)+')';
+      ctx.lineWidth=9;ctx.stroke();
+    }
+    ctx.lineCap='butt';ctx.lineJoin='miter';ctx.globalCompositeOperation='source-over';
+    return true;
+  }
+
+  function drawBloom(bl){
+    bl.age++;
+    const u=bl.age/16; if(u>=1) return false;
+    const p=proj(bl.n[0]*R3,bl.n[1]*R3,bl.n[2]*R3);
+    if(p){
+      const rMax=R3*(0.10+0.55*P.whiteReach);
+      const r=rMax*(0.4+0.6*u), a=(1-u)*(1-u)*0.55;
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
+      g.addColorStop(0,'rgba(255,255,255,'+(a*0.9)+')');
+      g.addColorStop(0.4,'rgba('+mix(fg,[255,255,255],0.55).join(',')+','+(a*0.4)+')');
+      g.addColorStop(1,'rgba('+fg.join(',')+',0)');
+      ctx.globalCompositeOperation=GLOW();ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,r,0,6.2832);ctx.fill();
+      ctx.globalCompositeOperation='source-over';
+    }
+    return true;
+  }
+
+  function drawOrbit(phase,speed,tilt){
+    const pr=t*speed+phase;
+    let ax=[Math.sin(pr)*tilt, Math.cos(pr*0.8)*tilt*0.7, 1];
+    const ma=Math.hypot(ax[0],ax[1],ax[2])||1;ax=[ax[0]/ma,ax[1]/ma,ax[2]/ma];
+    const rb=basis(ax), ru=rb[0], rv=rb[1], Rr=R3*1.16;
+    ctx.globalCompositeOperation=GLOW();ctx.beginPath();let st=false;
+    for(let k=0;k<=90;k++){const th=k/90*6.2832,cct=Math.cos(th),s2=Math.sin(th);
+      const p=proj(Rr*(cct*ru[0]+s2*rv[0]),Rr*(cct*ru[1]+s2*rv[1]),Rr*(cct*ru[2]+s2*rv[2]));
+      if(!p){st=false;continue;}if(st)ctx.lineTo(p.x,p.y);else{ctx.moveTo(p.x,p.y);st=true;}}
+    ctx.strokeStyle='rgba('+fg.join(',')+',0.09)';ctx.lineWidth=1.1;ctx.stroke();
+    ctx.globalCompositeOperation='source-over';
+  }
+
+  function band(px,bw,col,a0,a1){const bg2=tctx.createLinearGradient(px-bw,0,px+bw,0);
+    bg2.addColorStop(0,col+a0+')');bg2.addColorStop(0.5,col+a1+')');bg2.addColorStop(1,col+a0+')');tctx.fillStyle=bg2;tctx.fillRect(0,0,OW,OH);}
+  function buildMask(time){
+    mctx.setTransform(DPR,0,0,DPR,0,0);mctx.globalCompositeOperation='source-over';mctx.clearRect(0,0,OW,OH);
+    mctx.fillStyle='#fff';mctx.strokeStyle='#fff';mctx.lineJoin='round';mctx.lineCap='round';
+    mctx.textAlign='center';mctx.textBaseline='middle';
+    const wAmp=P.numWidth*act;
+    /* Per ROW now. `- r*1.7` on the width wave and `- r*0.6` on the travelling
+       bump are so two lines do not breathe in lockstep, which reads as one
+       object rather than two. Each row's tint column is clipped to its own band;
+       full-height columns would have let the address's glyphs tint the number
+       underneath. */
+    const rh=rows.length>1?ROWH:OH;
+    glyphTint=[];
+    for(let r=0;r<rows.length;r++){
+      const R=rows[r], n=R.chars.length, total=(n-1)*STAG+PD/2;
+      mctx.font='300 '+R.fs+'px '+FAM3;
+      const ws=[],svs=[];let tw=0;
+      for(let i=0;i<n;i++){const sv=Math.sin(numT*0.009 - i*0.55 - r*1.7);svs.push(sv);const wi=1+wAmp*sv;ws.push(wi);tw+=R.cw[i]*wi;}
+      let px=-tw*R.sc/2;
+      for(let i=0;i<n;i++){
+        const lt=((time - i*STAG - r*0.6)%total+total)%total;
+        const bump=lt<PD ? (1-Math.cos(6.2832*lt/PD))/2 : 0;
+        const sw=bump*5.0*act, csc=1+0.16*bump*act, wi=ws[i];
+        const adv=R.cw[i]*wi*R.sc;
+        const cxi=px+adv/2; px+=adv;
+        glyphTint.push({cx:OW/2+cxi, w:adv, y0:R.y-rh/2, h:rh,
+                        t:Math.pow(Math.max(0,svs[i]),1.5)*heat});
+        mctx.save();mctx.translate(OW/2+cxi,R.y);mctx.scale(csc*wi*R.sc,csc*R.sc);
+        mctx.fillText(R.chars[i],0,0);
+        if(sw>0.05){mctx.lineWidth=sw/(csc*R.sc);mctx.strokeText(R.chars[i],0,0);}
+        mctx.restore();
+      }
+    }
+  }
+  function drawLiquidNumber(time){
+    tctx.setTransform(DPR,0,0,DPR,0,0);tctx.globalCompositeOperation='source-over';tctx.clearRect(0,0,OW,OH);
+    const g=tctx.createLinearGradient(0,0,0,OH);g.addColorStop(0,gTop);g.addColorStop(0.5,gMid);g.addColorStop(1,gBot);
+    tctx.fillStyle=g;tctx.fillRect(0,0,OW,OH);
+    tctx.globalCompositeOperation='lighter';
+    band((Math.sin(numT*0.020)*0.5+0.5)*OW,38,'rgba(255,255,255,','0','0.85');
+    band((Math.sin(numT*0.020+2.1)*0.5+0.5)*OW,30,'rgba(255,255,255,','0','0.7');
+    band((Math.sin(numT*0.020+4.2)*0.5+0.5)*OW,26,'rgba(200,245,255,','0','0.6');
+    tctx.globalCompositeOperation='multiply';
+    band((Math.sin(-numT*0.014)*0.5+0.5)*OW,55,'rgba(0,0,0,','0','0.6');
+    band((Math.sin(-numT*0.014+3.1)*0.5+0.5)*OW,40,'rgba(0,0,0,','0','0.5');
+    buildMask(time);
+    tctx.globalCompositeOperation='destination-in';tctx.drawImage(mk,0,0,OW,OH);
+    tctx.globalCompositeOperation='source-atop';
+    const accStr=accent.join(',');
+    for(const gt of glyphTint){if(gt.t<0.02)continue;tctx.fillStyle='rgba('+accStr+','+Math.min(1,gt.t)+')';tctx.fillRect(gt.cx-gt.w/2,gt.y0,gt.w,gt.h);}
+    const pStr=pierceCol.join(',');
+    const MAXR=OW*1.35;
+    for(let i=hits.length-1;i>=0;i--){
+      const h=hits[i]; h.age++;
+      const u=h.age/h.life;
+      if(u>=1){hits.splice(i,1);continue;}
+      const A=Math.min(1,2.4*(1-u));
+      const front=Math.min(0.985,0.03+u*1.02);
+      const s0=Math.max(0,front-0.30);
+      const sMid=Math.max(0.001,front-0.10);
+      const gg=tctx.createRadialGradient(h.x,h.y,0,h.x,h.y,MAXR);
+      gg.addColorStop(0,'rgba('+pStr+',0)');
+      if(s0>0) gg.addColorStop(s0,'rgba('+pStr+',0)');
+      gg.addColorStop(sMid,'rgba('+pStr+','+(0.55*A)+')');
+      gg.addColorStop(front,'rgba(255,255,255,'+(0.95*A)+')');
+      gg.addColorStop(Math.min(1,front+0.02),'rgba('+pStr+',0)');
+      gg.addColorStop(1,'rgba('+pStr+',0)');
+      tctx.fillStyle=gg;tctx.fillRect(0,0,OW,OH);
+    }
+    tctx.globalCompositeOperation='source-over';
+    const dw=Math.min(OW,2*R3*P.numScale),dh=OH*(dw/OW);
+    numDW=dw;numDH=dh;numOX=cx-dw/2;numOY=cy-dh/2;
+    ctx.drawImage(txt,cx-dw/2,cy-dh/2,dw,dh);
+  }
+
+  function step(){
+    t+=1;
+    heat*=0.95; if(shineTimer>0){shineTimer--; heat=1;}
+    act=heat; numT+=Math.max(act,0.15);
+    ctx.fillStyle='rgba('+clearCol+','+FADE()+')';ctx.fillRect(0,0,W,H);
+
+    drawOrbit(0.0, 0.006, 0.22);
+
+    if(projectile){
+      projectile.x+=projectile.vx;projectile.y+=projectile.vy;projectile.z+=projectile.vz;
+      const d3=Math.hypot(projectile.x,projectile.y,projectile.z);
+      if(d3<=R3 && !projectile.bnc){
+        const m=d3||1,n=[projectile.x/m,projectile.y/m,projectile.z/m];
+        blast(n);
+        const dv=projectile.vx*n[0]+projectile.vy*n[1]+projectile.vz*n[2];
+        projectile.vx=(projectile.vx-2*dv*n[0])*0.30;    /* bounce off the wall */
+        projectile.vy=(projectile.vy-2*dv*n[1])*0.30;
+        projectile.vz=(projectile.vz-2*dv*n[2])*0.30;
+        projectile.bnc=1;projectile.bAge=0;projectile.bLife=42;
+        onWallResolved();
+      }
+      else{
+        let fa=1;
+        if(projectile.bnc){
+          projectile.vx*=0.93;projectile.vy*=0.93;projectile.vz*=0.93;
+          fa=1-(++projectile.bAge)/projectile.bLife;     /* fade after the bounce */
+          if(fa<=0) projectile=null;
+        }
+        if(projectile){
+        const a=proj(projectile.x,projectile.y,projectile.z);
+        if(a){
+          const b=proj(projectile.x-projectile.vx*6,projectile.y-projectile.vy*6,projectile.z-projectile.vz*6);
+          const depth=Math.max(0.3,Math.min(1.7,a.s));
+          ctx.globalCompositeOperation=GLOW();
+          if(b){const tg=ctx.createLinearGradient(a.x,a.y,b.x,b.y);
+            tg.addColorStop(0,'rgba('+WHOT+','+(0.9*fa).toFixed(3)+')');tg.addColorStop(1,'rgba('+WCOL+',0)');
+            ctx.strokeStyle=tg;ctx.lineWidth=2*depth;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+          const rr=(2.2+2.2*depth);
+          const g=ctx.createRadialGradient(a.x,a.y,0,a.x,a.y,rr);
+          g.addColorStop(0,'rgba(255,232,205,'+(0.95*fa).toFixed(3)+')');
+          g.addColorStop(0.45,'rgba('+WHOT+','+(0.9*fa).toFixed(3)+')');
+          g.addColorStop(1,'rgba('+WCOL+',0)');
+          ctx.fillStyle=g;ctx.beginPath();ctx.arc(a.x,a.y,rr,0,6.2832);ctx.fill();
+          ctx.globalCompositeOperation='source-over';
+        } else projectile=null;
+        }
+      }
+    } else if(mode==='wall' && wallLeft>0){ cooldown--; if(cooldown<=0) spawnProjectile(); }
+
+    for(let i=ripples.length-1;i>=0;i--){ if(!drawRipple(ripples[i])) ripples.splice(i,1); }
+    for(let i=blooms.length-1;i>=0;i--){ if(!drawBloom(blooms[i])) blooms.splice(i,1); }
+
+    scheduler();
+    for(let i=piercers.length-1;i>=0;i--){ if(!drawPiercer(piercers[i])) piercers.splice(i,1); }
+
+    drawLiquidNumber(numT/60);
+    for(let i=hitFlashes.length-1;i>=0;i--){ if(!drawHitFlash(hitFlashes[i])) hitFlashes.splice(i,1); }
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+  })(document.getElementById('viz3'), {"P":{"numScale":1.4,"numWidth":0.16,"rippleLife":120,"gapMin":50,"gapRand":70,"glow":0.34,"layers":4,"whiteReach":0.18,"lifeVar":0.55,"ringSize":1.12,"fade":0.3,"attack":0.016,"wall":2,"pierce":5,"phaseGap":45},"fg":[120,205,230],"bg":[0,0,0],"accent":[74,144,255],"pierceCol":[74,144,255],"layerCols":[[235,196,62],[232,163,61],[198,152,44],[255,222,140],[150,112,32],[235,196,62]]});
+</script>
+</body>
+</html>

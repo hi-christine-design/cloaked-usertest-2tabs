@@ -1,0 +1,10 @@
+{
+  "name": "Cloaked \u2014 no ID cards",
+  "short_name": "Cloaked ID0",
+  "start_url": "./app.html?noid=1",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff"
+}

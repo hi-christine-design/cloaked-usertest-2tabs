@@ -1,0 +1,21 @@
+{
+  "name": "Cloaked · User test",
+  "short_name": "Cloaked UT",
+  "start_url": "./m.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1b1b18",
+  "theme_color": "#1b1b18",
+  "icons": [
+    {
+      "src": "V2/ut2/img/app-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "V2/ut2/img/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+<svg width="80" height="54" viewBox="0 0 80 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Online Shopping's card, as a badge. A CARD, not a disc: Figma 6673:220340
+     draws the transaction badge as the card itself, and a payment card is a
+     landscape rectangle wherever else it appears in this app (the 40x26 row
+     tile, the 353x232 face). It was a 40x40 circle, which is why Yuan could
+     not tell it was a card at all. 80x54 is card-dating.png's own size, so the
+     two card badges are the same object at the same aspect.
+     Both colours come from the card record in app.html: ground #8f4e1c, mark
+     #c9a0ee. The mark is the Cloaked logo (assets/CloakedPay/Cloaked Logo.svg,
+     16x12) at 45% of the card's width, NOT the 32.5% the face uses: the badge
+     renders at 22px, where 32.5% is a 7px mark and reads as a speck. The face
+     has 353px to play with and the badge has 22. -->
+<rect x="0" y="0" width="80" height="54" rx="8" fill="#8F4E1C"/>
+<g transform="translate(22 13.5) scale(2.25)" fill="#C9A0EE">
+<path d="M0.741518 7.57227C1.27284 7.57227 2.07804 7.99378 3.29425 8.65527C3.67192 8.86104 4.09398 9.09111 4.53937 9.32031L3.7923 11.1748C2.69827 10.758 0.442138 9.71284 0.0540179 8.64746C-0.0369816 8.39496 -0.0132938 8.15812 0.12726 7.92383C0.270459 7.68169 0.470808 7.57237 0.741518 7.57227ZM9.2464 0C9.37654 6.7494e-05 9.48894 0.0576511 9.55402 0.15918C10.3536 1.40417 11.4996 3.15153 12.4007 4.39648C13.5781 6.0245 15.4715 8.3514 16.0003 9C15.4686 9.54718 13.7751 10.9092 10.2747 10.6436L10.2278 10.6377C9.95085 10.6089 8.58893 10.456 7.43292 10.0654C6.42044 9.72184 4.9037 8.97219 4.89093 8.96582C4.50021 8.75743 4.12735 8.55181 3.7757 8.35645C2.76791 7.79657 1.93721 7.33572 1.26007 7.15332C3.15893 5.98639 6.80248 3.35774 8.9046 0.174805C8.97752 0.0654269 9.10545 2.98885e-05 9.24347 0H9.2464Z"/>
+</g>
+</svg>

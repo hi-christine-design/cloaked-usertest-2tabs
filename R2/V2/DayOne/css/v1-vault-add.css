@@ -1,0 +1,1732 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   FROM HERE TO THE END OF THIS BLOCK: NOT day-gated.
+   The Add page, the create flows, the fake keyboard, the avatar sheet, the
+   created-item detail page and the rows a flow lands are the SAME component on
+   both days — the FAB opens this page on day 1 and on day 30 (Christine, R5) —
+   so these selectors carry no html.day1. They are safe ungated because every
+   subject is a d1j-* class that exists only on nodes this file injects; nothing
+   here can reach a day-30 node that was already in the markup. Anything that
+   re-skins an EXISTING node stays gated, above.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Add to vault (FAB → full page, Figma 5941:242113) ─────────────────── */
+.d1j-add {
+  position: fixed; inset: 0; z-index: 4000; background: #fff;
+  display: flex; flex-direction: column; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transform: translateY(100%); visibility: hidden; pointer-events: none;
+  transition: transform .35s cubic-bezier(.32,.72,0,1), visibility 0s .35s;
+}
+@media (min-width: 500px) and (hover: hover) and (pointer: fine) {
+  .phone-frame .d1j-add { position: absolute; }
+}
+.d1j-add.on {
+  transform: translateY(0); visibility: visible; pointer-events: auto;
+  transition: transform .35s cubic-bezier(.32,.72,0,1), visibility 0s;
+}
+.d1j-add-close {
+  position: absolute; right: 20px; top: 64px; width: 40px; height: 40px;
+  border-radius: 50%; border: 0; background: rgba(255,255,255,0.2);
+  box-shadow: 0 0 8px rgba(0,0,0,0.08);
+  display: flex; align-items: center; justify-content: center;
+  color: #141410; cursor: pointer; z-index: 2;
+}
+.d1j-add-close svg { width: 24px; height: 24px; display: block; }
+/* Figma 5941:242113 puts the title at y=120 — directly under the 120-tall
+   close bar rather than on the same line as the X — and draws it in the serif
+   face at 26/1.2, which is the 31px box the frame measures. It no longer has to
+   dodge the X, so it takes the full width. The WORDS are untouched (V1 "Create
+   identity", V2/V3 "Add to vault"): Yuan, 25 Aug, "title should be the same as
+   right now". */
+.d1j-add-title {
+  position: absolute; left: 20px; right: 20px; top: 120px; z-index: 2;
+  font-family: var(--d1-serif); font-weight: 400;
+  font-size: 26px; line-height: 1.2; letter-spacing: -0.01em;
+  color: #141410;
+}
+/* 217, which is where the frame starts the grid — the title's own line has to
+   fit between the close bar and it. */
+.d1j-add-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  margin: 217px 20px 0;
+}
+/* 172, the frame's tile. The radius stays 16: 5941:242113 does not carry one,
+   and a screenshot is not a measurement. */
+.d1j-add-cell {
+  position: relative; height: 172px; background: #fff;
+  border: 1px solid #e0ddd6; border-radius: 16px; overflow: hidden;
+  cursor: default;
+}
+/* 5941:242113 measures 20/20 from the cell's OUTER edge, and `left`/`top` on an
+   absolute child start INSIDE the 1px border — so 19 lands the glyph on 20.
+   Same compensation as before; only the frame's number moved (19 → 20). */
+.d1j-add-cell .icon {
+  position: absolute; left: 19px; top: 19px; width: 24px; height: 24px;
+  color: #141410;
+}
+.d1j-add-cell .icon svg { width: 24px; height: 24px; display: block; }
+/* The frame's label box is 128..152 inside a 172 tile — 20 from the bottom,
+   19 inside the border. The 20px type is unchanged and was already right:
+   Figma measures "Password" at 99 wide, which is what 20px gives in this face. */
+.d1j-add-cell .lbl {
+  position: absolute; left: 19px; bottom: 19px;
+  font-size: 20px; line-height: 1.2; letter-spacing: 0.1px; color: #141410;
+  white-space: nowrap;
+}
+/* 22 above, not 16 — the button's top edge is 774 and the grid ends at 752.
+   Its glyph sits 31 from the label, which is what puts the pair where Figma
+   has it (icon at 49) rather than tight to the middle. */
+/* The frame puts this at y=765 — 16 under a grid that ends at 749, and 32 above
+   the frame's bottom edge, which is what the bottom margin keeps.
+   `position: static` because V1's OTHER sheet declares this same button
+   `position: fixed; left: 20; right: 20; bottom: 32`, and this rule (loaded
+   second) overrode its margins but not its positioning: the two combined into a
+   313-wide pill inset 40 from each edge, floating 64 up. One button, two sheets,
+   and three numbers neither of them asked for. */
+.d1j-add-import {
+  flex: none; position: static; height: 56px; margin: 16px 20px 32px;
+  border: 1px solid #e0ddd6; border-radius: 300px; background: #fff;
+  display: flex; align-items: center; justify-content: center; gap: 31px;
+  font-size: 16px; letter-spacing: -0.16px; color: #141410; cursor: default;
+}
+.d1j-add-import svg { width: 24px; height: 24px; display: block; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DAY 1 · CREATE-ITEM FLOWS (Figma 5941:242114) — motion ported from the R1
+   identity-prototype (02_Features/.../R1 identity-prototype/onboarding-v1.html).
+   Its four numbers are the whole vocabulary, so they are named once here and
+   every flow below reads them:
+     --d1-ease  cubic-bezier(.22,.61,.36,1)   content settle
+     --d1-rise  cubic-bezier(.2,0,0,1)        anything travelling up (keyboard,
+                                              word masks, cards, sheets)
+     --d1-nav   cubic-bezier(.4,0,.2,1)       colour/canvas floods
+     --d1-page  cubic-bezier(.32,.72,0,1)     the 350ms page push .d1j-page uses
+   ══════════════════════════════════════════════════════════════════════════ */
+html {
+  --d1-ease: cubic-bezier(.22,.61,.36,1);
+  --d1-rise: cubic-bezier(.2,0,0,1);
+  --d1-nav: cubic-bezier(.4,0,.2,1);
+  --d1-page: cubic-bezier(.32,.72,0,1);
+  /* 291, which is what day01.css declares for .kbd — the keyboard these pages
+     actually show. It said 238 ("the fake keyboard's own height", from .d1j-kb's
+     own box), so every reservation anchored to it was 53px short: Save landed at
+     254-310 against keys occupying 0-291 (Yuan, 26 Aug: "can you move up the
+     button"), the smart bar at 238-294 was covered outright, and the alias
+     flow's Save had to be HIDDEN while the words field was open for the same
+     reason — see .d1j-ae .d1j-wzs.words .d1j-ae-next. One number, three
+     symptoms. .d1j-kb reads it as its own height, so the drawn keyboard now
+     matches the real one instead of being 53px shorter than it. */
+  --d1-kbh: 291px;
+  --d1-serif: ui-serif, 'New York', 'Simula', Georgia, 'Times New Roman', serif;
+  --d1-tone: #b3a266;              /* per-flow accent, set inline by the JS */
+}
+
+/* ── the flow shell ───────────────────────────────────────────────────────
+   Same push as .d1j-page (320ms), one layer above it and above the Add page,
+   so a flow covers the page it was opened from and ✕ unwinds one step. */
+.d1j-flow {
+  position: fixed; inset: 0; z-index: 4200;
+  background: #fff; color: #141410;
+  /* clip, not hidden: `hidden` leaves a scrollable box, and the parked sheet
+     and the 1145px flood sit well below the fold — so one scrollIntoView (a
+     focused field, a chip, the on-screen keyboard) dragged the whole layer up
+     and the sheet stood halfway across the screen. `clip` cannot scroll. */
+  overflow: hidden; overflow: clip;
+  transform: translateX(100%);
+  visibility: hidden; pointer-events: none;
+  transition: transform .35s var(--d1-page), visibility 0s .35s;
+}
+.d1j-flow.on {
+  transform: translateX(0); visibility: visible; pointer-events: auto;
+  transition: transform .35s var(--d1-page);
+}
+.d1j-det { z-index: 4300; }
+@media (min-width: 500px) and (hover: hover) and (pointer: fine) {
+  .phone-frame .d1j-flow { position: absolute; }
+}
+
+/* progress: three thin segments, the R1 story bar at .4s */
+.d1j-prog {
+  position: absolute; left: 20px; right: 76px; top: 76px; z-index: 3;
+  display: flex; gap: 4px;
+}
+.d1j-prog i {
+  height: 4px; flex: 1; border-radius: 1px; background: #e0ddd6;
+  transition: background .4s;
+}
+.d1j-prog i.f { background: #141410; }
+/* dark beat: the bar and the ✕ invert with the screen */
+.d1j-flow.dark .d1j-prog i { background: rgba(243,241,237,.22); }
+.d1j-flow.dark .d1j-prog i.f { background: #f3f1ed; }
+
+.d1j-x {
+  position: absolute; right: 20px; top: 64px; z-index: 4;
+  width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 8px rgba(0,0,0,.08), 0 8px 16px rgba(0,0,0,.10);
+  display: flex; align-items: center; justify-content: center;
+  color: #141410; cursor: pointer; transition: background .5s, color .5s, box-shadow .5s;
+}
+.d1j-x svg { width: 24px; height: 24px; display: block; }
+.d1j-x.d1j-nav-back { left: 20px; right: auto; }
+/* ...except on the saved screen, where this same button stops being a back
+   arrow and becomes a close. Yuan, 25 Aug: "最后出现的页面close在左边也不对".
+   Scoped by the state rather than moved outright, because steps 1 and 2 use the
+   very same element as their back arrow and it belongs on the left there.
+   This sheet rather than day01.css: V3 keeps the rule here, and it loads last. */
+.d1j-flow:has(.d1j-gen.done) .d1j-x.d1j-nav-back { left: auto; right: 20px; }
+.d1j-flow:has(> .d1j-nav-back) .d1j-prog { left: 76px; right: 20px; }
+.d1j-flow:has(> .d1j-ae-back:not([hidden])) > .d1j-nav-back { display: none; }
+.d1j-x:active { transform: scale(.96); }
+.d1j-flow.dark .d1j-x {
+  background: rgba(243,241,237,.14); color: #f3f1ed; box-shadow: none;
+}
+
+/* ── steps: absolutely stacked, cross-faded (R1 .scr) ─────────────────── */
+.d1j-wzs {
+  position: absolute; inset: 0; z-index: 1;
+  opacity: 0; pointer-events: none; transition: opacity .45s ease;
+  overflow: hidden; overflow: clip;
+}
+.d1j-wzs.on { opacity: 1; pointer-events: auto; }
+/* R1's staggered content reveal, same delays */
+.d1j-rv {
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .45s ease, transform .45s var(--d1-rise);
+}
+.d1j-wzs.on .d1j-rv { opacity: 1; transform: none; }
+.d1j-wzs.on .d1j-rv:nth-of-type(1) { transition-delay: .06s; }
+.d1j-wzs.on .d1j-rv:nth-of-type(2) { transition-delay: .14s; }
+.d1j-wzs.on .d1j-rv:nth-of-type(3) { transition-delay: .22s; }
+.d1j-wzs.on .d1j-rv:nth-of-type(4) { transition-delay: .30s; }
+
+.d1j-wzbody { padding: 152px 20px 0; }
+.d1j-h1 {
+  font-family: var(--d1-serif); font-weight: 400;
+  font-size: 30px; line-height: 1.12; letter-spacing: -0.01em; color: #141410;
+  max-width: 320px;
+}
+/* the R1 title carousel: each word masked, rising 118% on a 55ms stagger */
+.d1j-h1 .w {
+  display: inline-block; overflow: hidden; vertical-align: top;
+  line-height: 1.16; padding-bottom: .12em; margin-bottom: -.12em;
+}
+.d1j-h1 .wi { display: inline-block; transform: translateY(118%); opacity: 0; }
+.d1j-h1 .wi.in {
+  transform: translateY(0); opacity: 1;
+  transition: transform .6s var(--d1-rise), opacity .55s ease;
+}
+
+/* ── field: a real input, invisible, over a mirror that draws the text ──
+   The mirror is what you see (ghost placeholder, typed value, 2px caret); the
+   input underneath is real, so hardware typing works inside the hub iframe.
+   Nothing is focused on entry — an autofocus here scrolls the hub's iframe. */
+.d1j-field {
+  position: relative; margin-top: 26px;
+  background: #f3f1ed; border-radius: 16px; padding: 18px;
+  min-height: 146px; cursor: text;
+}
+.d1j-field.one { min-height: 56px; display: flex; align-items: center; padding: 0 18px; }
+.d1j-mirror {
+  font-size: 16px; line-height: 1.35; letter-spacing: -0.16px; color: #141410;
+  word-break: break-word; min-height: 22px;
+}
+.d1j-mirror .gh { color: #84827e; }
+.d1j-caret {
+  display: inline-block; width: 2px; height: 18px; margin-left: 1px;
+  background: #141410; vertical-align: -3px;
+  animation: d1jBlink 1s steps(1) infinite;
+}
+@keyframes d1jBlink { 50% { opacity: 0; } }
+.d1j-realin {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  border: 0; padding: 0 18px; margin: 0; background: transparent;
+  font-family: inherit; font-size: 16px; color: transparent;
+  caret-color: transparent; resize: none; outline: none;
+}
+
+/* ── chips (R1 .tag / .chip2) ─────────────────────────────────────────── */
+.d1j-chips {
+  display: flex; gap: 8px; margin: 16px -20px 0; padding: 0 20px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.d1j-chips::-webkit-scrollbar { display: none; }
+.d1j-chip2 {
+  flex: 0 0 auto; height: 48px; padding: 0 20px; border: 0; border-radius: 999px;
+  background: #f3f1ed; color: #1a1810; font-family: inherit; font-size: 15px;
+  letter-spacing: -0.15px; cursor: pointer; white-space: nowrap;
+  transition: background .2s, color .2s;
+}
+.d1j-chip2.on { background: #141410; color: #fff; }
+
+/* remember-my-preference row */
+.d1j-check {
+  display: flex; align-items: center; gap: 12px; margin-top: 22px;
+  font-size: 15px; letter-spacing: -0.15px; color: #141410; cursor: pointer;
+}
+.d1j-check i {
+  width: 24px; height: 24px; flex: none; border-radius: 6px;
+  border: 1.5px solid #cbc8c0; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s, border-color .2s;
+}
+.d1j-check i::after {
+  content: ''; width: 11px; height: 6px; border: solid #fff; border-width: 0 0 2px 2px;
+  transform: translateY(-1px) rotate(-45deg); opacity: 0; transition: opacity .2s;
+}
+.d1j-check.on i { background: #141410; border-color: #141410; }
+.d1j-check.on i::after { opacity: 1; }
+
+/* ── footer buttons, parked above the keyboard ────────────────────────── */
+.d1j-foot {
+  position: absolute; left: 20px; right: 20px; bottom: 32px; z-index: 3;
+  display: flex; gap: 10px;
+}
+.d1j-wzs.kb .d1j-foot { bottom: calc(var(--d1-kbh) + 20px); }
+.d1j-cta {
+  flex: 1; height: 56px; border: 0; border-radius: 999px;
+  background: #0b0b0a; color: #fff; font-family: inherit;
+  font-size: 16px; letter-spacing: -0.16px; cursor: pointer;
+  transition: opacity .3s, background .3s;
+}
+.d1j-cta[disabled] { background: #e0ddd6; color: #84827e; cursor: default; }
+.d1j-cta.ghost { background: #fff; border: 1px solid #e0ddd6; color: #141410; }
+/* ...except on the reveal, where the page has just taken the item's colour and a
+   white pill reads as a second primary beside Done. Transparent with a hairline,
+   like the ✕ in the corner — Yuan, 24 Aug: "the custom button should not be
+   white, should be transparent, same as the close button". currentColor for the
+   border so it follows the ink, which already flips with .lit. */
+.d1j-gen .d1j-cta.ghost {
+  background: transparent; border-color: currentColor; color: #f3f1ed;
+}
+.d1j-gen.lit .d1j-cta.ghost { color: #141410; }
+
+/* A merchant's mark keeps its own white ground and sits INSIDE the disc rather
+   than filling it — the same rule the vault's rows follow, so a logo someone
+   else designed is never tinted by our flood colour. */
+.d1j-gav.brand { background: #fff; border-color: transparent; }
+.d1j-gen.lit .d1j-gav.brand { background: #fff; }
+.d1j-gav.brand img {
+  width: 26px; height: 26px; border-radius: 0; object-fit: contain;
+  opacity: 0; transition: opacity .62s ease;
+}
+.d1j-gen.lit .d1j-gav.brand img { opacity: 1; }
+.d1j-cta:active { transform: scale(.99); }
+
+/* ── the fake iPhone keyboard (R1 .kbwrap / .kb visuals) ──────────────── */
+.d1j-kb {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  height: var(--d1-kbh); box-sizing: border-box;
+  background: #ced2d9; padding: 8px 3px 0;
+  /* in pixels, not 100%, for the same compositor reason as the sheet */
+  transform: translateY(var(--d1-kbh));
+  transition: transform .5s var(--d1-rise) .1s;
+  -webkit-user-select: none; user-select: none;
+}
+.d1j-wzs.on .d1j-kb { transform: none; }
+.d1j-kb-r { display: flex; gap: 6px; padding: 0 3px 10px; justify-content: center; }
+.d1j-kb-r.pad { padding-left: 21px; padding-right: 21px; }
+.d1j-key {
+  flex: 1 1 0; min-width: 0; height: 42px; border-radius: 5px; background: #fff;
+  box-shadow: 0 1px 0 rgba(0,0,0,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; line-height: 1; color: #17170f; text-transform: lowercase;
+}
+.d1j-key.wide { flex: 1.4 1 0; font-size: 16px; background: #adb3bd; }
+.d1j-key.num { flex: 1.6 1 0; font-size: 15px; background: #adb3bd; }
+.d1j-key.spc { flex: 5 1 0; font-size: 15px; }
+.d1j-key.ret { flex: 2.2 1 0; font-size: 15px; background: #adb3bd; }
+.d1j-kb-home {
+  width: 141px; height: 5px; border-radius: 3px; background: #17170f; margin: 2px auto 8px;
+}
+
+/* ── step 3 · the generate screen ─────────────────────────────────────── */
+/* a quarter slower than it was, everywhere — "速度要慢一点点" (Yuan, 23 Aug).
+   The JS delays in buildAliasFlow's reveal() moved by the same factor; moving
+   one without the other only puts a gap in the middle of the animation. */
+.d1j-gen {
+  position: absolute; inset: 0; overflow: hidden; overflow: clip;
+  background: #141410; transition: background 1.15s var(--d1-nav) .55s;
+}
+.d1j-gen.lit { background: var(--d1-tone); }
+.d1j-gen .d1j-h1 { color: #f3f1ed; transition: color .8s ease; position: relative; z-index: 2; }
+.d1j-gen.lit .d1j-h1 { color: #141410; }
+/* the flood: one 1145px ellipse climbing out of the bottom edge (Figma) */
+.d1j-flood {
+  position: absolute; left: 50%; bottom: 0; z-index: 0;
+  width: 1145px; height: 1145px; border-radius: 50%;
+  background: var(--d1-tone); filter: blur(30px); pointer-events: none;
+  transform: translate(-50%, 96%) scale(.34); opacity: 0;
+  transition: transform 1.5s var(--d1-nav), opacity .55s ease;
+}
+.d1j-gen.flood .d1j-flood { transform: translate(-50%, 16%) scale(2); opacity: 1; }
+/* Centred on the page, not hung 120px under the heading — Yuan, 23 Aug:
+   "email的card需要在页面上居中". The entrance still lifts the card 24px, so the
+   centring has to ride inside the same transform: two transforms on one
+   element is one transform. */
+.d1j-gcard {
+  position: absolute; left: 20px; right: 20px; top: 50%; z-index: 2;
+  display: flex; align-items: center; gap: 14px;
+  /* explicitly nothing: this rule used to carry `margin: 120px 20px 0`, and one
+     build declares these rules in two stylesheets — dropping the property here
+     would have left the older sheet's margin pushing the centred card 120px
+     low, which is exactly what it did until this line was added */
+  margin: 0; padding: 16px; border-radius: 16px;
+  border: 1px solid rgba(243,241,237,.2); background: transparent;
+  opacity: 0; transform: translateY(calc(-50% + 24px));
+  transition: opacity .75s var(--d1-ease), transform .75s var(--d1-rise),
+              background 1s ease, border-color 1s ease, box-shadow 1s ease;
+}
+.d1j-gen.card-in .d1j-gcard { opacity: 1; transform: translateY(-50%); }
+/* `hidden` on these two is set by reveal() to choose ONE result format —
+   .d1j-gcard for a real address, .gwc for an alias — and it could never work:
+   [hidden] is a UA rule and loses to the author `display: flex` both of them
+   carry, so the short tile stayed printed inside the tall card (measured: gcard
+   at y387 inside the card's 282-571, display flex, opacity 1, hidden=1). Yuan,
+   27 Aug: "你还是显示了两个不同的frame". !important because it is that same
+   author display it has to outrank, and because these rules are declared in two
+   sheets in some builds. */
+.d1j-gcard[hidden], .gwc[hidden] { display: none !important; }
+.d1j-gen.lit .d1j-gcard {
+  background: #fff; border-color: transparent; box-shadow: 0 10px 30px rgba(0,0,0,.10);
+}
+.d1j-gav {
+  width: 40px; height: 40px; flex: none; border-radius: 50%;
+  border: 1px solid rgba(243,241,237,.35); background: transparent; color: #141410;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  transition: background .6s ease, border-color .6s ease;
+}
+.d1j-gen.lit .d1j-gav { border-color: transparent; background: var(--d1-tone); }
+.d1j-gav svg { width: 22px; height: 22px; display: block; opacity: 0; transition: opacity .62s ease; }
+.d1j-gen.lit .d1j-gav svg { opacity: 1; }
+/* The vault's own 40px discs (assets/Avatar/avatar-Vault item) ARE the whole
+   avatar — ground colour, artwork and all — so the tile stops being a tinted
+   circle with a glyph inside it and becomes the disc itself. Same files the
+   seeded items carry, so an alias you mint looks like the ones already there. */
+.d1j-gav.art { border-color: transparent; background: transparent; }
+.d1j-gen.lit .d1j-gav.art { background: transparent; }
+.d1j-gav.art img {
+  width: 40px; height: 40px; display: block; border-radius: 50%;
+  opacity: 0; transition: opacity .62s ease;
+}
+.d1j-gen.lit .d1j-gav.art img { opacity: 1; }
+.d1j-gname {
+  font-size: 14px; line-height: 1.2; letter-spacing: -0.14px; color: rgba(243,241,237,.65);
+  transition: color .8s ease;
+}
+.d1j-gen.lit .d1j-gname { color: #84827e; }
+.d1j-gval {
+  margin-top: 4px; font-size: 18px; line-height: 1.25; letter-spacing: -0.18px;
+  color: #f3f1ed; font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+  transition: color .8s ease;
+}
+/* an alias address is 25-35 characters and the design keeps it on one line */
+.d1j-gval.sm { font-size: 15px; letter-spacing: -0.15px; }
+.d1j-gen.lit .d1j-gval { color: #141410; }
+/* One line, so it is the item's line: the name takes what the value would have
+   had (18px/1.25, full ink) instead of staying a 14px caption over nothing.
+   Only reachable on a password or login the user titled and left without a
+   username — see patch30. */
+.d1j-gen.solo .d1j-gname {
+  font-size: 18px; line-height: 1.25; letter-spacing: -0.18px;
+  color: #f3f1ed;
+}
+.d1j-gen.solo.lit .d1j-gname { color: #141410; }
+/* R1's char morph, used when the scramble resolves */
+.d1j-gval .mc {
+  display: inline-block; white-space: pre;
+}
+.d1j-gval .mc.res {
+  animation: d1jRes .38s var(--d1-ease) both;
+}
+@keyframes d1jRes {
+  from { opacity: .35; filter: blur(5px); transform: translateY(3px); }
+  to   { opacity: 1; filter: blur(0); transform: none; }
+}
+.d1j-gbtns {
+  position: absolute; left: 20px; right: 20px; bottom: 32px; z-index: 3;
+  display: flex; gap: 10px;
+  opacity: 0; transform: translateY(12px); pointer-events: none;
+  transition: opacity .5s ease, transform .5s var(--d1-rise);
+}
+.d1j-gen.done .d1j-gbtns { opacity: 1; transform: none; pointer-events: auto; }
+
+/* ── custom-avatar sheet (Figma 5951:235134) ──────────────────────────── */
+.d1j-scrim2 {
+  position: absolute; inset: 0; z-index: 5; background: rgba(11,11,10,.4);
+  opacity: 0; pointer-events: none; transition: opacity .3s ease;
+}
+.d1j-scrim2.on { opacity: 1; pointer-events: auto; }
+.d1j-sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+  max-height: 88%; overflow-y: auto; background: #fff;
+  border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.18);
+  padding-bottom: 24px;
+  /* Parked below the screen — and hidden as well as translated. A percentage
+     translate on a composited layer is resolved against a height the compositor
+     can read one frame late, which left the closed sheet standing halfway up
+     the wizard; visibility is not a percentage of anything. */
+  transform: translateY(100%);
+  visibility: hidden; pointer-events: none;
+  transition: transform .42s var(--d1-rise), visibility 0s .42s;
+}
+.d1j-sheet.on {
+  transform: none; visibility: visible; pointer-events: auto;
+  transition: transform .42s var(--d1-rise);
+}
+.d1j-sheet-h {
+  padding: 20px; font-size: 20px; line-height: 1.2; color: #141410;
+}
+.d1j-sheet-lab {
+  padding: 8px 20px; background: #f3f1ed;
+  font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #84827e;
+}
+.d1j-avrow {
+  display: flex; gap: 12px; padding: 16px 20px 4px; overflow-x: auto; scrollbar-width: none;
+}
+.d1j-avrow::-webkit-scrollbar { display: none; }
+.d1j-avopt {
+  width: 64px; height: 64px; flex: none; border-radius: 50%; border: 0; padding: 0;
+  background: var(--d1-tone); color: #141410; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 3px transparent; transition: box-shadow .2s, background .3s;
+}
+.d1j-avopt svg { width: 26px; height: 26px; display: block; }
+.d1j-avopt.sel { box-shadow: 0 0 0 3px #141410; }
+.d1j-avopt.pic { background: #e6e2d8; }
+.d1j-avopt.plus { background: #fff; border: 1px solid #e0ddd6; color: #141410; }
+.d1j-dots {
+  display: flex; flex-wrap: wrap; gap: 12px; padding: 16px 20px 4px;
+}
+.d1j-dot {
+  width: 24px; height: 24px; flex: none; border-radius: 50%; border: 0; padding: 0;
+  cursor: pointer; box-shadow: 0 0 0 2px transparent; transition: box-shadow .2s;
+}
+.d1j-dot.sel { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #141410; }
+.d1j-slider {
+  height: 12px; margin: 18px 20px 4px; border-radius: 100px;
+  background: linear-gradient(90deg, #fff 0%, var(--d1-tone) 55%, #141410 100%);
+}
+.d1j-sheet-btns { display: flex; gap: 10px; padding: 18px 20px 8px; }
+
+/* ── created-item detail page (Figma 6595:336588) ──────────────────────
+   Three white blocks on a beige page: the band under the value row is the
+   page showing through, not a rule. */
+.d1j-det { background: #f3f1ed; }
+.d1j-det-head {
+  position: absolute; left: 0; right: 0; top: 0; height: 306px;
+  background: #fff; border-bottom: 1px solid #e0ddd6; overflow: hidden;
+}
+.d1j-det-top {
+  position: absolute; right: 20px; top: 64px; z-index: 3; display: flex; gap: 16px;
+}
+/* shadow discs, like every other toolbar in this build — Figma gives them no
+   outline, only the 8px glow */
+.d1j-det-btn {
+  height: 40px; width: 40px; padding: 0; border: 0;
+  border-radius: 300px; background: #fff; box-shadow: 0 0 8px rgba(0,0,0,.08);
+  color: #141410; font-family: inherit; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.d1j-det-btn.wide {
+  width: auto; padding: 0 16px;
+  font-size: 14px; line-height: 1.2; letter-spacing: -0.28px;
+}
+.d1j-det-btn:active { background: #f3f1ed; }
+.d1j-det-btn svg { width: 24px; height: 24px; display: block; }
+.d1j-det-av {
+  position: absolute; left: 20px; top: 152px;
+  width: 88px; height: 88px; border-radius: 300px; background: var(--d1-tone);
+  color: #141410; display: flex; align-items: center; justify-content: center;
+}
+.d1j-det-av svg { width: 40px; height: 40px; display: block; }
+/* Figma centres the name on 269 rather than stacking it under the disc */
+.d1j-det-name {
+  position: absolute; left: 20px; right: 20px; top: 269px; transform: translateY(-50%);
+  font-size: 24px; line-height: 1.1; letter-spacing: 0.24px; color: #141410;
+}
+.d1j-det-vrow {
+  position: absolute; left: 0; right: 0; top: 306px; height: 80px; background: #fff;
+  /* day01.css still holds this row's ORIGINAL rule from the flow layout it had
+     before it was placed by hand — margin-top: 26px, padding: 18px 0 and a
+     border top and bottom — and a margin offsets an absolutely-positioned box
+     just as it offsets any other. Measured: declared top 306, painted 332, so
+     the row overlapped Activities at 398 by 14px. Reset here, in the sheet that
+     owns the current design, rather than edited there, because that rule is
+     what a build still on the old layout would use. */
+  margin: 0; padding: 0; border-top: 0; border-bottom: 0;
+}
+.d1j-det-vtx { position: absolute; left: 20px; top: 20px; width: 263px; }
+/* `[hidden]` is a UA rule, and V1's day01.css still declares `display: flex`
+   for this row from the old flow layout — an author declaration beats the UA
+   one, so the row stayed painted and blank. (0,2,0) vs (0,1,0) wins on
+   specificity in either sheet order, so no !important. */
+.d1j-det-vrow[hidden] { display: none; }
+/* No value row, so Activities takes its place: the block's top moves from 398
+   to 318 (306 + the 12px band) and everything inside it shifts down by the
+   same 80, so the only thing that appears to move is the white edge. */
+.d1j-det.no-val .d1j-det-acts { top: 318px; }
+.d1j-det.no-val .d1j-det-empty { top: 268px; }
+.d1j-det.no-val .d1j-det-foot { top: 447px; }
+/* ...and the mirror of it: one block MORE. The one-time code sits where the
+   value row's 80px end, and the same three tops move down by the same 80. Written
+   as the counterpart of .no-val above rather than as a new idea, because it is
+   the same arithmetic in the other direction. */
+.d1j-det-vrow.otp { top: 386px; border-top: 1px solid #efece5; }
+/* The line and the footer live INSIDE Activities, so when the block moves down
+   they move up by the same amount and stay where the eye left them — which is
+   what .no-val above does in the other direction (block up 80, contents down
+   80). 108 = 188 - 80 and 287 = 367 - 80, i.e. still at 586 and 765 on the
+   page. Getting this sign wrong put them at 906 and 1085, off an 852 screen. */
+.d1j-det.has-otp .d1j-det-acts { top: 478px; }
+.d1j-det.has-otp .d1j-det-empty { top: 108px; }
+.d1j-det.has-otp .d1j-det-foot { top: 287px; }
+/* both at once: no value row, but a code — the code takes the value row's slot,
+   Activities is back at its own 398, and the contents keep their own tops. */
+.d1j-det.no-val .d1j-det-vrow.otp { top: 306px; border-top: 0; }
+.d1j-det.no-val.has-otp .d1j-det-acts { top: 398px; }
+.d1j-det-vlab {
+  font-size: 14px; line-height: 1.2; letter-spacing: -0.14px; color: #84827e;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.d1j-det-val {
+  margin-top: 2px;
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.16px; color: #141410;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* a bare glyph at 349 — no disc behind it */
+.d1j-det-copy {
+  position: absolute; left: 349px; top: 50%; transform: translateY(-50%);
+  margin-top: 3px; width: 24px; height: 24px; padding: 0; border: 0;
+  background: none; color: #141410; cursor: pointer;
+}
+.d1j-det-copy:active { opacity: .5; }
+.d1j-det-copy svg { width: 24px; height: 24px; display: block; }
+.d1j-det-acts {
+  position: absolute; left: 0; right: 0; top: 398px; bottom: 0; background: #fff;
+}
+.d1j-det-sec {
+  height: 86px; box-sizing: border-box; padding: 40px 20px 20px;
+  font-size: 24px; line-height: 1.1; letter-spacing: 0.24px; color: #141410;
+}
+/* the empty line sits in the middle of the block, not under the heading */
+.d1j-det-empty {
+  position: absolute; left: 0; right: 0; top: 188px; text-align: center;
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #84827e;
+}
+.d1j-det-foot { position: absolute; left: 20px; top: 367px; width: 353px; display: flex; }
+
+/* The rows a flow adds to the vault: the only tappable ones in the day-1 list,
+   and on day 30 they land in a .d30v-row shell whose siblings are buttons. */
+#idcardScreen .d1j-row.d1j-created,
+#idcardScreen .d30v-row.d1j-created { cursor: pointer; }
+
+/* ── reduced motion: keep the states, drop the travel ─────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .d1j-flow,
+  .d1j-wzs,
+  .d1j-rv,
+  .d1j-kb,
+  .d1j-gen,
+  .d1j-flood,
+  .d1j-gcard,
+  .d1j-gbtns,
+  .d1j-sheet { transition: none !important; }
+  .d1j-h1 .wi { transform: none; opacity: 1; }
+  .d1j-caret { animation: none; }
+  .d1j-gval .mc.res { animation: none; }
+}
+
+/* created rows carry either the flow's tint or the neutral tile */
+#idcardScreen .d1j-av-dark { background: #232321; color: #fff; }
+#idcardScreen .d1j-av-dark svg { width: 22px; height: 22px; display: block; }
+#idcardScreen .d1j-av-tone { color: #141410; }
+#idcardScreen .d1j-av-tone svg { width: 22px; height: 22px; display: block; }
+/* the Add page's cells are controls now */
+.d1j-add-cell[data-d1jcell] { cursor: pointer; transition: background .16s, border-color .16s, color .16s; }
+/* Figma shows the pressed cell filled black, not tinted — the glyphs are
+   exported files with #141410 baked in, so the lit state inverts them rather
+   than shipping a second copy of each. */
+.d1j-add-cell[data-d1jcell]:active { background: #0b0b0a; border-color: #0b0b0a; }
+.d1j-add-cell[data-d1jcell]:active .lbl { color: #f3f1ed; }
+.d1j-add-cell[data-d1jcell]:active .icon img { filter: brightness(0) invert(1); }
+
+/* ══ ALIAS EMAIL (Figma 6565:335055) ═════════════════════════════════════
+   One page sets the whole alias up: what to call it, the address (with a
+   reroll), and the two optional facts — then Continue mints it. Figma gives
+   every element an exact top, so the tops ARE the layout rather than a stack
+   hung off the bottom edge. */
+.d1j-ae-back {
+  position: absolute; left: 20px; top: 64px; z-index: 4;
+  width: 40px; height: 40px; border-radius: 300px; border: 0; cursor: pointer;
+  background: rgba(255,255,255,.15); box-shadow: 0 0 8px rgba(0,0,0,.08);
+  display: flex; align-items: center; justify-content: center; color: #141410;
+}
+.d1j-ae-back[hidden] { display: none; }
+.d1j-ae-back svg { width: 24px; height: 24px; display: block; }
+/* a row: label left, value or action right, rule underneath */
+.d1j-ae-r {
+  position: absolute; left: 0; right: 0;
+  display: flex; align-items: center; gap: 16px; padding: 0 20px;
+  border-bottom: 1px solid #e0ddd6; background: #fff;
+}
+.d1j-ae-r .k {
+  flex: 0 0 auto;
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410;
+}
+.d1j-ae-r .d1j-fv.d1j-field {
+  flex: 1 1 auto; min-width: 0; margin: 0; padding: 0; min-height: 21px;
+  background: none; border-radius: 0; display: block; text-align: right;
+}
+.d1j-ae-r .d1j-mirror {
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.32px;
+  min-height: 21px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.d1j-ae-r .d1j-realin { padding: 0; text-align: right; }
+.d1j-ae-add {
+  flex: 0 0 auto; margin-left: auto; padding: 0; border: 0; background: none;
+  cursor: pointer; font-family: inherit;
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410;
+}
+.d1j-ae-add:active { opacity: .5; }
+/* Figma 6934:186805's own tops. The page is 751 tall and the keyboard covers
+   the last 238 of the 852 — that overlap is the design, not a mistake: the
+   only element that moves for the keyboard is Save, which floats above it. */
+.d1j-ae-title { top: 183px; height: 72px; }
+.d1j-ae-mail  { top: 255px; height: auto; min-height: 72px; padding-top: 12px; padding-bottom: 12px; }
+.d1j-ae-fwd   { top: 435px; height: 80px; }
+.d1j-ae-idc   { top: 515px; height: 72px; }
+.d1j-ae-note  { top: 587px; height: 72px; }
+/* Forward to answers with a switch, so its label carries the address it would
+   forward to underneath rather than beside it */
+.d1j-ae-fwd .tt { flex: 1 1 auto; min-width: 0; }
+.d1j-ae-fwd .tt .k { display: block; }
+.d1j-ae-fwd .tt .s {
+  display: block; margin-top: 2px;
+  font-size: 14px; line-height: 1.3; letter-spacing: -0.14px; color: #84827e;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.d1j-tgl {
+  flex: 0 0 auto; position: relative; width: 51px; height: 31px; padding: 0;
+  border: 0; border-radius: 999px; background: #e0ddd6; cursor: pointer;
+  transition: background .22s ease;
+}
+.d1j-tgl::after {
+  content: ''; position: absolute; left: 2px; top: 2px;
+  width: 27px; height: 27px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .22s var(--d1-rise);
+}
+/* Green in the password sheet, because Figma 7051-437024 is explicit about it —
+   everywhere else in this app a switch is still #141410. */
+.d1j-tgl[aria-checked="true"] { background: #141410; }
+.d1j-pwt .d1j-tgl[aria-checked="true"] { background: #16a34a; }
+.d1j-tgl[aria-checked="true"]::after { transform: translateX(20px); }
+.d1j-ae-mail .v {
+  flex: 1 1 auto; min-width: 0; text-align: right;
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410;
+  overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere;
+}
+/* how far through the pool the reroll is — small, next to the glyph, so the
+   button reads as a set you are walking rather than a dice roll */
+.d1j-ae-count {
+  /* the 30px that used to be here was clearing the absolutely-placed reroll;
+     the row's own gap does that now */
+  flex: 0 0 auto;
+  font-size: 13px; line-height: 1.2; letter-spacing: -0.13px; color: #84827e;
+  font-variant-numeric: tabular-nums;
+}
+.d1j-ae-count[hidden] { display: none; }
+/* Flowed, not positioned. Placing it absolutely at Figma's 348 made both the
+   value and the counter reserve room for it by hand, and the two reservations
+   stacked — which clipped the address to an ellipsis as soon as the counter
+   appeared. In flow it lands at 349, and the row's align-items centres it. */
+.d1j-ae-roll {
+  flex: 0 0 auto;
+  width: 24px; height: 24px; padding: 0; border: 0;
+  background: none; cursor: pointer; color: #141410;
+}
+.d1j-ae-roll svg { width: 24px; height: 24px; display: block; }
+.d1j-ae-roll:active { opacity: .5; }
+/* the beige strip is the band between the alias itself and the extras */
+.d1j-ae-band { position: absolute; left: 0; right: 0; top: 423px; height: 12px; background: #f3f1ed; }
+.d1j-ae .d1j-ae-words { position: absolute; left: 20px; top: 347px; width: 353px; flex: none; }
+.d1j-ae .d1j-ae-next  { position: absolute; left: 20px; top: 675px; width: 353px; flex: none; }
+/* Save is the only thing that moves for the keyboard — at its Figma top it
+   would sit under the keys, and everything above it is meant to be covered.
+   It rides on a plate: a black pill floating over the half-visible ID Card row
+   reads as a layout bug rather than as a button that moved. */
+/* ── the page SCROLLS while the keys are up ────────────────────────────
+   The comment above described the old bargain: Save was lifted onto a white
+   plate and everything under it — ID Card at 515, Notes at 587 — was "meant to
+   be covered". It is a pinned layout (every row has an authored `top`) inside
+   an `overflow: clip` box, so covered meant unreachable: nothing scrolled and
+   the only thing you could act on was the lifted button. Christine, 27 Aug:
+   "이거 스크롤이 아직 안되는데 버튼만 보이고" — and, asked which way to go,
+   chose the password form's behaviour: the page scrolls and Save sits at the
+   foot of the rows it belongs to.
+   padding-bottom, not a shorter box: `.d1j-kb` is anchored `bottom: 0` to this
+   element and a shorter box would drag the drawn keyboard up with it. Padding
+   leaves the padding box — and so the keyboard — exactly where it was, and only
+   adds scrollable room under the last row.
+   overflow-x stays hidden rather than clip: one axis clip + one axis auto is
+   not a legal pair, and the clip would win and kill the scrolling. */
+.d1j-ae .d1j-wzs.kbf.up {
+  bottom: var(--d1-kbh);
+  overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-bottom: 24px;
+}
+/* The box has to END at the keys, not merely pad them: padding on a full-height
+   box adds nothing to scroll past, because every row here is absolutely
+   positioned and the tallest of them (675+56) still fits inside 852 — measured,
+   scrollHeight === clientHeight and the page would not move a pixel. Ending the
+   box at 561 is also what #nqFormScroll does on the day-30 form.
+   `.d1j-kb` — the page's OWN drawn keyboard — is anchored `bottom: 0` to this
+   element, so a shorter box would hoist it 291px up the screen. It stands down
+   instead: the keys actually on screen are the app-wide #kbd (z-index 4300,
+   painted over this whole flow), which is what you were already looking at. */
+.d1j-ae .d1j-wzs.kbf.up .d1j-kb { display: none; }
+/* ...so Save stops being the one thing that moves: it keeps its authored 675
+   and travels with the rows. The plate it used to ride on goes with it. */
+.d1j-ae .d1j-wzs.kbf.up .d1j-ae-next { top: 675px; bottom: auto; z-index: 3; }
+/* the setup page has no progress to report: it IS the whole setup */
+.d1j-ae.setup .d1j-prog { visibility: hidden; }
+
+/* ══ special words · an overlay tray (Figma 6934:193377) ══════════════
+   It used to be a page you were pushed to and had to come back from, which
+   made an optional refinement read as a step in the flow. Yuan, 23 Aug:
+   "不应该是back button，而应该是overlay tray". So it rises over the page and
+   sits ON the keyboard — which never leaves, because the tray's textarea
+   wants it exactly as much as Title did. The scrim stops at the keyboard's top
+   edge for the same reason: dimming the keys would say the keyboard is behind
+   the tray, when it is part of it. */
+.d1j-wtray { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.d1j-wtray-scrim {
+  position: absolute; left: 0; right: 0; top: 0; bottom: var(--d1-kbh);
+  background: rgba(11,11,10,.4); opacity: 0; transition: opacity .3s ease;
+}
+.d1j-wtray-panel {
+  position: absolute; left: 0; right: 0; bottom: var(--d1-kbh);
+  height: 465px; box-sizing: border-box; padding: 72px 20px 0;
+  background: #fff; border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 40px rgba(0,0,0,.18);
+  /* Parked below the SCREEN, not below its own box: the panel's bottom edge is
+     the keyboard's top, so translating by its own height alone leaves it
+     sitting exactly over the keys — visible, on the closed state. The keyboard's
+     height has to be in the sum.
+     Pixels, not a percentage, for the compositor's sake: a percentage translate
+     is resolved against a height that can be read one frame late, which is the
+     bug that left the avatar sheet standing halfway up the wizard. */
+  transform: translateY(calc(465px + var(--d1-kbh)));
+  transition: transform .42s var(--d1-rise);
+}
+.d1j-wtray.on { pointer-events: auto; }
+.d1j-wtray.on .d1j-wtray-scrim { opacity: 1; }
+.d1j-wtray.on .d1j-wtray-panel { transform: none; }
+.d1j-wtray-h {
+  font-family: var(--d1-serif); font-weight: 400;
+  font-size: 24px; line-height: 1.15; letter-spacing: -0.01em; color: #141410;
+  max-width: 272px;
+}
+.d1j-wtray .d1j-field { margin-top: 32px; }
+.d1j-wtray .d1j-check { margin-top: 26px; }
+/* ── the special words, expanded in place (alias page) ──────────────────
+   The pill IS the field's closed state, so it gives up its row. Same field and
+   same checkbox the sheet used; the margins are this page's own gutter rather
+   than the sheet's 32/26, which were spacing inside a panel.
+   ABSOLUTE, at the pill's own top: this section positions every row at an exact
+   top (see .d1j-ae-title and friends), so a box in the flow lands ON them —
+   which is what the first attempt did, printing the field over Title and Alias.
+   Everything below the pill then moves down by --ae-wbox, which openWords()
+   measures off the box rather than guessing: the field's height is the field's
+   business, and one variable keeps the five offsets from drifting apart. */
+.d1j-ae-wbox {
+  position: absolute; left: 20px; right: 20px; top: 347px;
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height .4s ease, opacity .28s ease;
+}
+.d1j-wzs.words .d1j-ae-wbox { max-height: 146px; opacity: 1; }
+.d1j-ae .d1j-ae-words {
+  overflow: hidden; max-height: 80px;
+  transition: max-height .34s ease, opacity .2s ease, border-width .34s ease;
+}
+.d1j-wzs.words .d1j-ae-words { max-height: 0; opacity: 0; border-width: 0; }
+/* the rows below glide with the box rather than jumping ahead of it */
+.d1j-ae-band, .d1j-ae-fwd, .d1j-ae-idc, .d1j-ae-note {
+  transition: top .4s ease;
+}
+/* Shorter than the standalone field's 146: the frame draws a box about this
+   tall, and the rows below have to clear the keys. */
+.d1j-ae-wbox .d1j-field { margin-top: 0; min-height: 88px; }
+.d1j-ae-wbox .d1j-check { margin-top: 12px; }
+/* Save and its white plate stand down while the field is open. The frame shows
+   neither in this state, and they are bottom-anchored to --d1-kbh (238) while
+   the keys are actually 291 tall, so both would have painted over the checkbox.
+   They come back the moment focus leaves the field — see the focusin handler. */
+.d1j-ae .d1j-wzs.words .d1j-ae-next { display: none; }
+.d1j-ae .d1j-wzs.kbf.up.words::after { display: none; }
+.d1j-wzs.words .d1j-ae-band { top: calc(423px + var(--ae-wbox, 0px)); }
+.d1j-wzs.words .d1j-ae-fwd  { top: calc(435px + var(--ae-wbox, 0px)); }
+.d1j-wzs.words .d1j-ae-idc  { top: calc(515px + var(--ae-wbox, 0px)); }
+.d1j-wzs.words .d1j-ae-note { top: calc(587px + var(--ae-wbox, 0px)); }
+.d1j-ae .d1j-wzs.words .d1j-ae-next { top: calc(675px + var(--ae-wbox, 0px)); }
+.d1j-wtray .d1j-cta { position: absolute; left: 20px; right: 20px; bottom: 26px; }
+
+/* the area-code picker (Figma 6565:335454) — a selection list dropped low on
+   the page, exactly where Figma puts it (485), with the same 32px control the
+   ID-card flow's step 2 uses */
+/* Figma puts three rows at 485 with 137 of air under them; anchoring to that
+   137 keeps the list sitting just above the CTA whatever number of codes it
+   holds, instead of running off the bottom as soon as a fourth is added. */
+.d1j-ae-areas { position: absolute; left: 0; right: 0; bottom: 137px; background: #fff; }
+.d1j-ae-area {
+  display: flex; align-items: center; gap: 24px;
+  width: 100%; height: 80px; padding: 0 20px; cursor: pointer;
+  border: 0; border-bottom: 1px solid #e0ddd6; background: #fff;
+  font-family: inherit; text-align: left;
+}
+.d1j-ae-area:active { background: #faf9f6; }
+.d1j-ae-area .t {
+  flex: 1 1 auto; min-width: 0; display: flex; gap: 12px;
+  font-size: 16px; line-height: 1.3; color: #141410;
+  overflow: hidden; white-space: nowrap;
+}
+.d1j-ae-area .t b { flex: 0 0 34px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.d1j-ae-area .box {
+  flex: 0 0 auto; display: grid; place-items: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #e0ddd6; color: #fff; transition: background .18s;
+}
+.d1j-ae-area .box svg { width: 20px; height: 20px; opacity: 0; transition: opacity .14s; }
+.d1j-ae-area.on .box { background: #0b0b0a; }
+.d1j-ae-area.on .box svg { opacity: 1; }
+.d1j-ae .d1j-wzs[data-s="4"] { background: #fff; }
+/* the detour's bar is the back button, not progress */
+.d1j-ae.detour .d1j-prog { visibility: hidden; }
+
+/* ══ OTHERS · the drawer list (Figma 6507:301979) ════════════════════════
+   A .d1j-flow, so it inherits the push-in and the 4200 layer. */
+.d1j-oth-bar {
+  position: absolute; left: 0; right: 0; top: 0; height: 120px; z-index: 2;
+  display: flex; align-items: center; gap: 16px; padding: 64px 20px 16px;
+  background: #fff;
+}
+.d1j-oth-back {
+  flex: 0 0 auto; width: 40px; height: 40px; border-radius: 300px;
+  border: 0; background: rgba(255,255,255,.15); cursor: pointer;
+  box-shadow: 0 0 8px rgba(0,0,0,.08);
+  display: flex; align-items: center; justify-content: center; color: #141410;
+}
+.d1j-oth-back svg { width: 24px; height: 24px; display: block; }
+.d1j-oth-back:active { background: #f3f1ed; }
+/* the title sits at 76 from the left, i.e. 20 + the 40 disc + 16 of gap */
+.d1j-oth-title { font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410; }
+.d1j-oth-body {
+  position: absolute; inset: 120px 0 120px; overflow-y: auto;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.d1j-oth-body::-webkit-scrollbar { display: none; }
+/* Figma builds this as the same beige-ground-with-8px-gap construction the
+   item forms use, but with ALL SIX rows in ONE white group — so the gap never
+   shows. Rows as direct children of the beige box put a band between every
+   row, which is what it looked like before this comment existed. */
+.d1j-oth-rows { background: #fff; }
+.d1j-oth-row {
+  display: flex; align-items: center; gap: 4px;
+  width: 100%; height: 80px; padding: 0 20px; cursor: pointer;
+  border: 0; border-bottom: 1px solid #e0ddd6; background: #fff;
+  font-family: inherit; text-align: left;
+}
+.d1j-oth-row:active, .d1j-oth-row.sel { background: #f7f5f1; }
+/* a 40px slot centring a 24px glyph — Figma's 4px gap is measured from that
+   slot, not from the glyph, which is why the label reads close to the icon */
+.d1j-oth-row .av {
+  flex: 0 0 auto; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center; color: #141410;
+}
+.d1j-oth-row .av svg, .d1j-oth-row .av img { width: 24px; height: 24px; display: block; }
+.d1j-oth-row .t {
+  flex: 1 1 auto; min-width: 0;
+  font-size: 16px; line-height: 1.3; color: #141410;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ══ THE ALIAS TRAY (Figma 6507:300274) ══════════════════════════════════
+   Between the Add page (4000) and the flows (4200): it covers the grid and is
+   covered the moment the flow it opens arrives. */
+.d1j-trayw { position: fixed; inset: 0; z-index: 4100; pointer-events: none; }
+@media (min-width: 500px) and (hover: hover) and (pointer: fine) {
+  .phone-frame .d1j-trayw { position: absolute; }
+}
+.d1j-trayw.on { pointer-events: auto; }
+.d1j-tray-scrim {
+  position: absolute; inset: 0; background: rgba(11,11,10,.45);
+  opacity: 0; transition: opacity .28s ease;
+}
+.d1j-trayw.on .d1j-tray-scrim { opacity: 1; }
+.d1j-tray {
+  position: absolute; left: 0; right: 0; bottom: 0; padding-bottom: 31px;
+  background: #fff; border-radius: 16px 16px 0 0; overflow: hidden;
+  transform: translateY(100%); transition: transform .34s cubic-bezier(.32,.72,0,1);
+}
+.d1j-trayw.on .d1j-tray { transform: translateY(0); }
+/* Section header-small: 24 above, 12 below, 16px at 500 — not Figma's 510,
+   which reads as semibold in SF (see the heading-weight decision). */
+.d1j-tray-h {
+  padding: 24px 20px 12px;
+  font-size: 16px; font-weight: 500; line-height: 1.2;
+  letter-spacing: -0.32px; color: #141410;
+}
+.d1j-tray-row {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; height: 80px; padding: 20px; cursor: pointer;
+  border: 0; border-bottom: 1px solid #e0ddd6; background: #fff;
+  font-family: inherit; text-align: left;
+}
+.d1j-tray-row:active { background: #f3f1ed; }
+.d1j-tray-row .av {
+  flex: 0 0 auto; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center; color: #141410;
+}
+.d1j-tray-row .av img, .d1j-tray-row .av svg { width: 24px; height: 24px; display: block; }
+/* alias.svg is authored 0 0 32 32 where Phone.svg and email.svg beside it are
+   0 0 24 24 (checked on disk), so in this 24px box its glyph would print at
+   24/32 of their weight. 1.25 is the grid ratio; on transform, so the row's
+   layout does not move. Same correction the Day 30 pick sheet needed. */
+.d1j-tray-row .av img.alias { transform: scale(1.25); }
+.d1j-tray-row .t {
+  flex: 1 1 auto; min-width: 0;
+  /* 16, not 20 — Yuan, 26 Aug, on the "Add a phone number" tray: "this text is
+     so large, can you make them 16px". It is also the size the tray's own
+     heading uses (.d1j-tray-h), so the row no longer out-shouts the question it
+     is answering. */
+  font-size: 16px; line-height: 1.2; letter-spacing: 0.1px; color: #000;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* ── the non-alias "Add <thing>" form (Figma 6085:127624 · 127647) ──────
+   Serif headline that re-words itself once the required fields are in, a
+   stack of labelled 56px fields, and a footer that sits on a hairline. */
+/* the body scrolls, not the layer: with the keyboard up the last field sits
+   under the footer, and a focus that scrolls the LAYER drags the whole flow */
+.d1j-fm-body {
+  position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 116px 20px calc(var(--d1-kbh) + 108px);
+}
+.d1j-fm-body .d1j-h1 { margin-bottom: 28px; }
+.d1j-flab {
+  font-size: 14px; line-height: 1.2; letter-spacing: -0.14px; color: #141410;
+  margin: 22px 0 8px;
+}
+.d1j-fslot:first-child .d1j-flab { margin-top: 0; }
+
+/* ══ ADD AN ITEM · per-type form (Figma 5941:242114) ══════════════════════
+   Three bands of rows. Figma builds it as a #f3f1ed column with an 8px gap
+   between white groups, so the separator is the GROUND showing through — not
+   a rule, which is why it reads thicker than the dividers inside a group. */
+/* The wizards arrive with the keyboard already up because typing IS their
+   step. This page is a list you scroll and tap into, and Figma draws it with
+   the Add button on the bottom edge — so here the keyboard follows focus.
+   `kbf` instead of `kb` keeps that difference explicit. */
+.d1j-fm-body.rows { padding: 0 0 140px; }
+/* Add, at the end of the form rather than floating above the keyboard.
+   Yuan, 25 Aug: "don't let add button sticky on the screen, put it at the end
+   of the form field". Here rather than in day01.css because this sheet loads
+   last and owns this form in V3. Scoped to the foot that now lives INSIDE the
+   scroller: .d1j-foot is shared with the onboarding Continue/Skip pair, the
+   area picker and the "other" add, which are separate pages.
+   `position: static` also disposes of .d1j-wzs.kbf.up .d1j-foot's raised
+   `bottom` without out-specifying it — `bottom` means nothing on a static box. */
+.d1j-wzs .d1j-fm-body > .d1j-foot {
+  position: static; left: auto; right: auto; bottom: auto;
+  margin: 28px 0 0;
+}
+/* Figma: the title's box starts at 152 and the first band at 206 — a 54px slot
+   for the title and the air under it. Giving the headline that slot as a
+   min-height pins the band at 206 whatever the serif's metrics do (a chased
+   padding value drifted 3px against New York's line box), and a two-line name
+   still pushes the band down rather than clipping. The wizards' shared 28px
+   headline margin stands down here. */
+.d1j-fhead { padding: 152px 20px 0; }
+/* While the keys are up the title gives back 32 of its 152: that is Figma's
+   at-rest number, and with a keyboard on screen it was the reason the Add
+   button sat under the keys (measured: 55px of it). Everything below moves with
+   it, so the form reads the same, just higher. */
+.d1j-wzs.kbf.up .d1j-fhead { padding-top: 120px; }
+.d1j-fm-body.rows .d1j-h1 {
+  margin-bottom: 0; min-height: 54px;
+  font-size: 32px; letter-spacing: -0.32px;
+}
+.d1j-wzs.kbf .d1j-kb { transform: translateY(var(--d1-kbh)); }
+.d1j-wzs.kbf.up .d1j-kb { transform: none; }
+.d1j-wzs.kbf.up .d1j-foot { bottom: calc(var(--d1-kbh) + 20px); }
+/* The scroller ENDS where the keys begin, rather than reserving their height as
+   padding inside a full-height box. Padding let content be laid out under the
+   keyboard — which is how the Add button came to be drawn there (Yuan, 26 Aug:
+   "the button is hidden") — while a shorter box cannot: everything below the
+   fold is now reachable by scrolling instead of hidden behind the keys. 24 is
+   the breathing room under the last thing in the form. */
+.d1j-wzs.kbf.up .d1j-fm-body.rows { bottom: var(--d1-kbh); padding-bottom: 24px; }
+/* ...and 56px higher again while the smart bar is up, because the bar is drawn
+   ON the keys' top edge and this box ended exactly there. Yuan, 27 Aug: "after I
+   add username, I cannot scroll up the screen to get the CTA until I select other
+   input item" — measured, the Add button bottomed out at 521 under a bar starting
+   at 505, and Title (no suggestions, no bar) was reachable, which is the "other
+   input item" that appeared to fix it. The bar's own `.on` is the condition:
+   #d1jSug is a child of .d1j-flow beside the section, so :has() asks the fact
+   directly instead of a second class the JS would have to keep in step. */
+.d1j-flow:has(> .d1j-sug.on) .d1j-wzs.kbf.up .d1j-fm-body.rows {
+  bottom: calc(var(--d1-kbh) + 56px);
+}
+.d1j-frows { background: #f3f1ed; display: flex; flex-direction: column; gap: 8px; }
+.d1j-fgrp { background: #fff; }
+/* 24px above and below a 21px line = Figma's 69px row. The label keeps its
+   width and the value takes the rest, right-aligned — a row, not a stack. */
+.d1j-frow {
+  position: relative; display: flex; align-items: center; gap: 16px;
+  padding: 24px 20px; background: #fff;
+  border-bottom: 1px solid #e0ddd6;
+}
+.d1j-fgrp > .d1j-frow:last-child { border-bottom: 0; }
+.d1j-frl {
+  flex: 0 0 auto; max-width: 60%;
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* the field keeps wireField's mirror + hidden input, but as a right-aligned
+   cell rather than a beige box */
+.d1j-frow .d1j-fv.d1j-field {
+  flex: 1 1 auto; min-width: 0; margin: 0; padding: 0;
+  min-height: 21px; background: none; border-radius: 0;
+  display: block; text-align: right;
+}
+.d1j-frow .d1j-mirror {
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.32px;
+  min-height: 21px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.d1j-frow .d1j-realin { padding: 0; text-align: right; }
+/* The pills belong to the row you are IN, and to no other. Yuan, 23 Aug, on
+   the username row: "如果highlight了之后，会出现两个button" — before the row has
+   focus there are no buttons at all, so it reads as a value like every other
+   row. Same rule the keyboard follows.
+   And they take their own line. Two pills, one of them a whole email address,
+   do not fit beside a label on a 393 frame: "Margaret611@gmail.com" alone
+   measures 177px of a 353px row. The previous layout made room by HIDING the
+   value line on any row that had pills — which meant a row you were typing
+   into showed you nothing. The value stays; the pills drop below it. */
+.d1j-frow.acts .d1j-fv { display: block; }
+.d1j-fverbs { display: none; gap: 8px; }
+.d1j-frow.acts.hot { flex-wrap: wrap; }
+.d1j-frow.acts.hot .d1j-fverbs {
+  display: flex; flex: 1 0 100%; order: 4;
+  margin-top: 12px; justify-content: flex-start;
+}
+
+/* ══ the keyboard's smart bar (Day30-V1's .nq-sug) ══════════════════════
+   Yuan, 24 Aug: "instead of button below the list item, can you make the
+   keyboard smart to open up the options?" So the two actions ride the keys.
+   56px on #d3d6dd with two flex-1 buttons and a 1px rule between them are
+   that file's values, not ones chosen to look like it. */
+.d1j-sug {
+  /* On the keyboard's top edge — Yuan, 26 Aug: "when I highlight password,
+     where's my smart keyboard that i had before go? (I can pick my email or
+     alias email)". It was there all along, at bottom: 238 while the keys are 291
+     tall, so its 56px band ran 238-294 INSIDE them, and .kbd's z-index 4300
+     against this page's 4200 drew straight over it. The fix is in --d1-kbh
+     itself, which now says 291. */
+  position: absolute; left: 0; right: 0; bottom: var(--d1-kbh); z-index: 3;
+  height: 56px; display: none; align-items: center; background: #d3d6dd;
+}
+.d1j-sug.on { display: flex; }
+/* it belongs to the keyboard, so it leaves with it */
+.d1j-wzs.kbf:not(.up) .d1j-sug { display: none; }
+.d1j-sug-b {
+  flex: 1 1 0; height: 100%; min-width: 0; padding: 0 10px; border: 0;
+  background: none; font-family: inherit; font-size: 15px; letter-spacing: -0.3px;
+  color: #141410; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.d1j-sug-b:active { background: rgba(20,20,16,.08); }
+.d1j-sug-x { flex: none; width: 1px; height: 24px; background: rgba(20,20,16,.28); }
+
+/* ══ a masked value ════════════════════════════════════════════════════ */
+.d1j-fmask {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px;
+  justify-content: flex-end; padding: 0; border: 0; background: none;
+  font-family: inherit; cursor: pointer; color: #141410;
+}
+.d1j-fmask .t {
+  min-width: 0; font-size: 16px; line-height: 1.3; letter-spacing: -0.32px;
+  color: #84827e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* a value reads as a value; the placeholder stays grey */
+.d1j-fmask.set .t { color: #141410; }
+/* dots are wider than they are tall — tabular keeps the row from twitching as
+   the length changes in the tray */
+.d1j-fmask:not(.shown) .t { letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+.d1j-fmask .eye { flex: none; width: 20px; height: 20px; color: #84827e; }
+.d1j-fmask .eye svg { width: 20px; height: 20px; display: block; }
+.d1j-fmask.shown .eye { color: #141410; }
+
+/* ══ create new alias (Figma 7136-463168) ══════════════════════════════
+   Reached from "Hide my email" inside the password form, so it is a sheet over
+   that form rather than a page after it. Same shape as the password sheet
+   above; every colour is named outright because this sheet has no palette of
+   its own to inherit. */
+.d1j-cna { position: absolute; inset: 0; z-index: 8; pointer-events: none; }
+.d1j-cna.on { pointer-events: auto; }
+.d1j-cna-scrim {
+  position: absolute; inset: 0; background: rgba(11,11,10,.4);
+  opacity: 0; transition: opacity .3s ease;
+}
+.d1j-cna.on .d1j-cna-scrim { opacity: 1; }
+/* A short bottom sheet at its content's height — Yuan, 25 Aug, with the Figma
+   beside the build: "shorter tray, and when user say include special words, it
+   expands". This reverts the full-page version from earlier the same day; the
+   frames end the sheet where the content ends, with Done under the last row.
+   Back to what V1 never stopped being, so the two builds share one shape. */
+.d1j-cna-panel {
+  position: absolute; left: 0; right: 0; bottom: 0; background: #fff;
+  border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.18);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  max-height: 94%; overflow-y: auto; scrollbar-width: none;
+  transform: translateY(110%);
+  /* bottom and max-height ride along, so growing and lifting onto the keyboard
+     are one movement rather than a jump followed by a slide. */
+  transition: transform .42s var(--d1-rise), bottom .4s ease,
+              max-height .4s ease;
+}
+/* Two equal buttons — Yuan, 25 Aug: "Maybe done and cancel". .ghost is the
+   file's own outline style, already used by the Custom button. */
+/* No bottom padding of its own: the PANEL already keeps 20px under the foot
+   (its padding-bottom), and while the words field is open the panel's bottom
+   edge IS the keyboard's top edge — so two 20s stacked put the buttons 40px off
+   the keys. Measured: Done's bottom at 521 against a panel bottom of 561.
+   Yuan, 26 Aug: "你看你的button和keyboard之间的距离可以减少到20px". One owner per
+   gap, and the tray comes out 20px shorter with it. */
+.d1j-cna-foot { padding: 20px 20px 0; display: flex; gap: 12px; }
+.d1j-cna-foot .d1j-cta { flex: 1 1 0; width: auto; }
+/* The band stays in both states — the 26 Aug frame draws the 12px strip while
+   the field is open too. */
+.d1j-cna.on .d1j-cna-panel { transform: none; }
+/* .d1j-cna-bar is gone from the markup with the ✕ the frames do not have; the
+   rule below is left for .d1j-cna-x, which the password sheet also uses. */
+.d1j-cna-x {
+  width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%;
+  background: #f3f1ed; color: #141410; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.d1j-cna-x svg { width: 20px; height: 20px; display: block; }
+/* Tray scale in the body sans, not the 28px display serif a full page carried —
+   the frames set it this way and it matches the sheets either side of it. */
+.d1j-cna-h {
+  margin: 28px 20px 24px; font-weight: 400;
+  font-size: 20px; line-height: 1.3; letter-spacing: -0.4px; color: #141410;
+}
+.d1j-cna-row {
+  display: flex; align-items: center; gap: 12px; min-height: 72px;
+  padding: 0 20px; border-top: 1px solid #e0ddd6;
+}
+.d1j-cna-row .k {
+  flex: none; font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410;
+}
+.d1j-cna-row .v {
+  flex: 1 1 auto; min-width: 0; text-align: right;
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.d1j-cna-roll {
+  flex: none; width: 24px; height: 24px; padding: 0; border: 0;
+  background: none; color: #141410; cursor: pointer;
+}
+.d1j-cna-roll svg { width: 24px; height: 24px; display: block; }
+.d1j-cna-roll:active { opacity: .5; }
+.d1j-cna-pill {
+  display: block; width: calc(100% - 40px); margin: 20px; height: 56px;
+  border: 1px solid #e0ddd6; border-radius: 999px; background: #fff;
+  font-family: inherit; font-size: 16px; letter-spacing: -0.32px; color: #141410;
+  cursor: pointer;
+}
+.d1j-cna-pill:active { background: #f3f1ed; }
+.d1j-cna-band { height: 12px; background: #f3f1ed; }
+/* the label leads and the address follows it in grey — the frame's own order */
+.d1j-cna-row .col { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.d1j-cna-row .fk { font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410; }
+.d1j-cna-row .fv {
+  font-size: 14px; line-height: 1.3; letter-spacing: -0.28px; color: #84827e;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* green here too, for the same reason the password sheet's are */
+.d1j-cna .d1j-tgl[aria-checked="true"] { background: #16a34a; }
+/* ── the words field, expanded in place ────────────────────────────────
+   The pill IS this field's closed state, so it gives up its row rather than
+   sitting above what it opened. Yuan: "when user say include special words, it
+   expands".
+   Lifted above the keys rather than padded to clear them: 291px is what
+   day01.css declares for .kbd. NOT --d1-kbh, which says 238 and whose own
+   comment calls itself the keyboard's height — it is stale, and the full-page
+   version was reserving 53px less than the keys occupy. .d1j-cna is z-index 8
+   against .kbd's 30, so the keyboard already draws over this tray and the lift
+   is all that is needed. */
+/* max-height, not display: display cannot be animated, which is why this
+   snapped. 160 is snug against the content (88 + 54 + a little). And the pill
+   collapses rather than vanishing, so one turns into the other. */
+/* `ease`, not --d1-rise: that curve covers most of its distance in the first
+   half, so a 320ms height read as ~150ms and still snapped. */
+.d1j-cna-words {
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height .4s ease, opacity .28s ease;
+}
+.d1j-cna.words .d1j-cna-words { max-height: 142px; opacity: 1; }
+/* EXPLICIT base max-height: a transition out of `max-height: none` has no start
+   value to interpolate from and lands in one frame. */
+.d1j-cna-pill {
+  overflow: hidden; max-height: 80px;
+  transition: max-height .34s ease, opacity .2s ease,
+              margin .34s ease, border-width .34s ease;
+}
+.d1j-cna.words .d1j-cna-pill {
+  max-height: 0; opacity: 0; margin-top: 0; margin-bottom: 0; border-width: 0;
+}
+.d1j-cna.words .d1j-cna-panel { bottom: 291px; max-height: calc(100% - 291px); }
+/* Closed while lifted has to clear the lift too: from a foot 291px up, 110% of
+   the panel's own height stops 291 - 0.1h short of the floor. Day30 showed this
+   as a tray that stayed on screen after Cancel (Yuan, 26 Aug); here cnaClose
+   drops `.words` in the same breath as `.on`, so the symptom never surfaced —
+   but bottom (.4s) and transform (.42s) were racing on the way out, and this
+   makes the exit exact whichever class comes off first. */
+.d1j-cna.words:not(.on) .d1j-cna-panel { transform: translateY(calc(110% + 291px)); }
+.d1j-cna-rem {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 14px 20px; border: 0; background: none; cursor: pointer; text-align: left;
+}
+.d1j-cna-rem i {
+  width: 26px; height: 26px; flex: none; border-radius: 4px; background: #f3f1ed;
+  background-repeat: no-repeat; background-position: center; background-size: 16px;
+}
+.d1j-cna-rem[aria-checked="true"] i { background-color: #0b0b0a;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f3f1ed' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5 9.5 18 20 6.5'/%3E%3C/svg%3E"); }
+.d1j-cna-rem span { font-size: 15px; line-height: 1.3; color: #141410; }
+/* 88, the frame's own proportion — the field was what made the expanded tray
+   overshoot (Yuan, 26 Aug: "feel this page expand too much"). */
+.d1j-cna-ta {
+  display: block; width: calc(100% - 40px); margin: 0 20px;
+  /* height, not just min-height: rows="4" gives the textarea an intrinsic 124px
+     and a min cannot pull it down (measured 124 with min-height: 88). */
+  height: 88px; min-height: 88px;
+  padding: 16px 18px; box-sizing: border-box; border: 0; border-radius: 20px;
+  background: #f3f1ed; resize: none; outline: none;
+  font-family: inherit; font-size: 17px; line-height: 1.35; color: #141410;
+}
+.d1j-cna .d1j-wtray-panel .d1j-cta { margin: 20px; width: calc(100% - 40px); }
+
+/* ══ customize password ════════════════════════════════════════════════
+   Rises over the form with the keyboard down — nothing in here is typed into.
+   The value is large because reading it is the whole point of revealing it, and
+   the settings are rows because Yuan asked for list items. */
+.d1j-pwt { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+.d1j-pwt-scrim {
+  position: absolute; inset: 0; background: rgba(11,11,10,.4);
+  opacity: 0; transition: opacity .3s ease;
+}
+.d1j-pwt-panel {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: #fff; border-radius: 20px 20px 0 0;
+  padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 20px);
+  box-shadow: 0 -10px 40px rgba(0,0,0,.18);
+  /* 110% of its OWN height, so the sheet parks itself however tall it gets.
+     It used to be a flat 560px — true when this sheet was value + toggles, and
+     wrong the moment patch40 gave it a Length slider, four option rows and a
+     Save: at 642 tall it left 82px of itself on screen, which is the "Strong
+     password" bar Yuan found stuck at the bottom of the form (25 Aug).
+     The pixel note this replaces was about the AVATAR sheet, which is sized by
+     its content as it opens; this one is laid out at load with no transition
+     running, and day 30's sheet has been on a percentage since patch42. */
+  transform: translateY(110%);
+  transition: transform .42s var(--d1-rise);
+}
+.d1j-pwt.on { pointer-events: auto; }
+.d1j-pwt.on .d1j-pwt-scrim { opacity: 1; }
+.d1j-pwt.on .d1j-pwt-panel { transform: none; }
+/* A titled bar with a close, per Yuan's 25 Aug frames — the sheet is a place
+   you are IN now (you can type in it), so it needs a way out that is not the
+   scrim. */
+/* A line of its own, not a bar with the title centred in it. Yuan, 25 Aug:
+   "Strong password 不错，不过header可以改一下layout". The title now starts on the
+   same 20px gutter as every row below it and takes sheet-title size (24/1.15,
+   what .vt-sheet-title uses for this job elsewhere); the 40px nudge went with
+   the centring it was balancing. The X stays — the reference frame has none, but
+   it is the only way out of here that is not Save — and top-aligns so it sits
+   beside the title's first line. */
+.d1j-pwt-bar {
+  display: flex; align-items: flex-start; gap: 12px; padding: 24px 20px 20px;
+}
+.d1j-pwt-h {
+  flex: 1 1 auto; text-align: left; padding-left: 0;
+  font-size: 24px; line-height: 1.15; letter-spacing: -0.5px; color: #141410;
+}
+.d1j-pwt-x {
+  flex: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%;
+  background: #f3f1ed; color: #141410; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.d1j-pwt-x svg { width: 20px; height: 20px; display: block; }
+.d1j-pwt-x:active { background: #e0ddd6; }
+/* the value is an input: editable, and monospaced so a generated string reads
+   as one thing rather than as a word */
+.d1j-pw-row.val { gap: 12px; }
+.d1j-pwt-in {
+  flex: 1 1 auto; min-width: 0; padding: 0; border: 0; background: none;
+  text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 16px; line-height: 1.3; color: #141410; -webkit-appearance: none;
+}
+.d1j-pwt-in:focus { outline: none; }
+/* Length: the ends are labelled, and the password above is the readout — the
+   reference frame names no current value, and the string changes as you drag. */
+.d1j-pw-len { padding: 20px 20px 24px; border-top: 1px solid #e0ddd6; }
+.d1j-pw-len .k {
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410;
+}
+.d1j-pw-len.off { opacity: .35; pointer-events: none; }
+.d1j-pw-slide { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+.d1j-pw-slide .n {
+  flex: none; font-size: 16px; line-height: 1.3; color: #141410;
+  font-variant-numeric: tabular-nums;
+}
+.d1j-pw-slide input[type="range"] {
+  flex: 1 1 auto; min-width: 0; height: 6px; margin: 0; padding: 0;
+  -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer;
+}
+.d1j-pw-slide input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 100px; background: #e0ddd6;
+}
+.d1j-pw-slide input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; margin-top: -11px;
+  width: 28px; height: 28px; border-radius: 50%; background: #fff;
+  border: 1px solid #e0ddd6; box-shadow: 0 1px 4px rgba(0,0,0,.18);
+}
+.d1j-pw-slide input[type="range"]::-moz-range-track {
+  height: 6px; border-radius: 100px; background: #e0ddd6;
+}
+/* filled to the knob, as the frame draws it */
+.d1j-pw-slide input[type="range"]::-moz-range-progress {
+  height: 6px; border-radius: 100px; background: #141410;
+}
+.d1j-pw-slide input[type="range"]::-moz-range-thumb {
+  width: 28px; height: 28px; border: 1px solid #e0ddd6; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.18);
+}
+.d1j-pw-sec {
+  padding: 20px 20px 8px; border-top: 1px solid #e0ddd6;
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #141410;
+}
+.d1j-pwt-foot { padding: 24px 20px 8px; display: flex; }
+.d1j-pwt-foot .d1j-cta { flex: 1 1 auto; }
+/* the accessory bar carries one wide offer as readily as two addresses */
+.d1j-sug-b.wide { flex: 1 1 auto; }
+.d1j-pwt-val {
+  display: flex; align-items: center; gap: 12px; margin: 20px 20px 8px;
+  padding: 16px 18px; border-radius: 16px; background: #f3f1ed;
+}
+.d1j-pwt-val .v {
+  flex: 1 1 auto; min-width: 0; font-size: 18px; line-height: 1.35;
+  letter-spacing: 0; color: #141410; overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.d1j-pwt-roll {
+  flex: none; width: 24px; height: 24px; padding: 0; border: 0;
+  background: none; color: #141410; cursor: pointer;
+}
+.d1j-pwt-roll svg { width: 24px; height: 24px; display: block; }
+.d1j-pwt-roll:active { opacity: .5; }
+.d1j-pw-row {
+  display: flex; align-items: center; gap: 16px; min-height: 64px;
+  padding: 0 20px; border-top: 1px solid #e0ddd6; background: #fff;
+}
+.d1j-pw-row .k {
+  flex: 1 1 auto; font-size: 16px; line-height: 1.3;
+  letter-spacing: -0.32px; color: #141410;
+}
+.d1j-pw-step { flex: none; display: flex; align-items: center; gap: 6px; }
+.d1j-pw-step button {
+  width: 32px; height: 32px; padding: 0; border: 1px solid #e0ddd6;
+  border-radius: 50%; background: #fff; color: #141410;
+  font-family: inherit; font-size: 17px; line-height: 1; cursor: pointer;
+}
+.d1j-pw-step button:active { background: #f3f1ed; }
+.d1j-pw-step b {
+  min-width: 28px; text-align: center; font-weight: 400; font-size: 16px;
+  font-variant-numeric: tabular-nums; color: #141410;
+}
+/* phrase mode makes its own length, so the stepper has nothing to say */
+.d1j-pw-step.off { opacity: .35; pointer-events: none; }
+.d1j-fverb {
+  height: 32px; padding: 0 16px; border-radius: 100px; cursor: pointer;
+  border: 1px solid #e0ddd6; background: #fff; font-family: inherit;
+  font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: #141410;
+}
+.d1j-fverb:active { background: #f3f1ed; }
+/* A filled row with pills is just a row: label left, value right, in the same
+   ink as every other row on the page. There used to be a whole second layout
+   here — the value dropped under the label at 14px grey — because two pills and
+   a Gmail address could not share one 353px line. The pills have their own line
+   now (.acts.hot, above), so that pressure is gone, and it was making a saved
+   password read as a hint rather than a value. */
+/* pickers — a fixed set, so a chevron rather than a caret */
+.d1j-fpick {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center;
+  justify-content: flex-end; gap: 4px;
+  border: 0; background: none; padding: 0; cursor: pointer; font-family: inherit;
+  font-size: 16px; line-height: 1.3; letter-spacing: -0.32px; color: #84827e;
+}
+.d1j-fpick.set { color: #141410; }
+.d1j-fpick .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.d1j-fpick svg { flex: 0 0 auto; width: 20px; height: 20px; color: #141410; }
+/* Bank account's "Add field" — a centred link row, not a field */
+.d1j-flink {
+  display: block; width: 100%; padding: 16px 20px; cursor: pointer;
+  border: 0; border-bottom: 1px solid #e0ddd6; background: #fff;
+  font-family: inherit; font-size: 12px; line-height: 1.3; color: #141410;
+  text-align: center;
+}
+.d1j-fgrp > .d1j-flink:last-child { border-bottom: 0; }
+/* The CTA rides on a white plate pinned to the bottom EDGE — Figma's bar is
+   bottom:0 with 32 of padding under the button, so the plate must give up
+   .d1j-foot's own 32px offset or the button floats 32 too high. */
+.d1j-foot.plate {
+  left: 0; right: 0; bottom: 0; padding: 16px 20px 32px; background: #fff;
+}
+/* ...and the per-type Add form's plate lives INSIDE the scroller — Yuan, 25 Aug:
+   "don't let add button sticky on the screen, put it at the end of the form
+   field". It was `absolute` there, which measures against the scroller's CONTENT
+   box rather than the screen, so with the keyboard up (that box is 852 + 411 of
+   reserved padding) it landed 39px BELOW the keys' top edge — measured on Add
+   email: cta 544-600 against a keyboard starting at 561. Yuan, 26 Aug: "the
+   button is hidden, can you move it up a bit?"
+   In flow, and with the dead space around it cut: 28px of gap above the plate
+   and 32 below the button were holding it down for nothing inside a scroller
+   that already reserves the keyboard's height. */
+.d1j-fm-body.rows > .d1j-foot.plate {
+  position: static; left: auto; right: auto; bottom: auto;
+  margin-top: 8px; padding: 8px 20px 16px;
+}
+
+/* the option sheet — one component for pickers, + Add and "Add field" */
+.d1j-oscrim {
+  position: absolute; inset: 0; z-index: 8; background: rgba(11,11,10,.45);
+  opacity: 0; pointer-events: none; transition: opacity .28s ease;
+}
+.d1j-oscrim.on { opacity: 1; pointer-events: auto; }
+.d1j-osheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 9;
+  max-height: 70%; display: flex; flex-direction: column;
+  background: #fff; border-radius: 24px 24px 0 0;
+  transform: translateY(100%); transition: transform .34s cubic-bezier(.32,.72,0,1);
+}
+.d1j-osheet.on { transform: translateY(0); }
+.d1j-osheet-h {
+  flex: 0 0 auto; padding: 26px 20px 12px;
+  font-family: var(--d1-serif); font-size: 22px; line-height: 1.15; color: #141410;
+}
+.d1j-osheet-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 0 28px; }
+.d1j-oopt {
+  display: block; width: 100%; padding: 15px 20px; cursor: pointer;
+  border: 0; border-bottom: 1px solid #e0ddd6; background: #fff;
+  font-family: inherit; text-align: left;
+}
+.d1j-oopt:last-child { border-bottom: 0; }
+.d1j-oopt:active { background: #f3f1ed; }
+.d1j-oopt b { display: block; font-size: 16px; font-weight: 400; color: #141410; }
+.d1j-oopt small { display: block; margin-top: 2px; font-size: 13px; color: #84827e; }
+.d1j-fslot[hidden] { display: none !important; }
+.d1j-fm-body .d1j-field { margin-top: 0; }
+.d1j-foot.hair {
+  left: 0; right: 0; padding: 16px 20px 0;
+  border-top: 1px solid #e0ddd6; background: #fff;
+}
+
+  /* ══ one size for every big number ══════════════════════════════════════
+     Yuan, 26 Aug: "can we make all big number same size (for example, the
+     screenshot, 4228 is bigger than 152). This is a global change".
+     Measured before this: 36 / 44 / 48 / 52 / 56 / 60 / 72px for the same role
+     — a card's or a page's headline count — with tracking anywhere from -0.5 to
+     -2px. 48px is both the mode and the size of the number he pointed at, so
+     everything meets it there and his 4,228 does not move.
+     The .digit reels and the .digit-sep comma inherit their size from these
+     containers (measured), so naming the containers is enough.
+     The story screens' editorial numbers (Playfair Display, 60-124px) are a
+     different device and keep their own scale. */
+  .at-num,
+  .actions-head-section .hero-num,
+  .rh-total-num,
+  .mon-removed-section .rh-total-num,
+  .rdh-total-num,
+  .dash-wcard .w-value,
+  .cgw-headline,
+  .av-hero-num,
+  .cg-hero-num,
+  html.day1 .at-card .at-num {
+    font-size: 48px;
+    letter-spacing: -0.96px;
+    line-height: 1.05;
+  }
+  /* The Call Guard tile stacks its count and its label by absolute `top`, so
+     taking the count from 36px to 48px pushed it 6px into "Spam blocked"
+     (measured: number ends 428, label began 422). The label moves down by the
+     10px the bigger line box needs; nothing else in the tile is anchored
+     between them. */
+  .cgw-sub { top: 106px; }
+
+/* ══ MV-4a · the reservation follows the KEYBOARD, not the form's `.up` ═══════
+   Yuan, 18 Sep: on DC-01 (#d1jForm), DC-04 (#d1jAephone) and DC-05 (#d1jAeemail),
+   "当我填完了 form，无法往上滑，所以滑不到 button 处… 不是每次都会有 bug".
+   Two owners of "the keyboard is up" (CLAUDE.md): the keys themselves are the
+   app's — #kbd.on, pinned by kbdPin('form') so they stay for the whole form —
+   but the ROOM the form leaves for them was keyed on its own `.kbf.up`, which
+   focusin adds and focusout removes 60ms later. Tap anywhere that is not a
+   field and `.up` is gone: the scroller grows back to full height while the
+   keys stay painted over its bottom 291px, and Continue is under them with
+   nothing left to scroll. Swipe without ever blurring and it works — hence
+   "偶尔又是对的".
+   Every `.kbf.up` reservation below has a twin keyed on the fact instead:
+   `.phone-frame:has(#kbd.on)`. Same declarations, so the two never disagree;
+   the `.up` rules stay for the frame before the keys have been asked for. */
+.phone-frame:has(#kbd.on) .d1j-wzs.kbf .d1j-fhead { padding-top: 120px; }
+.phone-frame:has(#kbd.on) .d1j-wzs.kbf .d1j-foot { bottom: calc(var(--d1-kbh) + 20px); }
+.phone-frame:has(#kbd.on) .d1j-wzs.kbf .d1j-fm-body.rows { bottom: var(--d1-kbh); padding-bottom: 24px; }
+.phone-frame:has(#kbd.on) .d1j-flow:has(> .d1j-sug.on) .d1j-wzs.kbf .d1j-fm-body.rows {
+  bottom: calc(var(--d1-kbh) + 56px);
+}
+.phone-frame:has(#kbd.on) .d1j-ae .d1j-wzs.kbf {
+  bottom: var(--d1-kbh);
+  overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-bottom: 24px;
+}
+.phone-frame:has(#kbd.on) .d1j-ae .d1j-wzs.kbf .d1j-kb { display: none; }
+.phone-frame:has(#kbd.on) .d1j-ae .d1j-wzs.kbf .d1j-ae-next { top: 675px; bottom: auto; z-index: 3; }
+.phone-frame:has(#kbd.on) .d1j-ae .d1j-wzs.kbf.words::after { display: none; }
+
+
+/* ══ MV-4b · the alias ending's generating beat, and created rows in the list ═
+   The value morph (buildAliasFlow → morph): a character mid-flight is blurred
+   and takes the item's tone, like the ID card mint's rolling characters take
+   the card's; it sharpens and returns to ink as it settles. Cells the shorter
+   string lacks are .gap — present for layout, invisible — and fade inside the
+   blur so a longer alias does not jump into place. */
+.d1j-gval .mc { transition: filter .16s linear, color .16s linear, opacity .16s linear; }
+.d1j-gval .mc.gap { opacity: 0; }
+.d1j-gval .mc.roll {
+  color: var(--d1-tone); filter: blur(2.4px); opacity: 1;
+  text-shadow: 0 0 10px currentColor;
+}
+.d1j-gval .mc.settling { filter: blur(1.1px); opacity: 1; text-shadow: 0 0 8px var(--d1-tone); }
+.d1j-gval .mc.settling.gap { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .d1j-gval .mc { transition: none; }
+}
+/* A created item's avatar in the Vault list: the flow's disc (an <img> of the
+   vault's own 40px art) fills the slot; a glyph from the custom-avatar sheet
+   sits 22px on the tone — the same two shapes .d1j-av-tone drew. */
+.vt-av.raw > .d1j-madeav { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; }
+.vt-av.raw > .d1j-madeav > img { width: 100%; height: 100%; display: block; border-radius: 50%; object-fit: cover; }
+.vt-av.raw > .d1j-madeav > svg { width: 22px; height: 22px; display: block; }
+
+/* ══ MV-4c · the alias page scrolls in EVERY state ════════════════════════════
+   Yuan, 18 Sep, after MV-4a: DC-04 "还是有滑不动页面的情况". MV-4a made the
+   keyboard's ROOM follow the keyboard, but this page was still scrollable
+   only WHILE a keyboard state held (`.kbf.up` or `#kbd.on`) and fell back to
+   the section's `overflow: clip` the moment both dropped — a pinned layout
+   whose Save ends at 731px, inside a box that may be shorter than that (a
+   phone with Safari's bars out, a 13 mini, the hub's iframe). The password
+   form never had this: its scroller is `overflow-y: auto` unconditionally.
+   So is this one now. The only thing the section kept the clip for was its
+   own drawn keyboard, `.d1j-kb`, parked below the fold with a transform (a
+   transformed child extends the scrollable area); on this page it is never
+   the keyboard you see — `#kbd` is — so it stands down for good. The
+   `#kbd.on` rule above still shortens the box while the keys are up. */
+.d1j-ae .d1j-wzs.kbf {
+  overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-bottom: 24px;
+}
+.d1j-ae .d1j-wzs.kbf .d1j-kb { display: none; }
+/* Save no longer hides while the words box is open (Yuan, 18 Sep: "当我点了
+   include special words, continue button 就不见了"). The hide dates from when
+   Save was bottom-anchored 53px short of the keys and would have covered the
+   checkbox; it travels with the rows now — `top: 675px + var(--ae-wbox)`,
+   declared above — so it simply moves down with them. */
+.d1j-ae .d1j-wzs.words .d1j-ae-next { display: flex; }
+
+/* ══ MV-3 · av-rule avatars in the Vault, the alias detail's dark top (MV-1's
+   sheet, ported), and the ID-card intro's dark tab bar ═══════════════════════ */
+.vt-av.av-rule.av-mark > svg { width: 100%; height: 100%; }
+.vt-hero-av .vt-av.av-rule > svg { width: 100%; height: 100%; }
+.vt-av.av-rule.av-logo { border-radius: 0; overflow: visible; background: none; }
+.vt-av.av-rule.av-logo > img { width: 100%; height: 100%; object-fit: contain; }
+.vt-av.av-rule.av-logo.av-whiten > img { filter: brightness(0) invert(1); }
+.vt-av.av-rule.av-mark.av-outline { box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+#vtL3.vt-dark {
+  --vt-bg: #141410; --vt-surface: #141410;
+  --vt-ink: #f3f1ed; --vt-ink-2: rgba(243,241,237,.62); --vt-line: rgba(255,255,255,.12);
+}
+#vtL3.vt-dark .vt-scroll { background: #fff; color: var(--vt-ink); }
+#vtL3.vt-dark .vt-hero-title, #vtL3.vt-dark .vt-hero-val { color: var(--vt-ink); }
+#vtL3.vt-dark .vt-hero-val { color: var(--vt-ink-2); }
+#vtL3.vt-dark .lgm-see, #vtL3.vt-dark .lgm-row { background: var(--vt-surface); color: var(--vt-ink); border-color: var(--vt-line); }
+#vtL3.vt-dark .lgm-see:active, #vtL3.vt-dark .lgm-row:active { background: rgba(255,255,255,.06); }
+#vtL3.vt-dark .lgm-l, #vtL3.vt-dark .lgm-k { color: var(--vt-ink); }
+#vtL3.vt-dark .lgm-v { color: var(--vt-ink-2); }
+#vtL3.vt-dark .vt-av.mark.av-whiten { filter: brightness(0) invert(1); }
+#vtL3.vt-dark .cg-sec:not(.flush) {
+  --vt-bg: #f3f1ed; --vt-surface: #ffffff;
+  --vt-ink: #141410; --vt-ink-2: #84827e; --vt-line: #e0ddd6;
+  color: #141410;
+}
+#vtL3.vt-dark .cg-sec:not(.flush) + .cg-gap, #vtL3.vt-dark .cg-sec:not(.flush) ~ .vt-tail { background: #f3f1ed; }
+#vtL3.vt-dark .vt-bar-btn { color: #f3f1ed; background: rgba(255,255,255,.1); }
+#vtL3.vt-dark .vt-bar #vtL3Star.on { color: #f3f1ed; }
+#vtL3.vt-dark .cg-value:active { background: rgba(255,255,255,.06); }
+#vtL3.vt-dark .cg-sw[aria-checked="false"] { background: rgba(255,255,255,.22); }
+/* IC-01…03 · the day-one intro is a dark page, so its tab bar is dark by
+   DECLARATION (Yuan, 18 Sep: "整个页面是 darkmode，所以 navigation 也应该是 dark
+   mode"). The scroll-sampled theme already said `video` here most of the time;
+   this stops it depending on a sample landing. */
+body.idcard-open:has(#idcardScreen.empty.open) .bottom-nav {
+  background: #0b0b0a; border-top-color: transparent;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+body.idcard-open:has(#idcardScreen.empty.open) .bottom-nav .nav-item { color: rgba(255,255,255,.5); }
+body.idcard-open:has(#idcardScreen.empty.open) .bottom-nav .nav-item.active { color: #fff; }
+
+/* ══ MV-4 · the rule's mark on the confirmation card and the detail page ═════
+   --d1-av-bg / --d1-av-ink are set by reveal() from AV.decide(); the disc keeps
+   them through `.lit` (the tone rule below used to repaint the disc in the
+   flood colour, which for an alias would erase the black disc). */
+.d1j-gav.rule, .d1j-gen.lit .d1j-gav.rule {
+  border-color: transparent; background: var(--d1-av-bg, transparent); color: var(--d1-av-ink, #141410);
+}
+.d1j-gav.rule svg { width: 100%; height: 100%; }
+.d1j-det-av.rule svg { width: 100%; height: 100%; }
+.d1j-det-av.logo { background: transparent !important; }
+.d1j-det-av.logo img { width: 100%; height: 100%; object-fit: contain; }
+/* a DARK ground (Hinge's black, a deep 02 disc) takes light ink on the page;
+   the card itself is white in `.lit`, so its text stays dark */
+.d1j-gen.lit.dkg .d1j-h1, .d1j-gen.lit.dkg .d1j-cta.ghost { color: #f3f1ed; }
+
+/* ══ MV-5 · DC-06 #d1jDetail · an alias item's detail is dark on top ═════════
+   Head (bar, avatar, name) and the value row take Cloaked Black with paper
+   ink; Activities stays light. Figma 12628-124992 (alias) vs 125087 (not). */
+.d1j-det.dark { background: #141410; }
+.d1j-det.dark .d1j-det-head, .d1j-det.dark .d1j-det-vrow { background: #141410; border-color: rgba(255,255,255,.12); }
+.d1j-det.dark .d1j-det-name, .d1j-det.dark .d1j-det-val, .d1j-det.dark .d1j-det-copy { color: #f3f1ed; }
+.d1j-det.dark .d1j-det-vlab { color: rgba(243,241,237,.62); }
+.d1j-det.dark .d1j-det-btn { background: rgba(255,255,255,.1); color: #f3f1ed; box-shadow: none; }
+.d1j-det.dark .d1j-det-btn:active { background: rgba(255,255,255,.18); }
+.d1j-det.dark .d1j-det-av.rule { box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+.d1j-det.dark .d1j-det-av.logo.whiten img { filter: brightness(0) invert(1); }
+.d1j-det.dark .d1j-det-acts { background: #fff; }
+/* MV-5b · a non-alias item has no activity stream: heading and empty state go, the CTA stays */
+.d1j-det.no-acts .d1j-det-sec, .d1j-det.no-acts .d1j-det-empty { display: none; }
+/* MV-5b · the alias detail's dark top meets the light Activities with no 12px gap
+   (Yuan, 18 Sep: 颜色很不一样了，不需要 padding 去区分). Each layout variant's
+   Activities block moves up by the gap it used to leave. */
+.d1j-det.dark .d1j-det-acts { top: 386px; }
+.d1j-det.dark.no-val .d1j-det-acts { top: 306px; }
+.d1j-det.dark.has-otp .d1j-det-acts { top: 466px; }
+.d1j-det.dark.no-val.has-otp .d1j-det-acts { top: 386px; }

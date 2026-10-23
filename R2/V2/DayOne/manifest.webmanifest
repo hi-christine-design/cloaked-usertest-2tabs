@@ -1,0 +1,10 @@
+{
+  "name": "Cloaked — Identity",
+  "short_name": "Cloaked",
+  "start_url": "./app.html?skip=1&tab=home",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff"
+}

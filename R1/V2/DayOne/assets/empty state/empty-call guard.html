@@ -1,0 +1,255 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Call Guard 6</title><style>html,body{margin:0;height:100%;background:#141410;overflow:hidden;}canvas{display:block;width:100vw;height:100vh;}</style></head><body><canvas id="c"></canvas><script>
+(function runViz(canvas, cfg){
+  const ctx=canvas.getContext('2d');
+  const P=cfg.P;
+  let fg=cfg.fg.slice(), bg=cfg.bg.slice(), accent=cfg.accent.slice();
+  let userLayerCols=(cfg.layerCols&&cfg.layerCols.length)?cfg.layerCols.map(c=>c.slice()):null;
+  let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+  let cx=0,cy=0,R3=0;
+  const CAM=820,F=820;
+  let t=0,heat=0,numT=0,act=0;
+  const PD=1.3,STAG=0.12;
+  const FNT='44px "SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,sans-serif';
+  const NUMFNT='"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,sans-serif';
+  const CHARS='0123456789#*+';
+  const SEG=80;
+
+  let COL='120,205,230', HOT='180,228,242', gTop='#234',gMid='#eaf',gBot='#123', clearCol='0,0,0', bgLight=false, LAYERCOLS=[];
+  function mix(c,target,a){return [Math.round(c[0]+(target[0]-c[0])*a),Math.round(c[1]+(target[1]-c[1])*a),Math.round(c[2]+(target[2]-c[2])*a)];}
+  function rgb(a){return 'rgb('+a[0]+','+a[1]+','+a[2]+')';}
+  function lum(c){return (0.2126*c[0]+0.7152*c[1]+0.0722*c[2])/255;}
+  function setColors(){
+    bgLight=lum(bg)>0.5;
+    clearCol=bg.join(',');
+    COL=fg.join(',');
+    if(bgLight){HOT=mix(fg,[0,0,0],0.35).join(',');gTop=rgb(mix(fg,[0,0,0],0.55));gMid=rgb(mix(fg,[0,0,0],0.15));gBot=rgb(mix(fg,[0,0,0],0.62));}
+    else{HOT=mix(fg,[255,255,255],0.6).join(',');gTop=rgb(mix(fg,[0,0,0],0.5));gMid=rgb(mix(fg,[255,255,255],0.85));gBot=rgb(mix(fg,[0,0,0],0.58));}
+    const auto=[accent.slice(), fg.slice(), mix(accent,fg,0.5), [150,120,235], mix(fg,[255,255,255],0.4), mix(accent,[255,90,60],0.5)];
+    LAYERCOLS = userLayerCols ? userLayerCols.map(c=>c.slice()) : auto;
+  }
+  setColors();
+  const GLOW=()=>bgLight?'source-over':'lighter';
+  const FADE=()=>bgLight?0.5:P.fade;        // higher = faster clear = more black behind the scan (subtler)
+
+  const OW=680,OH=150;
+  const txt=document.createElement('canvas'),tctx=txt.getContext('2d');
+  const mk=document.createElement('canvas'),mctx=mk.getContext('2d');
+  function sizeOff(){txt.width=OW*DPR;txt.height=OH*DPR;tctx.setTransform(DPR,0,0,DPR,0,0);mk.width=OW*DPR;mk.height=OH*DPR;mctx.setTransform(DPR,0,0,DPR,0,0);}
+  sizeOff();
+
+  function resize(){
+    W=Math.max(2,canvas.clientWidth);H=Math.max(2,canvas.clientHeight);
+    canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+    cx=W/2;cy=H/2;R3=Math.min(W,H)*0.313;
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  function randPhone(){const a=['212','415','310','646','305','617','512','206','312','718'];const ac=a[Math.floor(Math.random()*a.length)];
+    return ac+' '+(200+Math.floor(Math.random()*700))+'-'+(1000+Math.floor(Math.random()*9000));}
+  let chars=[],cw=[],glyphTint=[];
+  function layoutPhone(){chars=phone.split('');mctx.setTransform(DPR,0,0,DPR,0,0);mctx.font='300 '+FNT;cw=chars.map(c=>mctx.measureText(c).width);}
+  let phone=randPhone();layoutPhone();
+
+  function proj(x,y,z){const dz=CAM-z;if(dz<=1)return null;const s=F/dz;return {x:cx+x*s,y:cy+y*s,s:s};}
+  function unitDir(){let x=Math.random()*2-1,y=Math.random()*2-1,z=Math.random()*2-1;const m=Math.hypot(x,y,z)||1;return [x/m,y/m,z/m];}
+  function cross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
+  function basis(n){let up=Math.abs(n[1])<0.9?[0,1,0]:[1,0,0];let u=cross(n,up);const m=Math.hypot(u[0],u[1],u[2])||1;u=[u[0]/m,u[1]/m,u[2]/m];return [u,cross(n,u)];}
+
+  // ---- single projectile + impact blast ----
+  let projectile=null, cooldown=40;
+  let lastN=[0.3,0.6,0.74], curN=lastN.slice();   // orbit-ring axis follows the scan
+  const ripples=[], blooms=[];
+  function spawnProjectile(){
+    let u=unitDir();
+    const dist=R3*4.2, sp=R3*P.attack;
+    projectile={x:u[0]*dist,y:u[1]*dist,z:u[2]*dist,vx:-u[0]*sp,vy:-u[1]*sp,vz:-u[2]*sp,
+      label:CHARS[Math.floor(Math.random()*CHARS.length)],rot:Math.random()*6.2832,vrot:(Math.random()-0.5)*0.08};
+  }
+  function blast(n){
+    heat=1;
+    lastN=n.slice();                     // orbit rings align to the latest scan direction
+    blooms.push({n:n.slice(),age:0});
+    // Layers sets the MAX -> the actual count is random 1..max (Layers=3 => 1,2 or 3).
+    const L=1+Math.floor(Math.random()*Math.max(1,Math.round(P.layers)));
+    for(let i=0;i<L;i++){
+      // Ring 0 matches the sliders exactly: fastest (= Ring life) and smallest (= Ring size).
+      // Every extra ring is randomized to live LONGER (slower) and ride at a LARGER radius.
+      const lifeMul = i===0 ? 1 : (1 + Math.random()*Math.max(0,P.lifeVar)*2.5);
+      const life=P.rippleLife*lifeMul;
+      const rad = i===0 ? P.ringSize : (P.ringSize + Math.random()*0.40);
+      const delay=Math.round(Math.random()*78);                  // random launch -> staggered starts
+      ripples.push({n:n.slice(),age:-delay,life:life,rad:rad,
+                    col:(LAYERCOLS[i]||LAYERCOLS[LAYERCOLS.length-1]).slice()});
+    }
+  }
+
+  function drawRipple(rp){
+    rp.age++;
+    if(rp.age<0) return true;            // staggered delay
+    const u=rp.age/rp.life;
+    if(u>=1) return false;
+    const n=rp.n, b=basis(n), ux=b[0], vx=b[1];
+    const RR=R3*(rp.rad||1);             // outer shells ride at a larger radius than the surface
+    const APEX=Math.PI;                  // far pole (顶点)
+    const SPD=APEX/160;                   // fixed travel speed; a ring's LIFE decides how far it gets
+    const ar0=Math.min(APEX, rp.age*SPD);      // leading edge; clamps once it reaches the apex
+    const overall=(1-u)*(1-u);           // smooth fade across THIS ring's own life
+    // Smooth colour gradient (no concentric-ring pattern): many densely overlapping
+    // soft strokes blend into one continuous gradient band that travels with the edge.
+    const STEPS=28, BAND=0.5;
+    ctx.globalCompositeOperation=GLOW();ctx.lineCap='round';ctx.lineJoin='round';
+    for(let s=0;s<STEPS;s++){
+      const f=s/(STEPS-1);                       // 0 = leading edge, 1 = trailing
+      const ar=ar0 - f*BAND;
+      if(ar<=0.004) continue;
+      const env=Math.sin((1-f)*Math.PI/2);       // smooth falloff -> no hard rings
+      const a=overall*env*P.glow*0.5;
+      if(a<0.006) continue;
+      const frontFrac=ar0/Math.PI;
+      const whiteHead=Math.max(0,1-frontFrac/Math.max(0.02,P.whiteReach));
+      const wmix=Math.min(0.6, whiteHead*(1-f));
+      const col=mix(rp.col,[255,255,255],wmix);
+      const ca=Math.cos(ar),sa=Math.sin(ar);
+      ctx.beginPath();let started=false;
+      for(let k=0;k<=SEG;k++){const th=k/SEG*6.2832,ct=Math.cos(th),st=Math.sin(th);
+        const x=ca*n[0]+sa*(ct*ux[0]+st*vx[0]);
+        const y=ca*n[1]+sa*(ct*ux[1]+st*vx[1]);
+        const z=ca*n[2]+sa*(ct*ux[2]+st*vx[2]);
+        const p=proj(x*RR,y*RR,z*RR);if(!p){started=false;continue;}
+        if(started)ctx.lineTo(p.x,p.y);else{ctx.moveTo(p.x,p.y);started=true;}}
+      ctx.strokeStyle='rgba('+col.join(',')+','+Math.min(0.8,a)+')';
+      ctx.lineWidth=9;ctx.stroke();
+    }
+    ctx.lineCap='butt';ctx.lineJoin='miter';ctx.globalCompositeOperation='source-over';
+    return true;
+  }
+
+  function drawBloom(bl){
+    bl.age++;
+    const u=bl.age/16; if(u>=1) return false;          // short flash
+    const p=proj(bl.n[0]*R3,bl.n[1]*R3,bl.n[2]*R3);
+    if(p){
+      // small, quick glint at the impact point — scales with White reach, never engulfs the sphere
+      const rMax=R3*(0.10+0.55*P.whiteReach);
+      const r=rMax*(0.4+0.6*u), a=(1-u)*(1-u)*0.55;
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
+      g.addColorStop(0,'rgba(255,255,255,'+(a*0.9)+')');
+      g.addColorStop(0.4,'rgba('+mix(fg,[255,255,255],0.55).join(',')+','+(a*0.4)+')');
+      g.addColorStop(1,'rgba('+fg.join(',')+',0)');
+      ctx.globalCompositeOperation=GLOW();ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,r,0,6.2832);ctx.fill();
+      ctx.globalCompositeOperation='source-over';
+    }
+    return true;
+  }
+
+  function drawOrbit(phase,speed,tilt){
+    // single ring facing the user: axis points at the camera (+z) with a gentle
+    // wobble so it reads as a 3D ring rather than a flat 2D circle.
+    const pr=t*speed+phase;
+    let ax=[Math.sin(pr)*tilt, Math.cos(pr*0.8)*tilt*0.7, 1];
+    const ma=Math.hypot(ax[0],ax[1],ax[2])||1;ax=[ax[0]/ma,ax[1]/ma,ax[2]/ma];
+    const rb=basis(ax), ru=rb[0], rv=rb[1], Rr=R3*1.16;
+    ctx.globalCompositeOperation=GLOW();ctx.beginPath();let st=false;
+    for(let k=0;k<=90;k++){const th=k/90*6.2832,cct=Math.cos(th),s2=Math.sin(th);
+      const p=proj(Rr*(cct*ru[0]+s2*rv[0]),Rr*(cct*ru[1]+s2*rv[1]),Rr*(cct*ru[2]+s2*rv[2]));
+      if(!p){st=false;continue;}if(st)ctx.lineTo(p.x,p.y);else{ctx.moveTo(p.x,p.y);st=true;}}
+    ctx.strokeStyle='rgba('+fg.join(',')+',0.09)';ctx.lineWidth=1.1;ctx.stroke();
+    ctx.globalCompositeOperation='source-over';
+  }
+
+  // ---- liquid number (reacts on blast) ----
+  function band(px,bw,col,a0,a1){const bg2=tctx.createLinearGradient(px-bw,0,px+bw,0);
+    bg2.addColorStop(0,col+a0+')');bg2.addColorStop(0.5,col+a1+')');bg2.addColorStop(1,col+a0+')');tctx.fillStyle=bg2;tctx.fillRect(0,0,OW,OH);}
+  function buildMask(time){
+    mctx.setTransform(DPR,0,0,DPR,0,0);mctx.globalCompositeOperation='source-over';mctx.clearRect(0,0,OW,OH);
+    mctx.fillStyle='#fff';mctx.strokeStyle='#fff';mctx.lineJoin='round';mctx.lineCap='round';
+    mctx.textAlign='center';mctx.textBaseline='middle';mctx.font='300 '+FNT;
+    const n=chars.length,total=(n-1)*STAG+PD/2, wAmp=P.numWidth*act;
+    const ws=[],svs=[];let tw=0;
+    for(let i=0;i<n;i++){const sv=Math.sin(numT*0.009 - i*0.55);svs.push(sv);const wi=1+wAmp*sv;ws.push(wi);tw+=cw[i]*wi;}
+    let px=-tw/2; glyphTint=[];
+    for(let i=0;i<n;i++){
+      const lt=((time - i*STAG)%total+total)%total;
+      const bump=lt<PD ? (1-Math.cos(6.2832*lt/PD))/2 : 0;
+      const sw=bump*5.0*act, csc=1+0.16*bump*act, wi=ws[i];
+      const cxi=px+cw[i]*wi/2; px+=cw[i]*wi;
+      glyphTint.push({cx:OW/2+cxi, w:cw[i]*wi, t:Math.pow(Math.max(0,svs[i]),1.5)*heat});
+      mctx.save();mctx.translate(OW/2+cxi,OH/2);mctx.scale(csc*wi,csc);
+      mctx.fillText(chars[i],0,0);
+      if(sw>0.05){mctx.lineWidth=sw/csc;mctx.strokeText(chars[i],0,0);}
+      mctx.restore();
+    }
+  }
+  function drawLiquidNumber(time){
+    tctx.setTransform(DPR,0,0,DPR,0,0);tctx.globalCompositeOperation='source-over';tctx.clearRect(0,0,OW,OH);
+    const g=tctx.createLinearGradient(0,0,0,OH);g.addColorStop(0,gTop);g.addColorStop(0.5,gMid);g.addColorStop(1,gBot);
+    tctx.fillStyle=g;tctx.fillRect(0,0,OW,OH);
+    tctx.globalCompositeOperation='lighter';
+    band((Math.sin(numT*0.020)*0.5+0.5)*OW,38,'rgba(255,255,255,','0','0.85');
+    band((Math.sin(numT*0.020+2.1)*0.5+0.5)*OW,30,'rgba(255,255,255,','0','0.7');
+    band((Math.sin(numT*0.020+4.2)*0.5+0.5)*OW,26,'rgba(200,245,255,','0','0.6');
+    tctx.globalCompositeOperation='multiply';
+    band((Math.sin(-numT*0.014)*0.5+0.5)*OW,55,'rgba(0,0,0,','0','0.6');
+    band((Math.sin(-numT*0.014+3.1)*0.5+0.5)*OW,40,'rgba(0,0,0,','0','0.5');
+    buildMask(time);
+    tctx.globalCompositeOperation='destination-in';tctx.drawImage(mk,0,0,OW,OH);
+    tctx.globalCompositeOperation='source-atop';
+    const accStr=accent.join(',');
+    for(const gt of glyphTint){if(gt.t<0.02)continue;tctx.fillStyle='rgba('+accStr+','+Math.min(1,gt.t)+')';tctx.fillRect(gt.cx-gt.w/2,0,gt.w,OH);}
+    tctx.globalCompositeOperation='source-over';
+    const dw=Math.min(OW,2*R3*P.numScale),dh=OH*(dw/OW);
+    ctx.drawImage(txt,cx-dw/2,cy-dh/2,dw,dh);
+  }
+
+  function step(){
+    t+=1;
+    heat*=0.95; act=heat; numT+=Math.max(act,0.15);   // number drifts slowly; surges on a blast
+    ctx.fillStyle='rgba('+clearCol+','+FADE()+')';ctx.fillRect(0,0,W,H);
+
+    // single ring facing the user, gently wobbling
+    drawOrbit(0.0, 0.006, 0.22);
+
+    if(projectile){
+      projectile.x+=projectile.vx;projectile.y+=projectile.vy;projectile.z+=projectile.vz;
+      const d3=Math.hypot(projectile.x,projectile.y,projectile.z);
+      if(d3<=R3){const m=d3||1;blast([projectile.x/m,projectile.y/m,projectile.z/m]);projectile=null;
+        cooldown=Math.round(P.gapMin+Math.random()*P.gapRand);}
+      else{
+        const a=proj(projectile.x,projectile.y,projectile.z);
+        if(a){
+          const b=proj(projectile.x-projectile.vx*6,projectile.y-projectile.vy*6,projectile.z-projectile.vz*6);
+          const depth=Math.max(0.3,Math.min(1.7,a.s));
+          ctx.globalCompositeOperation=GLOW();
+          if(b){const tg=ctx.createLinearGradient(a.x,a.y,b.x,b.y);
+            tg.addColorStop(0,'rgba('+HOT+',0.9)');tg.addColorStop(1,'rgba('+COL+',0)');
+            ctx.strokeStyle=tg;ctx.lineWidth=2*depth;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+          projectile.rot+=projectile.vrot;
+          ctx.save();ctx.translate(a.x,a.y);ctx.rotate(projectile.rot);
+          ctx.font='600 '+(9+6*depth).toFixed(1)+'px '+NUMFNT;ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillStyle='rgba('+HOT+',1)';ctx.fillText(projectile.label,0,0);ctx.restore();
+          ctx.globalCompositeOperation='source-over';
+        } else projectile=null;
+      }
+    } else { cooldown--; if(cooldown<=0) spawnProjectile(); }
+
+    for(let i=ripples.length-1;i>=0;i--){ if(!drawRipple(ripples[i])) ripples.splice(i,1); }
+    for(let i=blooms.length-1;i>=0;i--){ if(!drawBloom(blooms[i])) blooms.splice(i,1); }
+
+    drawLiquidNumber(numT/60);
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+
+  return {
+    P, resize,
+    blastNow(){ if(projectile){const m=Math.hypot(projectile.x,projectile.y,projectile.z)||1;blast([projectile.x/m,projectile.y/m,projectile.z/m]);projectile=null;cooldown=Math.round(P.gapMin+Math.random()*P.gapRand);} else {blast(unitDir());} },
+    regen(){phone=randPhone();layoutPhone();},
+    setFg(arr){fg=arr.slice();setColors();},
+    setBg(arr){bg=arr.slice();setColors();},
+    setAccent(arr){accent=arr.slice();setColors();},
+    setLayerCols(arr){userLayerCols=arr.map(c=>c.slice());setColors();},
+    getLayerCols(){return LAYERCOLS.map(c=>c.slice());}
+  };
+})(document.getElementById("c"), {"P":{"numScale":1.5,"numWidth":0.16,"rippleLife":160,"gapMin":50,"gapRand":70,"glow":0.34,"layers":5,"whiteReach":0.18,"lifeVar":0.55,"ringSize":1,"fade":0.3,"attack":0.056},"fg":[120,205,230],"bg":[20,20,16],"accent":[255,150,50],"layerCols":[[255,150,50],[120,205,230],[188,178,140],[150,120,235],[174,225,240],[255,120,55]]});
+</script></body></html>

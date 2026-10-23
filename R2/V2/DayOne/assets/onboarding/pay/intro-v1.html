@@ -1,0 +1,68 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cloaked Pay — Cover v1 — scroll into the collection</title>
+<link rel="stylesheet" href="cloaked.css?v=1786467845">
+
+<aside class="panel">
+  <div class="brand">Cloaked Pay</div>
+  <div class="controls" id="controls"></div>
+</aside>
+
+<main class="stage"><div id="phonewrap" style="flex:0 0 auto"><div class="phone" id="phone">
+  <div id="screens"></div>
+  <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
+</div></div></main>
+<script>window.CLOAKED_BOOT="intro-v1";</script>
+<script src="cloaked-assets.js?v=1786467845"></script>
+<script src="cloaked-app.js?v=1786467845"></script>
+
+<!-- ── ?page=2 ─────────────────────────────────────────────────────────────
+     The Cloaked app opens this file as a deep link from the protection-journey
+     page: "Set up Cloaked Pay" is meant to land on "A virtual card for every
+     need", which is intro-v1's second copy state. That state is not a separate
+     screen — it is scroll progress: the 'Our solution' cue does
+     sc.scrollTo(bottom) and the screen's own scroll handler swaps A→B, fades
+     the cover, brings the board and the CTA in. So this jumps the same
+     scroller to the same place rather than re-implementing any of it, which is
+     also why cloaked-app.js needs no edit (it is shared and stays untouched).
+     No param → nothing here runs and the file boots on page 1 as before. -->
+<style>
+  /* Embedded in the app's onboarding overlay the frame IS the phone, so the
+     bezel, the tray and fitPhone()'s letterboxing have nothing to sit in.
+     Scoped to the deep link, which is the only way the app opens it. */
+  html.page-2, html.page-2 body { margin:0; height:100%; }
+  html.page-2 .panel { display:none !important; }
+  html.page-2 .stage { padding:0 !important; }
+  html.page-2 #phonewrap { width:100% !important; height:100% !important; }
+  html.page-2 .phone {
+    width:100% !important; height:100% !important;
+    border-radius:0 !important; box-shadow:none !important; transform:none !important;
+  }
+  /* the app floats its own 40px back button over this corner, so the wordmark
+     starts clear of it — the deep link is the only route that has one */
+  html.page-2 .v2brand { padding-left:48px; }
+</style>
+<script>
+  (function () {
+    if (new URLSearchParams(location.search).get('page') !== '2') return;
+    document.documentElement.classList.add('page-2');
+    /* render() runs at the end of cloaked-app.js, so #v2Scroll already exists —
+       but onEnter finishes with sc.scrollTop=0, and the word-rise starts in a
+       rAF. Jump after that frame, then hold it for a couple more: mountCover()
+       and the fan resolve asynchronously and each one can re-lay the scroller. */
+    var tries = 0;
+    function jump() {
+      var sc = document.querySelector('#v2Root .v2scroll') || document.getElementById('v2Scroll');
+      if (!sc) { if (tries++ < 60) requestAnimationFrame(jump); return; }
+      var max = sc.scrollHeight - sc.clientHeight;
+      if (max <= 0) { if (tries++ < 60) requestAnimationFrame(jump); return; }
+      if (sc.scrollTop !== max) sc.scrollTop = max;
+      /* the screen listens for 'scroll'; assigning scrollTop only fires it when
+         the value actually changes, so the read is asked for explicitly */
+      sc.dispatchEvent(new Event('scroll'));
+      if (tries++ < 40) setTimeout(jump, 60);
+    }
+    requestAnimationFrame(function () { requestAnimationFrame(jump); });
+  })();
+</script>

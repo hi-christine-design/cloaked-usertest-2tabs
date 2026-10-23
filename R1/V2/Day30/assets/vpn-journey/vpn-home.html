@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloaked — VPN (full page, from Figma)</title>
+<style>
+  :root{
+    --ink:#141410;            /* Global/Text/Primary */
+    --bkgd01:#f3f1ed;         /* Global/Background/BKGD_01 */
+    --bkgd02:#ffffff;         /* Global/Background/BKGD_02 */
+    --brand:#ff550c;
+    --btn:#0b0b0a;            /* Button/Primary/Container */
+    --divider:rgba(11,11,10,0.15);   /* Divider/Divider */
+    --divider2:#dedac7;       /* Divider */
+    --toggle-on:#008924;
+    --toggle-off:rgba(11,11,10,0.15);
+    --guard01:#006166;        /* Features/Guard_Container_01 */
+    --guard02:#004141;        /* Features/Guard_Container_02 */
+    --sf:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","SF Pro","Helvetica Neue",sans-serif;
+  }
+  *{ box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+  html,body{ margin:0; background:#e6e4e0; font-family:var(--sf); color:var(--ink); }
+  body{ min-height:100vh; display:flex; align-items:center; justify-content:center; }
+  /* phone viewport: 393 x 853 with rounded corners */
+  #frame{ position:relative; width:393px; height:853px; background:var(--bkgd01);
+    border-radius:55px; overflow:hidden; }
+  #frame.vpn-on{ background:var(--bkgd02); }   /* initial/fallback; live bg is driven inline in sync with the globe */
+  /* content scrolls inside; the nav stays pinned to the phone bottom */
+  #scroll{ position:absolute; inset:0; overflow-x:hidden; overflow-y:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  #scroll::-webkit-scrollbar{ display:none; }
+
+  /* ---------- Top bar ---------- */
+  .largeTitle{ display:flex; align-items:flex-end; padding:96px 16px 12px; }   /* Guard header: scrolls away with content */
+  .largeTitle h1{ margin:0; font-weight:400; font-size:24px; line-height:1; letter-spacing:0.12px; }
+  .tabbar{ position:sticky; top:0; z-index:20; display:flex; align-items:center;   /* tabs: pin to top on scroll */
+    border-bottom:1px solid var(--divider); background:rgba(243,241,237,0.82); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); }
+  .tabbar.stuck{ padding-top:48px; background:rgba(255,255,255,0.82)!important; }   /* pinned over the white feed -> white, plus status-bar space */
+  #frame.vpn-on .tabbar{ background:rgba(255,255,255,0.82); }
+  .tab{ display:flex; align-items:center; justify-content:center; padding:20px; font-size:16px; line-height:1.3; letter-spacing:-0.32px; white-space:nowrap; }
+  .tab.dim{ opacity:0.3; }
+  .tab.active{ border-bottom:1px solid var(--btn); }
+
+  /* ---------- Globe ---------- */
+  .globe-wrap{ position:relative; margin:0; width:393px; height:423px; }   /* full-width view, tab bar end → status row top; globe sphere = 353 centered */
+  .globe-clip{ position:absolute; inset:0; overflow:hidden; }   /* the clip window; iframe is a fixed size inside */
+  /* iframe is a FIXED 393x853 so it never resizes during expand (no globe re-render jitter);
+     only its translateY animates. collapsed: globe centred in the 423 slot (offset -215). */
+  .globe-clip iframe{ position:absolute; left:0; top:0; width:393px; height:853px; border:0;
+    transform:translateY(-215px); transition:transform .8s cubic-bezier(.4,0,.2,1); }
+  /* expanded: globe unrolls to a fullscreen flat map (ring-pixel big mode).
+     the wrap (clip window) is FLIP-animated inline via JS; the iframe just slides to 0. */
+  .globe-wrap.expanded{ overflow:hidden; z-index:1000; background:#fff; }
+  /* iframe translateY is driven inline by JS (in sync with the wrap), so collapse animates too */
+  /* surrounding UI slides away + fades while expanding */
+  .largeTitle, .tabbar, .feed{ transition:transform .8s cubic-bezier(.4,0,.2,1), opacity .45s ease, padding-top .25s ease; }
+  #frame.expanding .largeTitle, #frame.expanding .tabbar{ transform:translateY(-130%); opacity:0; pointer-events:none; }
+  #frame.expanding .feed{ transform:translateY(90px); opacity:0; pointer-events:none; }
+  #frame.expanding #nav{ transform:translateY(100%); opacity:0; }
+  /* during collapse, lift the page UI above the shrinking globe so it slides back in visibly (no end-pop) */
+  #frame.collapsing .largeTitle, #frame.collapsing .feed{ position:relative; z-index:1001; }
+  #frame.collapsing .tabbar{ z-index:1002; }
+  #frame.collapsing #nav{ z-index:1001; }
+  .expand{ position:absolute; top:18px; right:20px; width:40px; height:40px; border-radius:50%; border:none; padding:0;
+    background:var(--btn); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:5; }
+  .globe-wrap.expanded .expand{ top:20px; right:20px; z-index:1001; }
+  #frame.map-mode .expand{ display:none; }   /* Map Options view: globe + on/off only, no expand */
+  .expand .ic-collapse{ display:none; }
+  .globe-wrap.expanded .ic-expand{ display:none; }
+  .globe-wrap.expanded .ic-collapse{ display:block; }
+
+  /* ---------- Feed ---------- */
+  .feed{ margin-top:0; display:flex; flex-direction:column; gap:12px; background:var(--bkgd01); }   /* 12px warm divider colour shows between sections */
+  .feed > div:not(.faq){ background:var(--bkgd02); }   /* each section is a white card */
+
+  .row{ display:flex; align-items:center; justify-content:space-between; height:69px; padding:0 20px; border-bottom:1px solid var(--divider); }
+  .row .label{ font-size:16px; line-height:1.3; letter-spacing:-0.32px; }
+  .row .right{ display:flex; align-items:center; gap:8px; font-size:16px; line-height:1.3; letter-spacing:-0.32px; }
+  .flag{ width:34px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size:20px; line-height:1; overflow:hidden; }
+  .flag img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+  .linkbtn{ height:48px; width:100%; display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1.3; letter-spacing:0.5px; color:var(--ink); border:none; background:none; cursor:pointer; font-family:inherit; }
+  .more-rows{ overflow:hidden; max-height:0; transition:max-height .38s cubic-bezier(.4,0,.2,1); }
+  .more-rows.open{ max-height:360px; }
+
+  .section-h{ display:flex; align-items:center; gap:12px; height:96px; padding:48px 20px 16px; }
+  .section-h h2{ margin:0; flex:1; font-weight:400; font-size:24px; line-height:1.1; letter-spacing:0; }
+  .pill{ display:inline-flex; align-items:center; gap:6px; background:var(--bkgd01); border-radius:999px; padding:7px 12px; font-size:14px; letter-spacing:-0.28px; }
+  .reset{ font-size:14px; line-height:1.3; letter-spacing:-0.28px; opacity:0.5; }
+
+  /* location cards */
+  .cards{ display:flex; gap:16px; padding:0 20px; overflow-x:auto; scrollbar-width:none; }
+  .cards::-webkit-scrollbar{ display:none; }
+  .loc-card{ flex:0 0 160px; height:104px; background:var(--bkgd01); border-radius:20px; padding:16px;
+    display:flex; flex-direction:column; gap:12px; }
+  .loc-card .cflag{ width:34px; height:18px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  .loc-card .cflag img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .loc-card .ctext .city{ font-size:16px; line-height:1.3; letter-spacing:-0.32px; }
+  .loc-card .ctext .sub{ font-size:14px; line-height:1.2; letter-spacing:-0.28px; opacity:0.5; margin-top:4px; }
+
+  /* scan history stats */
+  .stats{ display:flex; align-items:center; padding:0 20px; margin-top:32px; height:80px; }
+  .stat{ display:flex; flex-direction:column; }
+  .stat .num{ font-size:32px; line-height:1; letter-spacing:-0.4px; }
+  .stat .cap{ font-size:13px; line-height:1; opacity:0.5; margin-top:13px; }
+  .stat.s1{ width:176px; }
+  .vdiv{ width:1px; height:48px; background:var(--divider); margin-right:20px; }
+
+  /* toggle list items */
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; gap:24px; height:72px; padding:20px; border-bottom:1px solid var(--divider2); }
+  .toggle-row .t-label{ font-size:16px; line-height:1.3; letter-spacing:-0.32px; }
+  .switch{ position:relative; width:72px; height:32px; border-radius:16px; background:var(--toggle-off); flex:0 0 auto; cursor:pointer; transition:background .22s ease; }
+  .switch .knob{ position:absolute; top:6px; left:6px; width:20px; height:20px; border-radius:50%; background:var(--btn); transition:transform .22s ease, background .22s ease; }
+  .switch.on{ background:var(--toggle-on); }
+  .switch.on .knob{ transform:translateX(40px); background:#fff; }
+
+  /* FAQ footer */
+  .faq{ background:var(--guard02); padding-top:48px; padding-bottom:120px; }
+  .faq h2{ margin:0; padding:0 20px; font-weight:400; font-size:24px; line-height:1.1; letter-spacing:0; color:#f3f1ed; }
+  .carousel{ display:flex; gap:10px; padding:62px 20px 0; overflow-x:auto; scrollbar-width:none; }
+  .carousel::-webkit-scrollbar{ display:none; }
+  .faq-card{ flex:0 0 233px; height:274px; background:var(--guard01); border-radius:16px; padding:24px 16px 16px;
+    display:flex; flex-direction:column; position:relative; }
+  .faq-card .cat{ font-size:14px; line-height:1.2; letter-spacing:-0.28px; color:#f3f1ed; opacity:0.7; }
+  .faq-card .q{ font-size:24px; line-height:1; letter-spacing:0.12px; color:#f3f1ed; margin-top:14px; font-family: 'Simula', Georgia, 'Times New Roman', serif; }
+  .faq-card .arrow{ position:absolute; left:16px; bottom:16px; width:40px; height:40px; border-radius:50%;
+    background:rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; }
+
+  /* bottom navigation — pinned to the phone bottom, hides on scroll-down */
+  #nav{ position:absolute; left:0; right:0; bottom:0; z-index:50;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:0;
+    padding:16px 24px 24px; background:var(--bkgd02); border-top:1px solid var(--divider);
+    transition:transform .32s cubic-bezier(.4,0,.2,1), background .25s ease, border-color .25s ease, opacity .3s ease; }
+  #nav.hidden{ transform:translateY(100%); }
+  #nav.teal{ background:var(--guard02); border-top-color:rgba(255,255,255,0.12); }
+  .nav-item{ display:flex; flex-direction:column; align-items:center; gap:6px; width:56px;
+    color:var(--ink); text-align:center; }
+  .nav-item svg{ width:24px; height:24px; display:block; }
+  .nav-item .lbl{ font-size:10px; line-height:1.3; letter-spacing:0.05px; }
+  .nav-item.dim{ opacity:0.3; }
+  #nav.teal .nav-item{ color:#f3f1ed; }
+
+  /* ===== Server Location screen (change / search / sort) ===== */
+  .row.tappable{ cursor:pointer; }
+  #locScreen{ position:absolute; inset:0; z-index:1100; background:#fff; display:flex; flex-direction:column;
+    transform:translateY(100%); transition:transform .8s cubic-bezier(.33,0,.12,1), visibility .8s; visibility:hidden; }  /* deliberate slide-down on close */
+  #locScreen.open{ transform:translateY(0); visibility:visible; transition:transform .45s cubic-bezier(.2,0,0,1), visibility .45s; }  /* quick open */
+  /* dim scrim behind the overlay so the slide-up / slide-down reads as an overlay */
+  #locScrim{ position:absolute; inset:0; z-index:1099; background:rgba(0,0,0,0.8); opacity:0; visibility:hidden;
+    transition:opacity .8s ease, visibility .8s; }   /* fades out slow, in sync with the overlay close */
+  #locScrim.open{ opacity:1; visibility:visible; transition:opacity .45s ease, visibility .45s; }  /* quick fade-in on open */
+  .loc-topbar{ position:relative; height:112px; flex:0 0 auto; }
+  .loc-topbar .loc-title{ position:absolute; left:0; right:0; top:64px; text-align:center; font-size:16px; letter-spacing:-0.32px; color:var(--ink); }
+  .loc-back{ position:absolute; left:20px; top:62px; width:28px; height:28px; border:none; background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink); }
+  .loc-searchbar{ flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:0 20px; }
+  .loc-input{ flex:1; height:40px; background:rgba(11,11,10,0.05); border-radius:240px; display:flex; align-items:center; gap:8px; padding:0 12px; min-width:0; }
+  .loc-input svg{ width:20px; height:20px; flex:0 0 auto; color:#84827e; }
+  .loc-input input{ flex:1; min-width:0; border:none; background:none; outline:none; font-family:inherit; font-size:16px; letter-spacing:-0.32px; color:var(--ink); }
+  .loc-input input::placeholder{ color:#84827e; }
+  .loc-sortbtn{ width:40px; height:40px; flex:0 0 auto; border-radius:50%; border:none; background:rgba(11,11,10,0.05); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink); }
+  .loc-cancel{ flex:0 0 auto; border:none; background:none; cursor:pointer; font-family:inherit; font-size:16px; letter-spacing:-0.32px; color:var(--ink); display:none; padding:0 2px; }
+  #locScreen.searching .loc-sortbtn{ display:none; }
+  #locScreen.searching .loc-cancel{ display:block; }
+  .loc-list{ flex:1 1 auto; overflow-y:auto; margin-top:16px; scrollbar-width:none; }
+  .loc-list::-webkit-scrollbar{ display:none; }
+  .loc-divider{ height:28px; background:var(--bkgd01); display:flex; align-items:center; padding:0 20px;
+    font-size:12px; letter-spacing:0.06px; text-transform:uppercase; color:var(--ink); }
+  .loc-item{ display:flex; align-items:center; gap:24px; padding:20px; background:#fff; border-bottom:1px solid var(--divider2); cursor:pointer; }
+  .loc-item .li-main{ flex:1; min-width:0; display:flex; align-items:center; gap:12px; }
+  .li-flag{ width:40px; height:40px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .li-flag img{ width:34px; height:18px; object-fit:cover; display:block; }
+  .flag img, .loc-card .cflag img, .li-flag img{ outline:1px solid rgba(11,11,10,0.22); outline-offset:-1px; }   /* light grey outline so white flags (Japan) read on white */
+  .li-text{ flex:1; min-width:0; }
+  .li-title{ font-size:16px; letter-spacing:-0.32px; color:var(--ink); }
+  .li-sub{ font-size:14px; letter-spacing:-0.28px; color:#84827e; margin-top:2px; }
+  .li-chev{ width:16px; height:16px; flex:0 0 auto; color:#84827e; transition:transform .35s cubic-bezier(.4,0,.2,1); }
+  .loc-country.open .li-chev{ transform:rotate(180deg); }
+  .loc-cities{ overflow:hidden; max-height:0; transition:max-height .42s cubic-bezier(.4,0,.2,1); }   /* smooth accordion */
+  .loc-city{ padding-left:20px; }           /* cities sit at the same inset (no flag) */
+  .li-radio{ width:32px; height:32px; flex:0 0 auto; border-radius:80px; background:rgba(11,11,10,0.05); display:flex; align-items:center; justify-content:center; transition:background-color .25s ease; }
+  .li-radio.sel{ background:var(--btn); }
+  .li-radio svg{ width:20px; height:20px; color:#fff; display:none; }
+  .li-radio.sel svg{ display:block; }
+  .loc-recommended .li-flag{ background:rgba(11,11,10,0.05); border-radius:50%; }
+  .loc-recommended .li-radio{ width:32px; height:32px; }
+
+  /* sort bottom sheet */
+  #sheetScrim{ position:absolute; inset:0; z-index:1200; background:rgba(11,11,10,0.35); opacity:0; visibility:hidden; transition:opacity .3s ease; }
+  #sheetScrim.open{ opacity:1; visibility:visible; }
+  #sortSheet{ position:absolute; left:0; right:0; bottom:0; z-index:1201; background:#fff; border-radius:24px 24px 0 0;
+    transform:translateY(100%); transition:transform .35s cubic-bezier(.4,0,.2,1); padding:0 0 28px; }
+  #sortSheet.open{ transform:translateY(0); }
+  .sheet-h{ font-size:24px; line-height:1.1; letter-spacing:0; color:var(--ink); padding:24px 20px 12px; }
+  .sort-opt{ display:flex; align-items:center; justify-content:space-between; padding:20px; border-top:1px solid var(--divider2); cursor:pointer; }
+  .sort-opt .li-title{ font-size:16px; letter-spacing:-0.32px; }
+  .sheet-save{ display:block; width:353px; height:56px; margin:20px auto 0; border:none; border-radius:240px;
+    background:var(--btn); color:#fff; font-family:inherit; font-size:16px; letter-spacing:-0.32px; cursor:pointer; }
+
+  /* ===== "Protect me automatically" first-disconnect sheet ===== */
+  #protectScrim{ position:absolute; inset:0; z-index:1300; background:rgba(11,11,10,0.45); opacity:0; visibility:hidden; transition:opacity .3s ease; }
+  #protectScrim.open{ opacity:1; visibility:visible; }
+  #protectSheet{ position:absolute; left:0; right:0; bottom:0; z-index:1301; background:#fff; border-radius:16px 16px 0 0;
+    transform:translateY(100%); transition:transform .4s cubic-bezier(.2,0,0,1); padding:48px 0 28px; }
+  #protectSheet.open{ transform:translateY(0); }
+  .protect-title{ padding:0 40px 0 20px; }
+  .protect-title h2{ margin:0; font-weight:400; font-size:24px; line-height:1.1; letter-spacing:0; color:var(--ink); }
+  .protect-title p{ margin:4px 0 0; font-size:14px; line-height:1.2; letter-spacing:-0.28px; color:#84827e; max-width:266px; }
+  .protect-row{ display:flex; align-items:center; justify-content:space-between; gap:24px; height:72px; margin-top:28px;
+    padding:0 20px; border-top:1px solid var(--divider2); border-bottom:1px solid var(--divider2); }
+  .protect-row .t-label{ font-size:16px; line-height:1.3; letter-spacing:-0.32px; }
+  .protect-done{ display:block; width:353px; height:56px; margin:24px auto 0; border:none; border-radius:240px;
+    background:var(--btn); color:#fff; font-family:inherit; font-size:16px; letter-spacing:-0.32px; cursor:pointer; }
+
+  /* ===== slow-connection toast (shown once, on first connect) ===== */
+  /* full-width banner: overlays the bottom of the globe, anchored directly above the status list (no card/shadow) */
+  #slowToast{ position:absolute; left:0; right:0; bottom:100%; z-index:30;
+    display:flex; flex-direction:column; align-items:flex-start; gap:12px; padding:20px;
+    background:#DCD8CF; color:var(--ink);
+    opacity:0; visibility:hidden; transform:translateY(10px); pointer-events:none;
+    transition:opacity .3s ease, transform .35s cubic-bezier(.2,0,0,1), visibility .35s; }
+  #slowToast.show{ opacity:1; visibility:visible; transform:translateY(0); pointer-events:auto; }
+  #slowToast .blob-loader{ flex:0 0 auto; width:36px; height:36px; object-fit:contain; mix-blend-mode:multiply; }
+  #slowToast .toast-text{ display:flex; flex-direction:column; gap:8px; }
+  #slowToast .toast-title{ font-size:16px; font-weight:500; line-height:1.2; letter-spacing:-0.32px; color:#F3F1ED; }
+  #slowToast .toast-sub{ font-size:16px; line-height:1.3; letter-spacing:-0.32px; color:#84827e; }
+</style>
+</head>
+<body>
+  <div id="frame" class="vpn-on">
+    <div id="scroll">
+
+    <!-- Top bar -->
+    <div class="largeTitle"><h1>Guard</h1></div>
+    <div class="tabbar">
+      <div class="tab dim">Block email</div>
+      <div class="tab dim">Block call</div>
+      <div class="tab active">VPN</div>
+    </div>
+
+    <!-- Globe -->
+    <div class="globe-wrap">
+      <div class="globe-clip"><iframe id="globeFrame" title="VPN globe" scrolling="no"></iframe></div>
+      <script>/* Map Options: ?map=v1 -> V1 globe (R2), v2/none -> V2 globe (globe.html); map present hides expand */
+      (function(){ const m=new URLSearchParams(location.search).get('map'), f=document.getElementById('globeFrame');
+        f.src=(m==='v1')?'R2.html?embed=1&on=1':'globe.html?embed=1&nointro=1&on=1';
+        if(m) document.getElementById('frame').classList.add('map-mode'); })();</script>
+      <button class="expand" id="expandBtn" aria-label="Expand">
+        <svg class="ic-expand" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.9591 14.0869L6.296 19.749L9.95615 19.6963C10.4767 19.6887 10.9002 20.1132 10.8927 20.6338C10.8852 21.1332 10.482 21.5367 9.98252 21.5439L3.91123 21.6318L3.8165 21.6289C3.3514 21.5883 2.99325 21.1999 3.0001 20.7217L3.08896 14.6426C3.09642 14.1448 3.49841 13.7465 3.99619 13.7393C4.52021 13.7318 4.94327 14.1586 4.93564 14.6826L4.88193 18.335L10.545 12.6738L11.9591 14.0869ZM20.8106 3.00293C21.2759 3.04343 21.634 3.4327 21.627 3.91113L21.5382 9.98926C21.5309 10.4873 21.129 10.8864 20.631 10.8936C20.1073 10.9008 19.6841 10.4739 19.6915 9.9502L19.7442 6.2959L14.0831 11.959L12.6681 10.5449L18.3302 4.88184L14.671 4.93555C14.1507 4.94291 13.727 4.51935 13.7345 3.99902C13.7417 3.49952 14.1451 3.09624 14.6446 3.08887L20.7169 3L20.8106 3.00293Z" fill="white"/></svg>
+        <svg class="ic-collapse" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.3221 11.8387C11.8146 11.8815 12.1936 12.2932 12.1863 12.7996L12.0926 19.2351C12.0849 19.7624 11.6589 20.1846 11.1316 20.1922C10.5769 20.2 10.1294 19.7479 10.1375 19.1931L10.1932 15.325L4.64824 20.8709C4.37255 21.1463 3.81358 21.0343 3.40019 20.6209C2.98705 20.2075 2.8758 19.6494 3.15117 19.3738L8.69511 13.8279L4.82206 13.8846C4.27104 13.8926 3.82205 13.4443 3.82988 12.8933C3.83757 12.3644 4.26483 11.9372 4.79374 11.9295L11.2225 11.8357L11.3221 11.8387Z" fill="white"/><path d="M19.3738 3.15116C19.6494 2.8758 20.2075 2.98706 20.6209 3.40018C21.0343 3.81357 21.1463 4.37254 20.8709 4.64823L15.325 10.1931L19.2 10.1365C19.7511 10.1285 20.2002 10.5776 20.1922 11.1287C20.1845 11.6576 19.7572 12.0849 19.2283 12.0926L12.7996 12.1853L12.7 12.1824C12.2074 12.1395 11.8284 11.728 11.8357 11.2215L11.9295 4.78592C11.9373 4.25891 12.3624 3.83661 12.8894 3.82889C13.4443 3.82092 13.8925 4.27313 13.8846 4.82791L13.8279 8.6951L19.3738 3.15116Z" fill="white"/></svg>
+      </button>
+    </div>
+
+    <!-- Feed -->
+    <div class="feed">
+
+      <!-- status + location -->
+      <div id="statusCard" style="position:relative">
+        <!-- slow-connection banner: full width, overlays the globe bottom, sits right above this list -->
+        <div id="slowToast">
+          <video class="blob-loader" autoplay loop muted playsinline>
+            <source src="loading-blob.webm" type="video/webm">
+            <source src="loading-blob.mp4" type="video/mp4">
+          </video>
+          <div class="toast-text">
+            <div class="toast-title">Taking longer than usual</div>
+            <div class="toast-sub">Still connecting you to a secure server.</div>
+          </div>
+        </div>
+        <div class="row">
+          <span class="label" id="vpnTimer">00:00:01</span>
+          <div class="switch on" id="vpnToggle" role="switch" aria-checked="true" tabindex="0"><span class="knob"></span></div>
+        </div>
+        <div class="row tappable" id="locRow">
+          <span class="label">Location</span>
+          <div class="right"><span id="locName">New York</span><span class="flag"><img id="locFlag" src="flags/us.svg" alt=""></span></div>
+        </div>
+        <div class="more-rows" id="moreRows">
+          <div class="row"><span class="label">Your IP</span><div class="right">73.45.182.10</div></div>
+          <div class="row"><span class="label">Cloaked IP</span><div class="right">52.88.201.14</div></div>
+          <div class="row"><span class="label">Internet Health</span><div class="right" style="color:#008924">Excellent</div></div>
+          <div class="row"><span class="label">Download speed</span><div class="right">1.8 GB</div></div>
+          <div class="row"><span class="label">Upload speed</span><div class="right">340 MB</div></div>
+        </div>
+        <button class="linkbtn" id="seeMoreBtn">See more</button>
+      </div>
+
+
+      <!-- Locations -->
+      <div>
+        <div class="section-h"><h2>Locations</h2></div>
+        <div class="cards">
+          <div class="loc-card"><div class="cflag"><img src="flags/us.svg" alt=""></div><div class="ctext"><div class="city">New York</div><div class="sub">Fastest</div></div></div>
+          <div class="loc-card"><div class="cflag"><img src="flags/us.svg" alt=""></div><div class="ctext"><div class="city">New Jersey</div><div class="sub">Fastest</div></div></div>
+          <div class="loc-card"><div class="cflag"><img src="flags/gb.svg" alt=""></div><div class="ctext"><div class="city">London</div><div class="sub">Fastest</div></div></div>
+        </div>
+        <div class="linkbtn" style="margin-top:24px; border-top:1px solid var(--divider);">See all</div>
+      </div>
+
+
+      <!-- Monthly Usage -->
+      <div>
+        <div class="section-h">
+          <h2>Monthly Usage</h2>
+          <span class="reset">Reset: Jul 22</span>
+        </div>
+        <div class="stats">
+          <div class="stat s1"><span class="num">124h</span><span class="cap">Hours secured</span></div>
+          <div class="vdiv"></div>
+          <div class="stat"><span class="num">332GB</span><span class="cap">Data used</span></div>
+        </div>
+        <div style="height:23px;"></div>
+      </div>
+
+
+      <!-- FAQ footer -->
+      <div class="faq">
+        <h2>Frequently Asked Questions</h2>
+        <div class="carousel">
+          <div class="faq-card"><div class="cat">How it work</div><div class="q">Why do I need to install&nbsp; VPN profile?</div><div class="arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f3f1ed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>
+          <div class="faq-card"><div class="cat">How it work</div><div class="q">What does a VPN do?</div><div class="arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f3f1ed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>
+          <div class="faq-card"><div class="cat">Safety &amp; Privacy</div><div class="q">Should I keep it on all the time?</div><div class="arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f3f1ed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>
+          <div class="faq-card"><div class="cat">Safety &amp; Privacy</div><div class="q">Does VPN protect me on my home Wi-Fi too?</div><div class="arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f3f1ed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>
+        </div>
+      </div>
+
+    </div>
+    </div><!-- /#scroll -->
+
+    <nav id="nav">
+      <div class="nav-item dim">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 3.5l8.5 7M5.5 9.3V20h4V14.5h5V20h4V9.3"/></svg>
+        <span class="lbl">Home</span>
+      </div>
+      <div class="nav-item dim">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="14" width="3" height="6" rx="1"/><rect x="8" y="11" width="3" height="9" rx="1"/><rect x="13" y="8" width="3" height="12" rx="1"/><rect x="18" y="5" width="3" height="15" rx="1"/></svg>
+        <span class="lbl">Activity</span>
+      </div>
+      <div class="nav-item dim">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5V6.5A2.5 2.5 0 0 1 6.5 4H8.5M15.5 4H17.5A2.5 2.5 0 0 1 20 6.5V8.5M20 15.5V17.5A2.5 2.5 0 0 1 17.5 20H15.5M8.5 20H6.5A2.5 2.5 0 0 1 4 17.5V15.5"/></svg>
+        <span class="lbl">Monitoring</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.4l7.6 2.85v5.7c0 4.85-3.35 8.1-7.6 9.6-4.25-1.5-7.6-4.75-7.6-9.6v-5.7L12 2.4z"/></svg>
+        <span class="lbl">Guard</span>
+      </div>
+      <div class="nav-item dim">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10" width="15" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>
+        <span class="lbl">Identity</span>
+      </div>
+    </nav>
+
+    <!-- ===== Server Location screen ===== -->
+    <div id="locScrim"></div>
+    <div id="locScreen">
+      <div class="loc-topbar">
+        <button class="loc-back" id="locBack" aria-label="Back"><svg width="18" height="16" viewBox="0 0 18 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1 1 8l7 7M1 8h16"/></svg></button>
+        <div class="loc-title">Server location</div>
+      </div>
+      <div class="loc-searchbar">
+        <div class="loc-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <input id="locSearch" type="text" placeholder="Search for country">
+        </div>
+        <button class="loc-sortbtn" id="locSortBtn" aria-label="Sort"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 19V5M6 5 3 8M6 5l3 3M18 5v14M18 19l-3-3M18 19l3-3"/></svg></button>
+        <button class="loc-cancel" id="locCancel">Cancel</button>
+      </div>
+      <div class="loc-list" id="locList"></div>
+    </div>
+
+    <!-- ===== Sort bottom sheet ===== -->
+    <div id="sheetScrim"></div>
+    <div id="sortSheet">
+      <div class="sheet-h">Sort</div>
+      <div class="sort-opt" data-sort="color"><span class="li-title">Color</span><span class="li-radio sel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></div>
+      <div class="sort-opt" data-sort="az"><span class="li-title">A-Z</span><span class="li-radio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span></div>
+      <button class="sheet-save" id="sortSave">Save</button>
+    </div>
+
+    <!-- ===== "Protect me automatically" first-disconnect sheet ===== -->
+    <div id="protectScrim"></div>
+    <div id="protectSheet">
+      <div class="protect-title">
+        <h2>Protect me automatically</h2>
+        <p>Cloaked turns on by itself the moment you join Wi-Fi you don't trust.</p>
+      </div>
+      <div class="protect-row">
+        <span class="t-label">Auto-protect on unsafe Wi-Fi</span>
+        <div class="switch" id="protectSwitch"><span class="knob"></span></div>
+      </div>
+      <button class="protect-done" id="protectDone">Done</button>
+    </div>
+
+  </div>
+
+<script>
+// ---- VPN toggle <-> embedded ring-pixel globe (postMessage bridge) ----
+(function(){
+  const tgl=document.getElementById('vpnToggle');
+  const timer=document.getElementById('vpnTimer');
+  const frame=document.getElementById('globeFrame');
+  function cmd(action){ try{ frame.contentWindow.postMessage({type:'vpn-cmd', action}, '*'); }catch(_){} }
+  function toggle(){
+    const willConnect = !tgl.classList.contains('on');
+    cmd(willConnect ? 'connect' : 'disconnect');
+  }
+  tgl.addEventListener('click', toggle);
+  tgl.addEventListener('keydown', e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); toggle(); } });
+  // mirror the globe's real state (connection + ticking session timer) onto the page
+  const frameEl=document.getElementById('frame');
+  const tabbarEl=document.querySelector('.tabbar');
+  const locName=document.getElementById('locName');
+  const locFlag=document.getElementById('locFlag');
+  window.addEventListener('message', e=>{
+    const d=e.data||{};
+    if(d.type==='vpn-bg'){   // backdrop whiteness from the globe -> drive frame/tabbar bg in lockstep
+      const v=Math.max(0,Math.min(1,+d.v||0));
+      const r=Math.round(243+12*v), g=Math.round(241+14*v), b=Math.round(237+18*v);
+      frameEl.style.background='rgb('+r+','+g+','+b+')';
+      tabbarEl.style.background='rgba('+r+','+g+','+b+',0.82)';
+      return;
+    }
+    if(d.type!=='vpn-state') return;
+    const lit = !!d.connected || !!d.connecting;
+    tgl.classList.toggle('on', lit);
+    document.getElementById('frame').classList.toggle('vpn-on', lit);   // top area white when on
+
+    tgl.setAttribute('aria-checked', d.connected ? 'true' : 'false');
+    if(d.connecting || Date.now() < (window.__connUntil||0)) timer.textContent='Connecting...';  // mid-connect / picked a location
+    else if(d.connected)  timer.textContent = d.time || '00:00:00'; // session timer
+    else                  timer.textContent = 'Off';             // disconnected
+    // location: a globe dot-tap (globe's own loc changes) takes over and clears any screen pick
+    if(d.loc!==undefined && d.loc!==window.__lastGlobeLoc){ window.__lastGlobeLoc=d.loc; window.__pickedLoc=null; }
+    if(window.__pickedLoc){ if(locName) locName.textContent=window.__pickedLoc.name; if(locFlag) locFlag.src='flags/'+window.__pickedLoc.cc+'.svg'; }
+    else { if(d.loc && locName) locName.textContent=d.loc; if(d.cc && locFlag) locFlag.src='flags/'+d.cc+'.svg'; }
+  });
+})();
+</script>
+
+<script>
+// ---- expand / collapse: surrounding UI slides+fades out, globe grows to fill and morphs globe<->flat ----
+(function(){
+  const btn=document.getElementById('expandBtn');
+  const wrap=document.querySelector('.globe-wrap');
+  const clip=wrap.querySelector('.globe-clip');
+  const frame=document.getElementById('globeFrame');
+  const phone=document.getElementById('frame');
+  const scroll=document.getElementById('scroll');
+  const DUR=800;
+  let expanded=false, busy=false, slot=null, spacer=null;
+
+  function px(n){ return n+'px'; }
+  function place(r){ wrap.style.top=px(r.top); wrap.style.left=px(r.left); wrap.style.width=px(r.width); wrap.style.height=px(r.height); }
+
+  function expand(){
+    slot = wrap.getBoundingClientRect();              // remember the in-flow slot (viewport coords)
+    const ph = phone.getBoundingClientRect();
+    expanded=true; busy=true;
+    phone.classList.add('expanding');                 // header up / feed + nav down, fade out
+    scroll.style.overflow='hidden';                   // lock scroll while expanded
+    btn.setAttribute('aria-label','Collapse');
+    wrap.classList.add('expanded');                   // icon swap + z-index/bg
+    wrap.style.position='fixed'; wrap.style.margin='0'; wrap.style.transition='none'; wrap.style.borderRadius='0';
+    // reserve the slot in normal flow so the feed below doesn't reflow up into the globe's space
+    // while the globe is position:fixed (this is what made the map look like it vanished on collapse)
+    spacer=document.createElement('div'); spacer.style.height=slot.height+'px'; spacer.setAttribute('aria-hidden','true');
+    wrap.parentNode.insertBefore(spacer, wrap);
+    place(slot);
+    wrap.getBoundingClientRect();                     // reflow so the start rect sticks
+    wrap.style.transition='top '+DUR+'ms cubic-bezier(.4,0,.2,1), left '+DUR+'ms cubic-bezier(.4,0,.2,1), width '+DUR+'ms cubic-bezier(.4,0,.2,1), height '+DUR+'ms cubic-bezier(.4,0,.2,1), border-radius '+DUR+'ms ease';
+    place(ph); wrap.style.borderRadius='55px';
+    frame.style.transform='translateY(0)';            // globe slides to fill, in sync with the wrap
+    cmd();                                             // morph globe -> flat
+    setTimeout(()=>{ busy=false; }, DUR);
+  }
+  function collapse(){
+    expanded=false; busy=true;
+    phone.classList.remove('expanding');               // header/feed/nav slide back in
+    phone.classList.add('collapsing');                 // lift page UI above the shrinking globe so it slides in visibly (no end-pop)
+    btn.setAttribute('aria-label','Expand');
+    const ph = phone.getBoundingClientRect();
+    place(ph);                                          // ensure start = full phone
+    wrap.getBoundingClientRect();
+    wrap.style.transition='top '+DUR+'ms cubic-bezier(.4,0,.2,1), left '+DUR+'ms cubic-bezier(.4,0,.2,1), width '+DUR+'ms cubic-bezier(.4,0,.2,1), height '+DUR+'ms cubic-bezier(.4,0,.2,1), border-radius '+DUR+'ms ease';
+    place(slot); wrap.style.borderRadius='0';
+    frame.style.transform='translateY(-215px)';         // globe slides back, in sync with the wrap
+    cmd();                                              // morph flat -> globe
+    setTimeout(()=>{                                    // restore normal flow
+      wrap.classList.remove('expanded');
+      wrap.removeAttribute('style');
+      if(spacer){ spacer.remove(); spacer=null; }       // release the reserved slot; wrap returns to flow in the same spot (no pop)
+      frame.style.transform='';                         // back to base (-215)
+      scroll.style.overflow='';
+      phone.classList.remove('collapsing');
+      busy=false;
+    }, DUR);
+  }
+  function cmd(){ try{ frame.contentWindow.postMessage({type:'vpn-cmd', action:'toggleExpand'}, '*'); }catch(_){} }
+
+  btn.addEventListener('click', ()=>{ if(busy) return; expanded ? collapse() : expand(); });
+})();
+</script>
+
+<script>
+// ---- "See more" reveals IP / health / speed rows ----
+(function(){
+  const btn=document.getElementById('seeMoreBtn'), rows=document.getElementById('moreRows');
+  if(!btn||!rows) return;
+  btn.addEventListener('click', ()=>{
+    const open=rows.classList.toggle('open');
+    btn.textContent = open ? 'See less' : 'See more';
+  });
+})();
+</script>
+
+<script>
+// ===== Server Location: change / search / sort =====
+(function(){
+  const SERVERS = [
+    { c:'United States',  cc:'us', count:55, cities:[
+      {n:'New York',lat:40.71,lon:-74.0},{n:'New Jersey',lat:40.06,lon:-74.4},{n:'Connecticut',lat:41.6,lon:-72.7},
+      {n:'Rhode Island',lat:41.7,lon:-71.5},{n:'Pennsylvania',lat:41.2,lon:-77.6},{n:'Buffalo',lat:42.9,lon:-78.9}] },
+    { c:'United Kingdom', cc:'gb', count:4, cities:[
+      {n:'London',lat:51.5,lon:-0.13},{n:'Manchester',lat:53.48,lon:-2.24},{n:'Birmingham',lat:52.48,lon:-1.9},{n:'Glasgow',lat:55.86,lon:-4.25}] },
+    { c:'Japan',          cc:'jp', count:2, cities:[{n:'Tokyo',lat:35.68,lon:139.7},{n:'Osaka',lat:34.69,lon:135.5}] },
+    { c:'Germany',        cc:'de', count:3, cities:[{n:'Berlin',lat:52.52,lon:13.4},{n:'Frankfurt',lat:50.11,lon:8.68},{n:'Munich',lat:48.14,lon:11.58}] },
+    { c:'France',         cc:'fr', count:5, cities:[{n:'Paris',lat:48.86,lon:2.35},{n:'Lyon',lat:45.76,lon:4.84},{n:'Marseille',lat:43.3,lon:5.37},{n:'Nice',lat:43.7,lon:7.27},{n:'Bordeaux',lat:44.84,lon:-0.58}] },
+    { c:'Australia',      cc:'au', count:5, cities:[{n:'Sydney',lat:-33.87,lon:151.2},{n:'Melbourne',lat:-37.81,lon:144.96},{n:'Brisbane',lat:-27.47,lon:153.0},{n:'Perth',lat:-31.95,lon:115.86},{n:'Adelaide',lat:-34.93,lon:138.6}] },
+    { c:'Sweden',         cc:'se', count:2, cities:[{n:'Stockholm',lat:59.33,lon:18.07},{n:'Gothenburg',lat:57.71,lon:11.97}] },
+  ];
+  const RECENT = [ {n:'Tokyo',cc:'jp',country:'Japan',lat:35.68,lon:139.7}, {n:'Hokkaido',cc:'jp',country:'Japan',lat:43.06,lon:141.35} ];
+  const ALL = []; SERVERS.forEach((s,i)=>s.cities.forEach((city,ci)=>ALL.push({n:city.n,lat:city.lat,lon:city.lon,cc:s.cc,country:s.c,c:i,ci})));
+
+  const screen=document.getElementById('locScreen'), scrimEl=document.getElementById('locScrim'), list=document.getElementById('locList');
+  const search=document.getElementById('locSearch');
+  const scrim=document.getElementById('sheetScrim'), sheet=document.getElementById('sortSheet');
+  let expanded=null, sel={c:0,ci:0}, sortMode='color', pendingSort='color', searchMode=false;
+  function connectTo(name,country,cc,lat,lon){   // tell the globe to actually connect to this city (adds a dot if new)
+    try{ document.getElementById('globeFrame').contentWindow.postMessage({type:'vpn-cmd',action:'connectTo',city:name,country:country,cc:cc,lat:lat,lon:lon},'*'); }catch(_){}
+  }
+
+  const check='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
+  const chev ='<svg class="li-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  const flag = cc=>'<span class="li-flag"><img src="flags/'+cc+'.svg" alt=""></span>';
+  const radio= on=>'<span class="li-radio'+(on?' sel':'')+'">'+check+'</span>';
+  const esc  = s=>s.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+
+  function selRow(flagCC, title, sub, on, attrs){
+    return '<div class="loc-item loc-city"'+attrs+'><div class="li-main">'+(flagCC?flag(flagCC):'')+
+      '<div class="li-text"><div class="li-title">'+esc(title)+'</div>'+(sub?'<div class="li-sub">'+sub+'</div>':'')+'</div></div>'+radio(on)+'</div>';
+  }
+  function render(){
+    if(searchMode){ renderSearch(); return; }
+    let h='<div class="loc-divider">Recommended</div>';
+    h+='<div class="loc-item loc-recommended" data-rec="1"><div class="li-main">'+flag('us')+
+       '<div class="li-text"><div class="li-title">Fastest &amp; nearest</div><div class="li-sub">Connected · Miami · 5ms</div></div></div>'+radio(sel==='fastest')+'</div>';
+    h+='<div class="loc-divider">All Locations</div>';
+    let order=SERVERS.map((s,i)=>i);
+    if(sortMode==='az') order.sort((a,b)=>SERVERS[a].c.localeCompare(SERVERS[b].c));
+    order.forEach(i=>{
+      const s=SERVERS[i];
+      h+='<div class="loc-item loc-country" data-country="'+i+'"><div class="li-main">'+flag(s.cc)+
+         '<div class="li-text"><div class="li-title">'+esc(s.c)+'</div><div class="li-sub">'+s.count+' cities</div></div></div>'+chev+'</div>';
+      h+='<div class="loc-cities" data-cities="'+i+'">';
+      s.cities.forEach((city,ci)=>{ h+=selRow(null, city.n, '23ms', (sel.c===i&&sel.ci===ci), ' data-country="'+i+'" data-city="'+ci+'"'); });
+      h+='</div>';
+    });
+    list.innerHTML=h;
+    if(expanded!=null) openCities(expanded);
+  }
+  function renderSearch(){
+    const q=search.value.trim().toLowerCase();
+    let h='';
+    if(!q){ h+='<div class="loc-divider">Recent</div>';
+      RECENT.forEach((r,idx)=>{ h+=selRow(r.cc, r.n, '', false, ' data-recent="'+idx+'"'); });
+    } else {
+      const hits=ALL.filter(x=>x.n.toLowerCase().includes(q)||x.country.toLowerCase().includes(q));
+      if(!hits.length) h='<div class="loc-divider">No results</div>';
+      hits.forEach(x=>{ h+=selRow(x.cc, x.n, '23ms', (sel.c===x.c&&sel.ci===x.ci), ' data-country="'+x.c+'" data-city="'+x.ci+'"'); });
+    }
+    list.innerHTML=h;
+  }
+  function openCities(i){ const c=list.querySelector('.loc-cities[data-cities="'+i+'"]'), co=list.querySelector('.loc-country[data-country="'+i+'"]');
+    if(co) co.classList.add('open'); if(c){ c.classList.add('open'); c.style.maxHeight=c.scrollHeight+'px'; } }
+  function closeCities(i){ const c=list.querySelector('.loc-cities[data-cities="'+i+'"]'), co=list.querySelector('.loc-country[data-country="'+i+'"]');
+    if(co) co.classList.remove('open'); if(c){ c.classList.remove('open'); c.style.maxHeight='0'; } }
+  function toggleCountry(i){ if(expanded===i){ closeCities(i); expanded=null; return; } if(expanded!=null) closeCities(expanded); expanded=i; openCities(i); }
+  function flashSelect(el){ if(!el) return; const r=el.querySelector('.li-radio'); list.querySelectorAll('.li-radio.sel').forEach(x=>x.classList.remove('sel')); if(r) r.classList.add('sel'); }
+  // hold the selection so it registers, slide the overlay down, THEN show connecting
+  let pickCount=0;
+  function commitPick(go){
+    pickCount++;
+    const slow = (pickCount===2);   // 2nd location change -> "Taking longer than usual" banner
+    setTimeout(closeScreen, 250);
+    setTimeout(()=>{ go(); if(slow && window.__showSlowBanner) setTimeout(window.__showSlowBanner, 10000); }, 1150);  // banner appears ~10s in, simulating a slower-than-usual connect
+  }
+  function pickCity(ci_,cci_, el){ sel={c:ci_,ci:cci_}; const s=SERVERS[ci_], city=s.cities[cci_]; flashSelect(el);
+    commitPick(()=>connectTo(city.n, s.c, s.cc, city.lat, city.lon)); }
+
+  function openScreen(){ render(); scrimEl.classList.add('open'); screen.classList.add('open'); }
+  function closeScreen(){ screen.classList.remove('open'); scrimEl.classList.remove('open'); exitSearch(); }
+  function exitSearch(){ searchMode=false; screen.classList.remove('searching'); search.value=''; search.blur(); }
+
+  document.getElementById('locRow').addEventListener('click', openScreen);
+  document.getElementById('locBack').addEventListener('click', closeScreen);
+  list.addEventListener('click', e=>{
+    const cityEl=e.target.closest('.loc-city'), country=e.target.closest('.loc-country'), rec=e.target.closest('.loc-recommended');
+    if(cityEl){
+      if(cityEl.dataset.recent!==undefined){ const r=RECENT[+cityEl.dataset.recent]; sel='recent'; flashSelect(cityEl);
+        commitPick(()=>connectTo(r.n, r.country, r.cc, r.lat, r.lon)); return; }
+      pickCity(+cityEl.dataset.country, +cityEl.dataset.city, cityEl); return;
+    }
+    if(rec){ sel='fastest'; flashSelect(rec); commitPick(()=>connectTo('Miami','United States','us',25.76,-80.19)); return; }
+    if(country){ toggleCountry(+country.dataset.country); }
+  });
+  // search
+  search.addEventListener('focus', ()=>{ searchMode=true; screen.classList.add('searching'); render(); });
+  search.addEventListener('input', ()=>{ if(searchMode) render(); });
+  document.getElementById('locCancel').addEventListener('click', ()=>{ exitSearch(); render(); });
+  // sort sheet
+  function openSheet(){ pendingSort=sortMode; syncSheet(); scrim.classList.add('open'); sheet.classList.add('open'); }
+  function closeSheet(){ scrim.classList.remove('open'); sheet.classList.remove('open'); }
+  function syncSheet(){ sheet.querySelectorAll('.sort-opt').forEach(o=>o.querySelector('.li-radio').classList.toggle('sel', o.dataset.sort===pendingSort)); }
+  document.getElementById('locSortBtn').addEventListener('click', openSheet);
+  scrim.addEventListener('click', closeSheet);
+  sheet.querySelectorAll('.sort-opt').forEach(o=> o.addEventListener('click', ()=>{ pendingSort=o.dataset.sort; syncSheet(); }));
+  document.getElementById('sortSave').addEventListener('click', ()=>{ sortMode=pendingSort; closeSheet(); render(); });
+})();
+</script>
+
+<script>
+// ---- bottom nav: hide on scroll-down / slide up on scroll-up; match teal over the FAQ footer ----
+(function(){
+  const scroll=document.getElementById('scroll');
+  const nav=document.getElementById('nav');
+  const phone=document.getElementById('frame');
+  const faq=document.querySelector('.faq');
+  const tabbar=document.querySelector('.tabbar');
+  const stickAt=tabbar.offsetTop;   // natural position; tab bar pins once scrolled past this
+  let last=0;
+  function onScroll(){
+    const y=scroll.scrollTop;
+    if(y>last && y>40)      nav.classList.add('hidden');     // scrolling down -> hide
+    else if(y<last-1)       nav.classList.remove('hidden');  // scrolling up -> reveal
+    last=y;
+    tabbar.classList.toggle('stuck', y >= stickAt-1);        // 48px status space only while pinned
+    // turn the nav teal while the dark-teal FAQ footer sits behind it
+    const navTop = phone.getBoundingClientRect().bottom - nav.offsetHeight;
+    nav.classList.toggle('teal', faq.getBoundingClientRect().top <= navTop + 1);
+  }
+  scroll.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+})();
+</script>
+
+<script>
+// ===== First-disconnect "Protect me automatically" sheet  +  first-connect slow toast =====
+(function(){
+  const autoSwitch   = document.getElementById('autoProtectSwitch');   // VPN setting row
+  const protectSwitch= document.getElementById('protectSwitch');       // toggle inside the sheet
+  const scrim        = document.getElementById('protectScrim');
+  const sheet        = document.getElementById('protectSheet');
+  const done         = document.getElementById('protectDone');
+  const toast        = document.getElementById('slowToast');
+
+  function setAuto(on){ if(autoSwitch) autoSwitch.classList.toggle('on', on); }
+  // the VPN-setting auto-protect row is interactive too (keeps the sheet's toggle in sync)
+  if(autoSwitch) autoSwitch.addEventListener('click', ()=> setAuto(!autoSwitch.classList.contains('on')));
+  // other VPN-setting switches toggle on tap (auto-protect handled above to avoid double-toggle)
+  document.querySelectorAll('.toggle-row .switch:not(#autoProtectSwitch)').forEach(sw=> sw.addEventListener('click', ()=> sw.classList.toggle('on')));
+  // "Show all" reveals the remaining block settings (Block ads / trackers / malware)
+  (function(){ const link=document.getElementById('showAllSettings'), rows=document.getElementById('moreSettings');
+    if(link&&rows) link.addEventListener('click', ()=>{ const open=rows.classList.toggle('open'); link.textContent=open?'Show less':'Show all'; }); })();
+
+  // --- Protect me automatically sheet ---
+  function openProtect(){
+    protectSwitch.classList.toggle('on', autoSwitch && autoSwitch.classList.contains('on'));  // reflect current setting
+    scrim.classList.add('open'); sheet.classList.add('open');
+  }
+  function closeProtect(){ scrim.classList.remove('open'); sheet.classList.remove('open'); }
+  protectSwitch.addEventListener('click', ()=>{
+    const on = !protectSwitch.classList.contains('on');
+    protectSwitch.classList.toggle('on', on);
+    setAuto(on);   // turning this on also turns on "Auto-protect on unsafe Wi-Fi" in VPN setting
+  });
+  done.addEventListener('click', closeProtect);
+  scrim.addEventListener('click', closeProtect);
+
+  // --- slow-connection banner (triggered on the 2nd location change; see the location screen below) ---
+  let toastTimer=null;
+  function showSlowToast(){
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=> toast.classList.remove('show'), 4500);
+  }
+  window.__showSlowBanner = showSlowToast;   // called from the location-picker on the 2nd change
+
+  // --- watch the VPN connection state coming from the embedded globe ---
+  let wasLit=false, protectShown=false;
+  window.addEventListener('message', e=>{
+    const d=e.data||{};
+    if(d.type!=='vpn-state') return;
+    const connecting = !!d.connecting || Date.now() < (window.__connUntil||0);
+    const lit = !!d.connected || connecting;
+    if(wasLit && !lit && !protectShown){ protectShown=true; openProtect(); }  // first disconnect -> sheet (once)
+    wasLit = lit;
+  });
+})();
+</script>
+
+<script>
+// ===== VPN home always starts already ON =====
+// the globe iframe loads with ?nointro=1&on=1 -> seeded connected (orange) + timer running, no reveal.
+// just pin the page markup to ON for the first frame before the globe reports in.
+(function(){
+  const frame=document.getElementById('frame');
+  const tgl=document.getElementById('vpnToggle');
+  frame.classList.add('vpn-on');
+  if(tgl){ tgl.classList.add('on'); tgl.setAttribute('aria-checked','true'); }
+})();
+</script>
+
+<script>
+// ===== Embedded in the app: tapping a bottom-nav item (Home / Activity / Monitoring / Identity)
+// leaves the VPN journey and returns to the app. =====
+(function(){
+  document.querySelectorAll('#nav .nav-item.dim').forEach(function(it){
+    it.style.cursor='pointer';
+    it.addEventListener('click', function(){ try{ window.parent.postMessage({type:'cloaked-exit'}, '*'); }catch(_){} });
+  });
+})();
+</script>
+</body>
+</html>

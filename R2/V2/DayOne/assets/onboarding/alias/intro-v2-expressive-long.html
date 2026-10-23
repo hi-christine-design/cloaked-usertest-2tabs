@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Identity — Intro V2: Expressive (Short)</title>
+<script>if(window.self!==window.top)document.documentElement.classList.add('embedded');</script>
+<style>
+  /* ============================================================
+     Tokens — pulled 1:1 from Figma "cloaked over" (node 3699-40581)
+     ============================================================ */
+  :root{
+    --bkgd:        #000000;   /* Global/Background/BKGD_01 — pure black */
+    --expressive:  cubic-bezier(.22,.61,.36,1);
+    --text-primary:#f3f1ed;   /* Global/Text/Primary      */
+    --text-secondary: rgba(255,255,255,0.6); /* Global/Text/Secondary */
+    --divider:     rgba(255,255,255,0.10);
+    --btn-container:#ffffff;
+    --btn-text:    #141410;
+    --gold:        #c9a86a;   /* warm cloak accent         */
+    /* The disk, in ONE place: #circle, #strings, the JS that turns canvas x into
+       a fraction of the text box, AND the radius the logo ring welds onto at the
+       end of the pre-stage all read it — so the seam cannot be measured against
+       a different circle than the one on screen, and the two pages cannot hand
+       over at two different sizes.
+       337 is not a taste choice: it is the size the logo constellation resolves
+       to, and page one becoming page two only reads as one motion while the two
+       shapes are identical. I had this at 300 for a few hours and Yuan caught
+       the join immediately. The CARD's disk is a different number on purpose —
+       it is a crop, not a hand-over. */
+    --disk:        337px;
+    /* control tray tokens — controller-tray-style.md, dark mode */
+    --panel-bg:    #000000;
+    --stage-bg:    #000000;
+    --text:        #f3f1ed;
+    --text-mute:   #6b6960;
+    --rule:        #2a2a26;
+    --rail:        #2a2a26;
+    --fill:        #f3f1ed;
+    --pill-off:    transparent;
+    --pill-on:     #f3f1ed;
+    --pill-on-tx:  #141410;
+    --thumb:       #f3f1ed;
+    --border:      #f3f1ed;
+    --serif: "New York", ui-serif, "Iowan Old Style", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", system-ui, "Helvetica Neue", sans-serif;
+    --mono: "SF Mono", ui-monospace, Menlo, monospace;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; }
+  body{
+    background:var(--stage-bg);
+    color:var(--text);
+    font-family:var(--sans); font-size:13px;
+    font-feature-settings:'tnum' 1;
+    display:flex; align-items:stretch;
+    gap:0; padding:0; overflow:hidden;
+  }
+
+  /* ============================ PHONE ============================ */
+  .phone-scale{ transform-origin:center center; }
+  .phone{
+    position:relative; width:393px; height:852px;
+    background:var(--bkgd); border-radius:52px; overflow:hidden;
+    isolation:isolate;   /* own stacking context — required by Element Capture */
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.16),
+      0 0 0 12px #1b1c20,
+      0 0 0 13px rgba(255,255,255,.08),
+      0 40px 120px -30px rgba(0,0,0,.85);
+  }
+
+  /* pinstripe cloak texture ------------------------------------------
+     Figma: each 5px bar is a vertical gradient #141410 (top, = bg,
+     invisible) → color (bottom). Stripe shape comes from a mask;
+     the vertical gradient is the background, so the entrance has no
+     visible starting edge — it melts out of the background. */
+  /* the 1px/7px mask below is a fallback — fit() rewrites it so the stripe
+     width and period land on whole device pixels at the current scale,
+     otherwise they rasterise unevenly (some 1px solid, some 2px at 50%) */
+  .stripe-layer{
+    position:absolute; inset:0; z-index:2; pointer-events:none;
+    -webkit-mask-image:repeating-linear-gradient(90deg, #000 0 1px, transparent 1px 7px);
+            mask-image:repeating-linear-gradient(90deg, #000 0 1px, transparent 1px 7px);
+    background-size:100% 220%;
+    background-position:0 100%;   /* gradient parked below view */
+    background-repeat:no-repeat;
+    will-change:background-position,opacity;
+  }
+  /* phase 1 — gray: #141410 → #232323 exactly like node 3649:12042 */
+  #stripesGray{
+    background-image:linear-gradient(180deg,
+      rgba(35,35,35,0) 0%, #232323 62%, #232323 100%);
+  }
+  /* phase 2 — gold BAND that travels bottom → center → out the top.
+     Image (top→bottom): dim residue → bright band → transparent.
+     Sliding the window from bottom to top makes the band enter from
+     below, peak at center, and exit upward leaving a dim gold residue. */
+  #stripesGold{
+    /* image top→bottom: pre-band transparent → bright front → residue.
+       animating position 0%→100% slides the window DOWN the image,
+       which moves the band UP the screen: in from bottom, out the top */
+    /* same gold family as the circle strings: #d4b278 bright / #c9a86a base */
+    background-image:linear-gradient(180deg,
+      rgba(201,168,106,0)   0%,
+      rgba(201,168,106,0)   36%,
+      rgba(212,178,120,.9)  44%,
+      rgba(206,173,113,.45) 54%,
+      rgba(201,168,106,.11) 66%,
+      rgba(201,168,106,.10) 100%);
+    background-size:100% 300%;
+  }
+
+  /* identity circle ------------------------------------------------- */
+  #circle{
+    position:absolute; left:50%; top:486px; width:var(--disk); height:var(--disk);
+    transform:translate(-50%,-50%); z-index:3;
+    background:var(--bkgd); border-radius:50%;   /* blocks the bg pinstripes inside */
+  }
+  #circle .layer{ position:absolute; inset:0; border-radius:50%; }
+  #ring{ border:1px solid rgba(243,241,237,.16); }
+  #warm{
+    /* warm band inside the circle — travels with the outside gold:
+       rises from the bottom (linear, per Figma 3649:12304), fully
+       solid when the band is centered (3678:13386), then drains out
+       the top revealing the dark disk (3678:13474) */
+    /* 400% tall: window sees 25% — start (Y=0) and end (Y=100) slices
+       are fully transparent, so at rest only the outline shows */
+    background-image:linear-gradient(180deg,
+      rgba(138,113,70,0)  0%,
+      rgba(138,113,70,0)  25%,
+      rgba(138,113,70,.5) 31%,
+      #8a7146             36%,
+      #6b5c47             44%,
+      #6b5c47             56%,
+      rgba(107,92,71,.4)  66%,
+      rgba(107,92,71,0)   76%,
+      rgba(107,92,71,0)   100%);
+    background-size:100% 400%;
+    background-position:0 0%;
+    background-repeat:no-repeat;
+    will-change:background-position;
+  }
+  #dark{ background:#231f18; }   /* base disk under the warm band */
+  /* guilloché string-art layer — chords sweep in over the identity,
+     cover it while it swaps, then sweep out to reveal the cloak */
+  #strings{
+    position:absolute; left:50%; top:486px; width:var(--disk); height:var(--disk);
+    transform:translate(-50%,-50%); z-index:5; pointer-events:none;
+  }
+  #email, #emailNew{
+    /* The disk's centre is 486. Two rows, 34px apart, straddling it — 469 and
+       503 — so the PAIR is centred on the circle. They used to sit at 486 and
+       520, i.e. starting at the centre and going down, which put the pair 17px
+       low; the comment here claimed they straddled it long before they did.
+       Yuan, 23 Aug: "your email and phone are not in the center of the circle." */
+    position:absolute; left:50%; top:469px; transform:translate(-50%,-50%);
+    z-index:4; width:353px; text-align:center;
+    /* 20px, matched with the card's rows (Yuan, 23 Aug) — one size for the
+       identity wherever this animation appears. Was the reference's 26. */
+    font-family:var(--sans); font-size:20px; font-weight:250; line-height:1.2;
+    letter-spacing:-.3px; white-space:nowrap; color:var(--text-primary);
+    -webkit-font-smoothing:antialiased;
+  }
+  /* the replacement identity — lives ABOVE the strings and is revealed
+     through the inverse of the exposed one's mask, so wherever the chords
+     cover the real identity the cloaked one takes its place */
+  /* the cloaked identity is filled with a gold gradient 3× its own width and
+     clipped to the glyphs, so sliding the background sweeps a metallic
+     highlight across the letters — same material as the background shine */
+  #emailNew, #telNew{
+    z-index:6; opacity:0; color:transparent;
+    font-weight:400;            /* regular — the cloaked one carries more ink */
+    /* narrow hot core with a quick falloff — a streak, not a wide wash */
+    background-image:linear-gradient(100deg,
+      #b9975c  0%,
+      #c9a86a 40%,
+      #d8bb85 47%,
+      #f4e6c8 49.2%,
+      #fff9ee 50%,
+      #f4e6c8 50.8%,
+      #d8bb85 53%,
+      #c9a86a 60%,
+      #b9975c 100%);
+    background-size:300% 100%;
+    background-position:0% 0;
+    background-repeat:no-repeat;
+    -webkit-background-clip:text; background-clip:text;
+    will-change:background-position;
+  }
+  #email .ch{ display:inline-block; }
+
+  /* top bar --------------------------------------------------------- */
+  .topbar{
+    position:absolute; left:0; top:0; width:393px; z-index:45;
+    display:flex; align-items:center; gap:16px;
+    padding:64px 20px 16px;
+  }
+  .topbar .brand{
+    flex:1; font-family:var(--sans); font-weight:510; font-size:16px;
+    line-height:1.2; letter-spacing:-.32px; color:var(--text-primary);
+    text-transform:none; text-align:center;
+  }
+  .topbar .brand-left{text-align:left}
+  /* Embedded in the user-test app the parent overlays its own back button
+     top-left — clear it. Standalone (top window) nothing changes. */
+  html.embedded .topbar .brand-left{padding-left:48px}
+  /* the app that embeds this has its own tab bar; the prototype's 5-tab nav is
+     a second one from the old build, so it goes when we are in an iframe */
+  html.embedded .bottomnav{display:none!important}
+  /* ...and with it gone, the 98px the CTA row was holding for it is just void
+     (Yuan, 23 Aug: "too many space"). 32px off the bottom when embedded; the
+     standalone page keeps its own nav and so keeps the 98. */
+  html.embedded .actions2{bottom:calc(env(safe-area-inset-bottom,0px) + 32px)}
+  /* two stacked rows, email over phone, swept by the SAME seam — the change
+     Yuan asked for and the one UserTest-V1/V2 both show */
+  #tel, #telNew{
+    /* 503 = 486 + 17, the mirror of the address's 469 */
+    position:absolute; left:50%; top:503px; transform:translate(-50%,-50%);
+    z-index:4; width:353px; text-align:center;
+    /* 20px, as above */
+    font-family:var(--sans); font-size:20px; font-weight:250; line-height:1.2;
+    letter-spacing:-.3px; white-space:nowrap; color:var(--text-primary);
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ...and give the phone's cloak back what that rule just took off it. The
+     #emailNew,#telNew block above makes a cloak transparent at z-index 6 so the
+     gold gradient can show through background-clip:text; the rule immediately
+     above re-declares colour and z-index for #tel AND #telNew, and at equal
+     specificity the later one wins — so the number's rewritten half was being
+     painted solid #f3f1ed with the gold hidden behind it, while the address's
+     stayed gold. Measured: (243,241,237) against the address's (190,156,96).
+     Yuan, 23 Aug: "the colour on the number is not right, the left part should
+     be yellow, same as the email." Keep this rule AFTER that one. */
+  #telNew{ z-index:6; color:transparent; }
+  .topbar .skipbtn{
+    flex:none;border:none;cursor:pointer;
+    font-family:var(--sans);font-size:14px;color:var(--text-primary);
+    background:rgba(255,255,255,.10);border-radius:999px;
+    /* 40px tall, not 36: when this page is embedded the app floats its own
+       40px back disc at the same top, and two heights on one line read as a
+       mistake. The app's disc now wears these same values (Yuan, 23 Aug). */
+    height:40px;padding:0 18px;display:inline-flex;align-items:center;
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  }
+  .topbar .settings{
+    width:40px; height:40px; border-radius:300px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 8px rgba(0,0,0,.08);
+  }
+
+  /* headline / sub -------------------------------------------------- */
+  /* one centred copy block — the 20px gap between title and body is the
+     margin on .sub, so it holds no matter how the headline wraps */
+  .copy{
+    position:absolute; left:20px; top:141px; width:353px; z-index:5;
+    text-align:center;
+  }
+  .headline{
+    margin:0;
+    font-family:var(--serif); font-weight:400; font-size:32px;
+    line-height:1.1; letter-spacing:-.64px; color:var(--text-primary);
+  }
+  .sub{
+    margin:20px auto 0; width:321px;
+    font-family:var(--sans); font-weight:400; font-size:16px;
+    line-height:1.3; letter-spacing:-.32px; color:var(--text-secondary);
+  }
+
+  /* ============ pre-stage: logo ring -> dots -> line ring ============ */
+  #pre{
+    position:absolute;inset:0;z-index:40;background:transparent;   /* the phone already paints the bg */
+    transition:opacity .5s ease;
+  }
+  #pre.done{opacity:0;pointer-events:none}
+  #preScroll{position:absolute;inset:0;overflow-y:scroll;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #preScroll::-webkit-scrollbar{display:none}
+  #preSpacer{height:400%}
+  #preCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  #preCopy{
+    position:absolute;left:20px;top:141px;width:353px;z-index:2;text-align:center;pointer-events:none;
+    transition:filter .4s ease;
+  }
+  /* the pre-stage copy IS the build's copy, in the build's exact position,
+     so the hand-off is a straight cross-fade */
+  #preCopy #copyB p{margin-top:16.2px}   /* the word-mask line box runs 3.8px taller */
+  #preCopy h1{
+    margin:0;font-family:var(--serif);font-weight:400;font-size:32px;
+    line-height:1.1;letter-spacing:-.64px;color:var(--text-primary);
+  }
+  #preCopy p{
+    margin:20px auto 0;width:321px;font-family:var(--sans);font-size:16px;
+    line-height:1.3;letter-spacing:-.32px;color:var(--text-secondary);
+    opacity:0;filter:blur(7px);transition:opacity .5s ease .35s,filter .5s ease .35s;
+  }
+  #preCopy .swap{position:absolute;left:0;right:0;top:0;
+    transition:transform .6s var(--expressive),opacity .45s ease,filter .45s ease}
+  #preCopy .swap.up  {transform:translateY(-30px);opacity:0;filter:blur(7px);pointer-events:none}
+  #preCopy .swap.down{transform:translateY(30px); opacity:0;filter:blur(7px);pointer-events:none}
+  #preCopy .swap.on p{opacity:1;filter:blur(0)}
+  /* V1 word mask: each word rises out from behind its own line */
+  #preCopy .w{display:inline-block;overflow:hidden;vertical-align:top;line-height:1.16;padding-bottom:.12em;margin-bottom:-.12em}
+  #preCopy .wi{display:inline-block;transform:translateY(118%);opacity:0;filter:blur(8px);will-change:transform,opacity,filter}
+  #preCopy .swap.on .wi{
+    transform:translateY(0);opacity:1;filter:blur(0);
+    transition:transform .6s cubic-bezier(.2,0,0,1),opacity .55s ease,filter .55s ease;
+  }
+  #preCentre{
+    position:absolute;left:0;right:0;top:60%;transform:translateY(-50%);
+    transition:transform .55s var(--expressive) .5s, opacity .45s ease .5s;
+    z-index:2;text-align:center;pointer-events:none;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+  }
+  #preCentre.gone{transform:translateY(calc(-50% - 34px));opacity:0;transition-delay:0s}
+  #preCentre span{display:block;overflow:hidden;line-height:1.32}
+  #preCentre span i{
+    display:inline-block;font-style:normal;
+    font-family:var(--sans);font-size:16px;color:var(--text-primary);
+    transform:translateY(115%);opacity:0;
+    transition:transform .6s cubic-bezier(.2,0,0,1),opacity .5s ease;
+  }
+  /* the email beat must be pixel-identical to the build's #email */
+  #preCentre.mail span{line-height:1.2}
+  #preCentre.mail span i{
+    font-size:26px;font-weight:250;letter-spacing:-.3px;color:inherit;
+    -webkit-font-smoothing:antialiased;
+  }
+  #preCentre span.in i{transform:translateY(0);opacity:1}
+  #preCue{
+    position:absolute;left:50%;bottom:98px;transform:translate(-50%,0);z-index:3;
+    transition:transform .55s var(--expressive) .5s, opacity .45s ease .5s;
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text-primary);
+    background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.12);
+    backdrop-filter:blur(10px);border-radius:999px;padding:11px 18px;
+  }
+  #preCue.gone{transform:translate(-50%,-34px);opacity:0;transition-delay:0s}
+
+  /* get started ----------------------------------------------------- */
+  .cta{
+    position:absolute; left:0; bottom:0; width:393px; z-index:5;
+    padding:20px 20px 32px;
+  }
+  .cta .btn{
+    height:56px; width:100%; border-radius:240px; background:var(--btn-container);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--sans); font-size:16px; line-height:1.3; letter-spacing:-.32px;
+    color:var(--btn-text);
+    box-shadow:0 0 8px rgba(0,0,0,.08), 0 8px 16px rgba(0,0,0,.10);
+  }
+
+  /* ==================== CONTROL TRAY ====================
+     built to controller-tray-style.md: 10px uppercase labels,
+     12px tabular readouts, 11px controls, 2px corners, 1px
+     hairlines, 2px track with a 10px round thumb. No shadows. */
+  .panel{
+    flex:4; min-width:240px; max-width:380px;
+    background:var(--panel-bg); border-right:1px solid var(--rule);
+    padding:32px 20px;
+    display:flex; flex-direction:column; justify-content:space-between; gap:32px;
+    color:var(--text);
+  }
+  .stage{
+    flex:12; display:grid; place-items:center;
+    background:var(--stage-bg); overflow:hidden;
+  }
+  .tray-brand{ font-size:10px; text-transform:uppercase; letter-spacing:.14em; color:var(--text-mute); }
+  .controls{ display:flex; flex-direction:column; gap:22px; width:100%; }
+  .group{ display:flex; flex-direction:column; gap:10px; width:100%; }
+  .group-label, .slider-row{
+    font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-mute);
+  }
+  .slider-row{ display:flex; justify-content:space-between; align-items:baseline; }
+  .slider-row .value, .readout{
+    font-size:12px; font-variant-numeric:tabular-nums;
+    color:var(--text); letter-spacing:0; text-transform:none;
+  }
+  .panel input[type=text]{
+    width:100%; background:var(--pill-off); color:var(--text);
+    border:1px solid var(--rule); border-radius:2px; padding:7px 8px;
+    font:inherit; font-size:12px; font-variant-numeric:tabular-nums;
+    letter-spacing:0; outline:none; transition:border-color 140ms ease;
+  }
+  .panel input[type=text]:focus{ border-color:var(--border); }
+
+  .save-area{ display:flex; flex-direction:column; gap:14px; width:100%; }
+  .hint{ font-size:10px; letter-spacing:.04em; line-height:1.4; color:var(--text-mute); }
+  .save-row{ display:flex; gap:4px; width:100%; }
+  .save-btn{
+    flex:1; background:var(--pill-off); color:var(--text-mute);
+    border:1px solid var(--rule); padding:7px 8px; border-radius:2px;
+    font:inherit; font-size:11px; cursor:pointer; text-align:center; white-space:nowrap;
+    transition:background 140ms ease, color 140ms ease, border-color 140ms ease;
+  }
+  .save-btn:hover:not(:disabled){ color:var(--text); border-color:var(--border); }
+  .save-btn:disabled{ opacity:.5; cursor:default; }
+  .save-btn[aria-pressed="true"]{ background:var(--pill-on); color:var(--pill-on-tx); border-color:var(--pill-on); }
+
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:10px;
+    background:transparent; outline:none; padding:0; margin:0;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:2px; border-radius:1px;
+    background:linear-gradient(to right,
+      var(--fill) 0%, var(--fill) var(--pct,0%),
+      var(--rail) var(--pct,0%), var(--rail) 100%);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:10px; height:10px; background:var(--thumb);
+    border-radius:50%; cursor:pointer; margin-top:-4px; border:none;
+  }
+  input[type=range]::-moz-range-track{ height:2px; border-radius:1px; background:var(--rail); }
+  input[type=range]::-moz-range-progress{ height:2px; border-radius:1px; background:var(--fill); }
+  input[type=range]::-moz-range-thumb{
+    width:10px; height:10px; background:var(--thumb); border-radius:50%; border:none; cursor:pointer;
+  }
+
+  /* hub embed: phone only, full-bleed */
+  body.embed > :not(.stage){ display:none !important; }
+  body.embed .stage{ display:block; }
+  body.embed .phone{ border-radius:0; box-shadow:none; }
+  /* narrow / mobile: the tray is a desktop affordance — drop it entirely
+     and give the whole viewport to the phone */
+  @media (max-width:880px){
+    .panel{ display:none; }
+    .stage{ flex:1 1 100%; width:100%; }
+  }
+
+  /* ---------- two-button actions + bottom nav (ported from cover-v1) ---------- */
+  /* buttons sit 20px above the bottom nav (nav = 64px tall, 14px inset) */
+  .actions2{position:absolute;left:20px;right:20px;bottom:calc(env(safe-area-inset-bottom,0px) + 98px);display:flex;gap:12px;align-items:center;z-index:30}
+  .btn2{font-family:var(--sans);font-size:15px;font-weight:400;border-radius:999px;height:56px;padding:0 14px;cursor:pointer;white-space:nowrap;flex:0 0 calc(50% - 6px);min-width:0;display:inline-flex;align-items:center;justify-content:center;transition:transform .2s, background .25s;border:none}
+  .btn2:active{transform:scale(.97)}
+  /* glass container: frosted + saturated like Apple's material, but the
+     fill is dense enough (96%) that the pinstripes never read through */
+  .btn2-ghost{color:#F3F1ED;border:1px solid rgba(255,255,255,.16);
+    background:linear-gradient(180deg, rgba(60,60,56,.96) 0%, rgba(32,32,29,.96) 100%);
+    backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.10)}
+  .btn2-ghost:hover{background:linear-gradient(180deg, rgba(74,74,69,.97) 0%, rgba(42,42,38,.97) 100%)}
+  /* video: label stays, the play glyph now sits ON the thumbnail */
+  .btn2-video{position:relative;padding-left:58px;justify-content:flex-start}
+  .btn2-video .thumb{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;object-fit:cover;display:block;background:rgba(255,255,255,.12)}
+  .btn2-video::before{content:"";position:absolute;left:8px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.3)}
+  .btn2-video .play{position:absolute;left:28px;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;color:#fff;opacity:.95;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
+  .btn2-primary{color:#000;background:#fff}
+  .btn2-primary:hover{background:#e8e8e8}
+  .bottomnav{position:absolute;left:0;right:0;z-index:31;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);margin:0 14px;height:64px;border-radius:32px;background:rgba(24,24,28,.72);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-around}
+  .bottomnav svg{width:24px;height:24px;color:#8C8C92;stroke:currentColor}
+  .bottomnav svg.act{color:#F2F2EE}
+
+  /* while the pre-stage runs, the build's own chrome waits off-stage and
+     eases in exactly like V1: rise + blur -> clear */
+  .phone.preon .copy{opacity:0;pointer-events:none}   /* same words, same place — pure cross-fade */
+  .phone.preon #email,
+  .phone.preon #tel,
+  .phone.preon #emailNew,
+  .phone.preon #telNew{opacity:0;transform:translate(-50%,calc(-50% + 12px));pointer-events:none}
+  /* the pre-stage doesn't draw its own copy of the email — it reveals the real
+     one, parked on the build's frame 0, so there is nothing to hand over */
+  .phone.preon.mailon #email,
+  .phone.preon.mailon #tel{opacity:1!important;transform:translate(-50%,-50%)}
+  .phone #email,.phone #emailNew{transition:opacity .6s var(--expressive),transform .6s var(--expressive),filter .6s var(--expressive)}
+  /* the two buttons slide up one after the other instead of popping in */
+  .phone.preon .actions2{pointer-events:none}
+  .phone.preon .actions2>*{opacity:0;transform:translateY(30px)}
+  .phone .actions2>*{
+    transition:opacity .5s ease,transform .6s var(--expressive);transition-delay:0s;
+  }
+  .phone:not(.preon) .actions2>*:nth-child(1){transition-delay:.46s}
+  .phone:not(.preon) .actions2>*:nth-child(2){transition-delay:.60s}
+  /* the build's own artwork stays dark until the hand-off — otherwise the
+     finished scene reads straight through the pre-stage. !important beats
+     the inline opacity the build's rAF loop writes every frame. */
+  .phone.preon .stripe-layer,
+  .phone.preon #strings,
+  .phone.preon #email,
+  .phone.preon #tel,
+  .phone.preon #emailNew,
+  .phone.preon #telNew{opacity:0!important}
+  .phone.preon.mailon #email,
+  .phone.preon.mailon #tel{opacity:1!important}
+  .phone #strings{transition:opacity .75s ease}
+  .phone #circle{transition:opacity .4s ease}   /* driven per-frame, softened both ways */
+  .phone .copy,.phone .bottomnav{
+    transition:opacity .7s var(--expressive),transform .7s var(--expressive),filter .7s var(--expressive);
+  }
+  .phone .copy{transition-delay:0s;transition-duration:.45s}
+  .phone .bottomnav{transition-delay:.58s}
+  .phone .stripe-layer{transition:opacity 1s ease}
+</style>
+</head>
+<body>
+
+  <!-- ===================== CONTROL TRAY ===================== -->
+  <aside class="panel">
+    <div class="tray-brand">Cloaked · Identity</div>
+
+    <div class="controls">
+      <section class="group">
+        <span class="group-label">Your real email</span>
+        <input type="text" id="emailInput" value="usersmail@gmail.com" spellcheck="false" autocomplete="off">
+      </section>
+
+      <section class="group">
+        <span class="group-label">Your real phone</span>
+        <input type="text" id="phoneInput" value="(415) 555-0132" spellcheck="false" autocomplete="off">
+      </section>
+
+      <section class="group">
+        <span class="group-label">Cloaked as</span>
+        <span class="readout" id="cloakedOut">—</span>
+      </section>
+
+      <section class="group">
+        <span class="group-label">Phase</span>
+        <span class="readout" id="phaseOut">—</span>
+      </section>
+
+      <section class="group">
+        <div class="slider-row">
+          <span>Scrub full loop</span>
+          <span class="value" id="scrubVal">0%</span>
+        </div>
+        <input type="range" id="scrub" min="0" max="1000" value="0">
+      </section>
+    </div>
+
+    <div class="save-area">
+      <div class="save-row">
+        <button class="save-btn" id="playBtn">Pause</button>
+        <button class="save-btn" id="cloakBtn">New identity</button>
+      </div>
+
+      <section class="group">
+        <span class="group-label">Export</span>
+        <div class="save-row">
+          <button class="save-btn" id="videoBtn">Download video</button>
+        </div>
+        <span class="hint">Records one full loop (email → phone → email) of the phone screen only</span>
+      </section>
+    </div>
+  </aside>
+
+  <!-- ===================== PHONE PROTOTYPE ===================== -->
+  <main class="stage" id="stage">
+  <div class="phone-scale" id="phoneScale">
+    <div class="phone preon" id="phone">
+      <div class="stripe-layer" id="stripesGray"></div>
+      <div class="stripe-layer" id="stripesGold"></div>
+
+      <div id="circle">
+        <div class="layer" id="dark"></div>
+        <div class="layer" id="warm"></div>
+        <div class="layer" id="ring"></div>
+      </div>
+      <div id="email"></div>
+      <div id="tel"></div>
+      <canvas id="strings" width="674" height="674"></canvas>
+      <div id="emailNew"></div>
+      <div id="telNew"></div>
+
+      <div class="topbar">
+        <div class="brand brand-left">Identities</div>
+        <button class="skipbtn" id="skipBtn" type="button">Skip intro</button>
+      </div>
+
+      <!-- scroll-driven pre-stage: logo ring -> dots -> single line ring -->
+      <div id="pre">
+        <canvas id="preCanvas"></canvas>
+        <div id="preCopy">
+          <div class="swap" id="copyA">
+            <h1>Every signup hands out the real you.</h1>
+            <p>Data removal cleans up the past.<br>It can’t stop tomorrow’s signups.</p>
+          </div>
+          <div class="swap down" id="copyB">
+            <h1>Be yourself, without exposing yourself.</h1>
+            <p>Your real identity stays private. Use a different identity for every part of your life.</p>
+          </div>
+        </div>
+        <div id="preCentre"></div>
+        <div id="preCue">Our Solution
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div id="preScroll"><div id="preSpacer"></div></div>
+      </div>
+
+      <div class="copy">
+        <h1 class="headline">Be yourself, without exposing yourself.</h1>
+        <p class="sub">Your real identity stays private. Use a different identity for every part of your life.</p>
+      </div>
+
+            <div class="actions2" onclick="event.stopPropagation()">
+        <button class="btn2 btn2-ghost btn2-video"><img class="thumb" src="assets/Video thumbnail.png" alt=""><svg class="play" viewBox="0 0 12 12" fill="currentColor"><path d="M3 1.5 10.5 6 3 10.5z"/></svg>Learn more</button>
+        <button class="btn2 btn2-primary" id="createBtn" type="button">Create an identity</button>
+      </div>
+      <nav class="bottomnav" onclick="event.stopPropagation()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/></svg>
+    <svg class="act" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      </nav>
+    </div>
+  </div>
+  </main>
+
+<script>
+  /* ---- hub embed: CTA -> onboarding ---- */
+  function goOnboarding(){
+    if(window.parent!==window){
+      try{
+        if(typeof window.parent.skipToHome==='function') window.parent.skipToHome();
+        if(typeof window.parent.goTab==='function') window.parent.goTab('idcard');
+        if(typeof window.parent.icOpenCreate==='function'){
+          window.parent.icOpenCreate();
+          var overlay=window.parent.document.getElementById('d1jOnb');
+          if(overlay) overlay.classList.remove('on');
+          return;
+        }
+        if(typeof window.parent.handleIdentityIntroCreate==='function'){
+          window.parent.handleIdentityIntroCreate();
+          return;
+        }
+      }catch(e){}
+      try{ window.parent.postMessage({type:'cloaked-nav', src:'identity-setup.html'}, '*'); return; }catch(e){}
+    }
+    location.href='identity-setup.html';
+  }
+  document.getElementById('createBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    goOnboarding();
+  });
+  document.getElementById('skipBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    if(this.textContent.trim()==='Restart'){
+      if(window.__preRestart) window.__preRestart();
+      return;
+    }
+    goOnboarding();
+  });
+
+(function(){
+  "use strict";
+
+  // ---------- elements ----------
+  const stripesGray = document.getElementById('stripesGray');
+  const stripesGold = document.getElementById('stripesGold');
+  const warm = document.getElementById('warm');
+  const dark = document.getElementById('dark');
+  const ring = document.getElementById('ring');
+  const emailEl = document.getElementById('email');
+  const emailNewEl = document.getElementById('emailNew');
+  const telEl = document.getElementById('tel');
+  const telNewEl = document.getElementById('telNew');
+  const input = document.getElementById('emailInput');
+  const phoneInput = document.getElementById('phoneInput');
+  const cloakedOut = document.getElementById('cloakedOut');
+  const phaseOut = document.getElementById('phaseOut');
+  const scrub = document.getElementById('scrub');
+  const scrubVal = document.getElementById('scrubVal');
+  const playBtn = document.getElementById('playBtn');
+  const cloakBtn = document.getElementById('cloakBtn');
+
+  // ---------- helpers ----------
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  // map v from [a,b] -> [0,1] clamped
+  const map01 = (v,a,b)=> clamp((v-a)/(b-a),0,1);
+  const easeInOut = u => u<0.5 ? 2*u*u : 1-Math.pow(-2*u+2,2)/2;
+  const easeOut = u => 1-Math.pow(1-u,3);
+  // deterministic pseudo-random 0..1 from a number (stable for scrubbing)
+  const hash = x => { const s=Math.sin(x)*43758.5453; return s-Math.floor(s); };
+
+  // ---------- state ----------
+  let realEmail = input.value.trim() || "usersmail@gmail.com";
+  let realPhone = phoneInput.value.trim() || "(415) 555-0132";
+  let cloakedEmail = genCloaked();
+  let cloakedPhone = genCloakedPhone();
+  // the two texts render() actually paints — set per segment by applySeg():
+  //   underText = the EXPOSED identity (fully visible at p=0)
+  //   overText  = the CLOAK written over it (fully visible at p=1)
+  let underText = realEmail;
+  let overText  = cloakedEmail;
+  let underTel  = realPhone;
+  let overTel   = cloakedPhone;
+  const ROLL = 'abcdefghijklmnopqrstuvwxyz0123456789';
+
+  function genCloaked(){
+    const a='abcdefghijklmnopqrstuvwxyz';
+    const n = 5 + Math.floor(Math.random()*3); // 5–7 letters, like "jklaer"
+    let s=''; for(let i=0;i<n;i++) s+=a[Math.floor(Math.random()*26)];
+    return s + '@Cloaked.com';
+  }
+  function genCloakedPhone(){
+    const d = ()=>Math.floor(Math.random()*10);
+    // NANP-ish proxy number — area code never starts with 0/1
+    return '(' + (2+Math.floor(Math.random()*8)) + d() + d() + ') ' +
+           d()+''+d()+''+d() + '-' + d()+''+d()+''+d()+''+d();
+  }
+
+  // ============================================================
+  // render(p)  —  one sweep is a pure function of p ∈ [0,1]
+  //   0.00–0.06  exposed identity, thin outlined circle, plain bg
+  //   0.06–0.32  GRAY stripes melt in from the background (seamless —
+  //              each bar is a bg→gray vertical gradient, no edge)
+  //   0.32–0.56  GOLD washes up through the stripes; the circle
+  //              heats to warm amber in lockstep with the gold
+  //   0.56–0.66  peak — exposed identity dissolves as the seam
+  //              sweeps LEFT → RIGHT writing the cloak over it
+  //   0.62–0.86  circle cools to a solid dark disk; stripes settle
+  //
+  // Because everything is a pure function of p, playing p BACKWARD
+  // (1 → 0) un-draws the whole scene right → left — the loop below
+  // uses that to erase the cloak and reveal the OTHER identity.
+  // ============================================================
+  function render(p, pBand){
+    // pBand drives the BACKGROUND gold band only. It runs on segment-local
+    // forward time, so even when the scene plays in reverse (p: 1 → 0) the
+    // band still rises bottom → top. Everything else stays a function of p.
+    if(pBand === undefined) pBand = p;
+
+    // --- phase 1: gray stripes rise seamlessly ---
+    const grayIn = easeInOut(map01(p,0.06,0.30));
+    stripesGray.style.backgroundPosition = `0 ${(100-grayIn*100).toFixed(2)}%`;
+    stripesGray.style.opacity = grayIn.toFixed(3);
+
+    // --- phase 2: gold washes up over the gray ---
+    // ONE band position drives the circle fill; the background stripes get
+    // their own always-forward copy of it (pBand):
+    // band enters bottom (~ .30), centers (~ .59), exits top (~ .88)
+    const goldT = easeInOut(map01(p,0.30,0.88));
+    const goldBand = easeInOut(map01(pBand,0.30,0.88));
+    const bandY = `0 ${(goldT*100).toFixed(2)}%`;      // 0→100 = band travels UP the screen
+    stripesGold.style.backgroundPosition = `0 ${(goldBand*100).toFixed(2)}%`;
+    stripesGold.style.opacity = '1';                   // residue is baked into the gradient
+
+    // --- circle: linear-gradient fill rises bottom→top with the gold ---
+    const ringOp = 1 - map01(p,0.32,0.40);             // outline vanishes fast once fill starts
+    warm.style.backgroundPosition = bandY;             // circle fill rides the same band
+    const darkOp = map01(p,0.32,0.42);                 // dark base under the band
+    ring.style.opacity = ringOp.toFixed(3);
+    warm.style.opacity = '0.62';              /* brighter — the last scene shouldn't go murky */
+    dark.style.opacity = darkOp.toFixed(3);
+
+    // --- guilloché strings over the circle ---
+    // ONE chord — the longest, i = SN-1 — is the leading edge of the fan.
+    // It drives both the highlighted line and the text mask, so the seam
+    // and the line the viewer sees are the same object by construction.
+    drawStrings(p, goldT, darkOp);   // goldT/darkOp let the shadow chord
+                                     // sample the disk's live gradient
+
+    // --- identity text, then the sparks that ride the seam across it ---
+    renderIdentity(p, seamAt(p));    // sets the text first, so the spark
+    drawSparks(p);                   // window can measure the real glyphs
+  }
+
+  // ============================================================
+  // guilloché / string-art layer  (inspired by "times table" cardioids)
+  //   chords connect rim point i -> point (i·k mod N); k drifts so the
+  //   envelope morphs while chords cascade in, cover the identity, and
+  //   cascade back out revealing the cloaked one
+  // ============================================================
+  const strings = document.getElementById('strings');
+  const sctx = strings.getContext('2d');
+  const SN = 80;                  // rim points (all chords exist at once)
+  const SR = 333, SC = 337;       // radius & center in canvas px (2x)
+  const ROT = Math.PI/2;          // rim point 0 = BOTTOM CENTER — the fan anchor
+
+  // times-table animation, matched to the reference video:
+  // chord i connects rim point i -> point i·k, and k animates 1 → 0.
+  //   k=1     chords have zero length — empty circle
+  //   k 1→0   a band curls in from the rim; the bright knot (envelope
+  //           focus) travels in a small arc around the disk
+  //   k=0     every chord lands on rim point 0 — a clean straight fan
+  //           anchored at BOTTOM CENTER, frozen as the resting state
+  // k used to animate only across p 0.28→0.88, which left the chords frozen for
+  // ~1.2s at each end of a segment. Two segments meet end-to-end, so that read
+  // as a ~2.5s dead stop between the fill landing and the counter-motion
+  // starting. Spanning almost the whole phase instead means the return motion
+  // begins ~2.1s earlier and the fan is never completely still.
+  const K_START = 0.02, K_END = 0.985;
+  const kOf = p => 1 - map01(p, K_START, K_END);
+
+  function chordAngles(i,p){
+    const k = kOf(p);
+    // negative direction mirrors the sweep to match the reference video
+    return [ROT - (i/SN)*Math.PI*2, ROT - (i*k/SN)*Math.PI*2];
+  }
+
+  const LEAD = SN-1;              // the longest chord = the fan's leading edge
+  // "seam clears the address here — stop lighting it". This used to be pinned at
+  // p=0.72, which only matched the old K range; it now reads the measured
+  // SEAM.p1 so the highlight always fades exactly as the seam leaves the text.
+
+  // ---- disk colour, sampled ------------------------------------------------
+  // The shadow chord has to sit in the disk's own colour, and that colour is a
+  // moving gradient (#warm at 30% over #1b1a15). These mirror the CSS exactly:
+  // #warm is a 400%-tall gradient whose background-position rides `bandY`, so
+  // element-y fraction ty maps to image position (ty + 3·pct)/4.
+  const WARM_STOPS = [
+    [0.00,138,113,70,0  ], [0.25,138,113,70,0  ], [0.31,138,113,70,0.5],
+    [0.36,138,113,70,1  ], [0.44,107, 92,71,1  ], [0.56,107, 92,71,1  ],
+    [0.66,107, 92,71,0.4], [0.76,107, 92,71,0  ], [1.00,107, 92,71,0  ]
+  ];
+  function warmAt(u){
+    u = clamp(u,0,1);
+    for(let i=1;i<WARM_STOPS.length;i++){
+      const a = WARM_STOPS[i-1], b = WARM_STOPS[i];
+      if(u <= b[0]){
+        const t = (u-a[0])/Math.max(1e-6, b[0]-a[0]);
+        return [a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t,
+                a[3]+(b[3]-a[3])*t, a[4]+(b[4]-a[4])*t];
+      }
+    }
+    const l = WARM_STOPS[WARM_STOPS.length-1];
+    return [l[1],l[2],l[3],l[4]];
+  }
+  function diskColour(ty, pct, darkOp){
+    const w  = warmAt((ty + 3*pct)/4);
+    const aw = 0.3*w[3];                        // #warm renders at 30% opacity
+    const b  = 27*darkOp, bg = 26*darkOp, bb = 21*darkOp;   // #1b1a15 over #000
+    return 'rgb('+Math.round(b *(1-aw)+w[0]*aw)+','
+                 +Math.round(bg*(1-aw)+w[1]*aw)+','
+                 +Math.round(bb*(1-aw)+w[2]*aw)+')';
+  }
+
+  function drawStrings(p, pct, darkOp){
+    sctx.clearRect(0,0,674,674);
+    if(kOf(p)>=0.999) return;
+    // the field
+    sctx.lineWidth = 1;
+    sctx.strokeStyle = 'rgba(212,178,120,0.32)';
+    sctx.beginPath();
+    for(let i=0;i<SN;i++){
+      const [a1,a2] = chordAngles(i,p);
+      sctx.moveTo(SC+SR*Math.cos(a1), SC+SR*Math.sin(a1));
+      sctx.lineTo(SC+SR*Math.cos(a2), SC+SR*Math.sin(a2));
+    }
+    sctx.stroke();
+
+    // the leading edge — same hairline weight as the field, just brighter,
+    // so it reads as the seam the address is swapped across without
+    // looking like a different, heavier object. Once the seam has swept
+    // clear of the address it has no job left, and by k=0 it collapses to
+    // a stub at the bottom anchor — so fade the highlight out and let the
+    // chord settle back into the field.
+    const lit = 1 - map01(p, SEAM.p1, SEAM.p1+0.10);
+    if(lit<=0.001) return;
+    const [b1,b2] = chordAngles(LEAD,p);
+    const bx1 = SC+SR*Math.cos(b1), by1 = SC+SR*Math.sin(b1);
+    const bx2 = SC+SR*Math.cos(b2), by2 = SC+SR*Math.sin(b2);
+
+    // a chord painted in the disk's own gradient, laid under the seam and
+    // nudged right: the real address never butts up against the lit line, it
+    // gets a gap that reads as the disk itself showing through the fan
+    const bgGrad = sctx.createLinearGradient(0,0,0,674);
+    for(let i=0;i<=24;i++){
+      const ty = i/24;
+      bgGrad.addColorStop(ty, diskColour(ty, pct, darkOp));
+    }
+    sctx.globalAlpha = lit;
+    sctx.lineWidth = 4;
+    sctx.strokeStyle = bgGrad;
+    sctx.beginPath();
+    sctx.moveTo(bx1+2.5, by1);
+    sctx.lineTo(bx2+2.5, by2);
+    sctx.stroke();
+    sctx.globalAlpha = 1;
+
+    // The line's COLOUR was the "white part" (Yuan, 23 Aug), not the geometry:
+    // rgba(226,197,146,.6) composites to (152,130,93) over the disk, which is a
+    // cream. A saturated gold at the same brightness reads as a colour against
+    // the shadow beside it, so the two sides of the line are two colours
+    // meeting on one edge. The 2px shadowBlur went with it — a pale halo is the
+    // one thing that cannot help here, and it was worth all of 6 units of
+    // brightness. Do NOT replace this pair with a wash over half the disk: that
+    // loses both the line and its shadow, and at the start of the sweep the
+    // chord is short enough that the half-plane covers the part the line has
+    // not reached yet.
+    sctx.lineWidth = 1;
+    sctx.strokeStyle = 'rgba(230,180,60,'+(0.9*lit).toFixed(3)+')';
+    sctx.beginPath();
+    sctx.moveTo(bx1, by1);
+    sctx.lineTo(bx2, by2);
+    sctx.stroke();
+  }
+
+  // THE SEAM ------------------------------------------------------------
+  // The leading chord is the mask. Where it crosses the text row is the
+  // one boundary in the whole animation: cloaked identity to the LEFT of
+  // it (already swept), exposed identity to the RIGHT (not yet reached).
+  // One line, one edge — they can't disagree, and it sweeps the row
+  // cleanly from ~9% to ~93% of the box, so nothing pops. Played in
+  // reverse the same edge retreats right → left, un-writing the cloak.
+  const ROW_L = 38, ROW_R = 636;              // usable span of the text row
+
+  // where chord i crosses the text row (y = circle centre), or null
+  function crossOf(i,p){
+    const [a1,a2] = chordAngles(i,p);
+    const y1 = SC+SR*Math.sin(a1), y2 = SC+SR*Math.sin(a2);
+    if((y1-SC)*(y2-SC)>=0) return null;       // chord doesn't reach the row
+    const x1 = SC+SR*Math.cos(a1), x2 = SC+SR*Math.cos(a2);
+    return x1 + (SC-y1)*(x2-x1)/(y2-y1);
+  }
+  // The canvas is a fixed 674 internal units wide however big the disk is
+  // drawn, so the two conversions below have to divide by the LIVE ratio, not
+  // by the 2 that only held while the disk was 337 (Yuan 23 Aug shrank it).
+  // Read from --disk so there is one number for the circle and the seam.
+  const DISK = (function(){
+    const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--disk'));
+    return v > 0 ? v : 337;
+  })();
+  const C2S = 674/DISK;                                        // canvas px per CSS px
+  const canvasToFrac = cx => ((196.5 + (cx-SC)/C2S) - 20)/353;   // text box: left 20px, w 353px
+
+  // when the seam enters and leaves the row (found once, at boot)
+  const SEAM = (function(){
+    let p0=null, p1=null;
+    for(let s=0;s<=1000;s++){
+      const p=s/1000, x=crossOf(LEAD,p);
+      if(x!==null && x>ROW_L && x<ROW_R){ if(p0===null) p0=p; p1=p; }
+    }
+    return {p0:(p0===null?0.44:p0), p1:(p1===null?0.72:p1)};
+  })();
+
+  function seamAt(p){
+    if(p < SEAM.p0) return {x:ROW_L, on:false, done:false};   // not there yet
+    if(p > SEAM.p1) return {x:ROW_R, on:false, done:true};    // swept past — done
+    const x = crossOf(LEAD,p);
+    return {x:(x===null?ROW_R:x), on:true, done:false};
+  }
+
+  // ---- sparks -------------------------------------------------------------
+  // Tiny embers thrown off where the seam crosses the identity, so the moment
+  // the new one is written is legible even when both texts look alike.
+  // Each spark is born at the seam's own position at its birth time and is
+  // derived from hash(), so the whole field stays a pure function of p and
+  // scrubbing (or reverse playback) reproduces it exactly.
+  const SPARKS = 80, SPARK_LIFE = 0.055, ROW_BAND = 54;   // canvas px, ±27
+  let sparkSeed = Math.random()*97;
+  const fracToCanvas = f => SC + C2S*((f*353 + 20) - 196.5);   // inverse of canvasToFrac
+
+  // Sparks are confined to the stretch of p where the seam is actually
+  // crossing the glyphs, so nothing fires out over empty disk — the eye stays
+  // on the text. Measured from the live text, memoised per cloak string.
+  let sparkWin = null, sparkWinKey = '';
+  function sparkWindow(){
+    if(sparkWinKey === overText && sparkWin) return sparkWin;
+    if(!emailNewEl.firstChild) return null;
+    const rng = document.createRange();
+    rng.selectNodeContents(emailNewEl);
+    const gr = rng.getBoundingClientRect(), br = emailNewEl.getBoundingClientRect();
+    if(!br.width || !gr.width) return null;
+    const xL = fracToCanvas((gr.left  - br.left)/br.width) - 6;
+    const xR = fracToCanvas((gr.right - br.left)/br.width) + 6;
+    let pa = null, pb = null;
+    for(let s=0;s<=400;s++){
+      const q = SEAM.p0 + (SEAM.p1-SEAM.p0)*s/400, x = crossOf(LEAD,q);
+      if(x===null) continue;
+      if(x>=xL && x<=xR){ if(pa===null) pa=q; pb=q; }
+    }
+    if(pa===null) return null;
+    sparkWinKey = overText;
+    sparkWin = { pa:pa, pb:pb };
+    return sparkWin;
+  }
+
+  function drawSparks(p){
+    const win = sparkWindow();
+    if(!win) return;
+    if(p < win.pa || p > win.pb + SPARK_LIFE) return;
+    const span = Math.max(1e-6, win.pb - win.pa);
+    for(let i=0;i<SPARKS;i++){
+      const born = win.pa + (i/SPARKS)*span;
+      const age  = (p - born)/SPARK_LIFE;
+      if(age <= 0 || age >= 1) continue;
+      const x0 = crossOf(LEAD, born);
+      if(x0 === null) continue;
+      const h1 = hash(i*1.37 + sparkSeed);
+      const h2 = hash(i*7.11 + sparkSeed*2.3);
+      const h3 = hash(i*3.53 + sparkSeed*5.7);
+      const x = x0 + (-12 - h2*30)*age;          // trails behind the moving seam
+      const y = SC + (h1-0.5)*ROW_BAND + (h3-0.5)*26*age;
+      const fade = (1-age)*(1-age);
+      const r = 0.6 + h2*1.0;
+      sctx.beginPath();
+      sctx.fillStyle = 'rgba(248,235,205,'+(fade*0.9).toFixed(3)+')';
+      sctx.arc(x, y, r, 0, 6.28319);
+      sctx.fill();
+      if(h3 > 0.72){                             // a few carry a soft halo
+        sctx.beginPath();
+        sctx.fillStyle = 'rgba(226,190,130,'+(fade*0.16).toFixed(3)+')';
+        sctx.arc(x, y, r*3.2, 0, 6.28319);
+        sctx.fill();
+      }
+    }
+  }
+
+  // mask helpers — split the row at f% of the text box
+  const FE = 0.7;                             // feather ≈ the seam's own width
+  const maskRight = f=>`linear-gradient(90deg, transparent ${(f-FE).toFixed(1)}%, #000 ${(f+FE).toFixed(1)}%)`;
+  const maskLeft  = f=>`linear-gradient(90deg, #000 ${(f-FE).toFixed(1)}%, transparent ${(f+FE).toFixed(1)}%)`;
+  function setMask(el,m){ el.style.webkitMaskImage=m; el.style.maskImage=m; }
+
+  // ONE line, TWO crossings. The seam is a diagonal chord and the rows sit at
+  // different heights, so the address and the number are cut at two different
+  // x — and each of those is a point ON the line. crossOf() above only ever
+  // gave the crossing at the disk's centre, and both rows shared it; sharing it
+  // is what let the break drift off the line for the row that is not at the
+  // centre. Yuan, 23 Aug: "the line and the mask don't seem to be moving at the
+  // same speed."
+  //
+  // This also replaces an earlier attempt that expressed the break as a
+  // progress across each row's own glyph run so that a short number and a long
+  // address would turn gold together. It did that, but only the widest row's
+  // break still landed on the line: at 10% through the sweep the address broke
+  // at x=64 and the number at x=97. Because the chord is close to vertical, the
+  // real geometry gets both — the two rows turn gold within a few px of each
+  // other AND each break sits under the line.
+  function crossAtY(i,p,yc){
+    const [a1,a2] = chordAngles(i,p);
+    const y1 = SC+SR*Math.sin(a1), y2 = SC+SR*Math.sin(a2);
+    if((y1-yc)*(y2-yc)>=0) return null;      // the chord does not reach that y
+    const x1 = SC+SR*Math.cos(a1), x2 = SC+SR*Math.cos(a2);
+    return x1 + (yc-y1)*(x2-x1)/(y2-y1);
+  }
+  // A row's own y in the canvas's 674-unit space, measured off the disk it is
+  // drawn on rather than from the CSS numbers, so changing --disk or the row's
+  // font size cannot desync the two. getBoundingClientRect forces layout, so it
+  // is one read per row, cached until the window resizes.
+  const _cy = new Map();
+  function rowCy(el){
+    if(_cy.has(el)) return _cy.get(el);
+    const c = document.getElementById('circle');
+    if(!c) return null;
+    const cr = c.getBoundingClientRect(), er = el.getBoundingClientRect();
+    if(!cr.height || !er.height) return null;
+    const v = SC + ((er.top + er.height/2) - (cr.top + cr.height/2)) * (674/cr.height);
+    _cy.set(el, v);
+    return v;
+  }
+  window.addEventListener('resize', () => _cy.clear());
+  function renderRow(realEl, cloakEl, under, over, p, sm){
+    realEl.style.filter = 'none';             // size/weight live in CSS
+    realEl.style.zIndex = '4';                // always BEHIND the strings
+    realEl.style.color = 'rgba(243,241,237,.66)';    // the exposed identity sits back
+    realEl.style.opacity = '1';
+    realEl.textContent = under;
+    cloakEl.textContent = over;
+    // fades up as the seam enters, so it doesn't blink on at full strength
+    cloakEl.style.opacity = easeOut(map01(p, SEAM.p0, SEAM.p0+0.06)).toFixed(3);
+    // one metallic pass across the glyphs once the swap has landed
+    cloakEl.style.backgroundPosition =
+      (easeInOut(map01(p, 0.72, 0.98))*100).toFixed(1)+'% 0';
+
+    if(!sm.on && !sm.done){                   // seam hasn't reached the row
+      setMask(realEl,'none');
+      cloakEl.style.opacity = '0';
+      return;
+    }
+    if(sm.done){                              // seam has swept clear — swapped
+      setMask(realEl,'linear-gradient(90deg, transparent 100%, #000 101%)');
+      setMask(cloakEl,'none');
+      cloakEl.style.opacity = '1';
+      return;
+    }
+    // this row's own crossing of the same line, so the break sits under it
+    const cy = rowCy(realEl);
+    let rx = (cy == null) ? sm.x : crossAtY(LEAD, p, cy);
+    if(rx == null) rx = sm.x;
+    const f = clamp(canvasToFrac(rx),0,1)*100;
+    setMask(realEl,  maskRight(f));            // exposed identity ahead of the seam
+    setMask(cloakEl, maskLeft(f));             // cloaked identity behind it
+  }
+  function renderIdentity(p, sm){
+    renderRow(emailEl, emailNewEl, underText, overText, p, sm);
+    renderRow(telEl,   telNewEl,   underTel,  overTel,  p, sm);
+  }
+
+  // ---------- playback ----------
+  // The opening beat (background stripes + gold wash, phase 0 → 0.28) used
+  // to eat 28% of the runtime before anything moved. WARP plays that stretch
+  // in half the wall-clock time; the phase constants above stay untouched.
+  const WARP_T = 0.14, WARP_P = 0.28;      /* fast open */
+  const TAIL_T = 0.90, TAIL_P = 0.87;      /* the settle at the bottom, played through */
+  const warp = t => t < WARP_T
+    ? t/WARP_T*WARP_P
+    : t < TAIL_T
+      ? WARP_P + (t-WARP_T)/(TAIL_T-WARP_T)*(TAIL_P-WARP_P)
+      : TAIL_P + (t-TAIL_T)/(1-TAIL_T)*(1-TAIL_P);
+
+  // ============================================================
+  // THE LOOP — four segments, alternating direction, forever:
+  //   0  forward   exposed EMAIL  → seam sweeps L→R → cloaked email
+  //   1  backward  seam retreats R→L un-drawing the fan — but the
+  //                exposed side now holds the PHONE, so the erase
+  //                reveals the phone number, not the old email
+  //   2  forward   exposed PHONE  → seam sweeps L→R → cloaked phone
+  //   3  backward  erase again — this time the reveal is the EMAIL
+  //   … back to 0 with a freshly generated cloaked email.
+  // A backward segment is literally the forward render played with
+  // p going 1 → 0 (through the same warp, mirrored), so every layer
+  // — stripes, gold band, strings, seam, sparks — retraces itself.
+  // ============================================================
+  /* Two segments, not the original's four: the email and the phone are now two
+     stacked rows crossed by the same seam, so one pass cloaks both and the
+     backward pass reveals the next pair. */
+  const SEGS = [
+    { dir:+1, label:'Cloak identity' },
+    { dir:-1, label:'Reveal identity' }
+  ];
+  let segIdx = 0;         // which segment
+  let t = 0;              // 0→1 wall-clock progress within the segment
+  const segPhase = ()=> SEGS[segIdx].dir > 0 ? warp(t) : warp(1-t);
+  // background gold band always runs forward — pass segment-local time as pBand
+  const renderNow = ()=> render(segPhase(), warp(t));
+
+  function applySeg(){
+    const s = SEGS[segIdx];
+    underText = realEmail;  overText = cloakedEmail;
+    underTel  = realPhone;  overTel  = cloakedPhone;
+    if(cloakedOut) cloakedOut.textContent = overText;
+    if(phaseOut) phaseOut.textContent = (segIdx+1) + '/2 · ' + s.label;
+  }
+
+  let playing = true, last = 0;
+  const DUR = 8.6, HOLD = 0;     // per segment; no hold — straight through
+  let holdT = 0;
+
+  function advanceSeg(){
+    segIdx = (segIdx+1) % SEGS.length;
+    // fresh cloaks are minted at the top of the segment that writes them,
+    // so the identity that was just revealed is never retro-edited
+    /* fresh cloaks are minted at the top of the segment that writes them, so
+       the pair you were just shown is never retro-edited under you */
+    if(segIdx===0){
+      cloakedEmail = genCloaked(); cloakedPhone = genCloakedPhone();
+      sparkSeed = Math.random()*97;
+    }
+    applySeg();
+  }
+
+  function frame(ts){
+    if(!last) last = ts;
+    const dt = (ts-last)/1000; last = ts;
+    if(playing){
+      if(t < 1){
+        t = Math.min(1, t + dt/DUR);
+      } else {
+        holdT += dt;
+        if(holdT >= HOLD){ holdT = 0; t = 0; advanceSeg(); }
+      }
+      syncScrub();
+      renderNow();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function paintTrack(){
+    scrub.style.setProperty('--pct', (scrub.value/10).toFixed(1)+'%');
+  }
+  function syncScrub(){
+    const cyc = (segIdx + t)/SEGS.length;      // 0..1 across the whole loop
+    scrub.value = Math.round(cyc*1000);
+    scrubVal.textContent = Math.round(cyc*100)+'%';
+    paintTrack();
+  }
+
+  // ---------- interactions ----------
+  scrub.addEventListener('input', ()=>{
+    playing = false; playBtn.textContent = 'Play';
+    const cyc = scrub.value/1000;
+    segIdx = Math.min(SEGS.length-1, Math.floor(cyc*SEGS.length));
+    t = clamp(cyc*SEGS.length - segIdx, 0, 1);
+    holdT = 0;
+    applySeg();
+    scrubVal.textContent = Math.round(cyc*100)+'%';
+    paintTrack();
+    renderNow();
+  });
+  window.__buildReset=function(hold){
+    segIdx=0; t=0; holdT=0; last=0; playing=!hold;   /* hold = park on frame 0 */
+    cloakedEmail=genCloaked(); cloakedPhone=genCloakedPhone();
+    applySeg(); renderNow();
+  };
+  window.__buildPlay=function(){ playing=true; last=0; };
+  playBtn.addEventListener('click', ()=>{
+    playing = !playing; last = 0; holdT = 0;
+    playBtn.textContent = playing ? 'Pause' : 'Play';
+  });
+  cloakBtn.addEventListener('click', ()=>{
+    cloakedEmail = genCloaked(); cloakedPhone = genCloakedPhone();
+    sparkSeed = Math.random()*97;
+    segIdx = 0; t = 0; holdT = 0; last = 0; playing = true; playBtn.textContent='Pause';
+    applySeg();
+    renderNow();
+  });
+  input.addEventListener('input', ()=>{
+    realEmail = input.value.trim() || "usersmail@gmail.com";
+    applySeg();
+    if(!playing) renderNow();
+  });
+  phoneInput.addEventListener('input', ()=>{
+    realPhone = phoneInput.value.trim() || "(415) 555-0132";
+    applySeg();
+    if(!playing) renderNow();
+  });
+
+  // ---------- export: record exactly one full loop, download as video ------
+  // The intro is DOM + CSS masks, not a single canvas, so a display stream is
+  // the only faithful capture. We then locate the phone inside the captured
+  // frames by marker detection and crop to it, so the file contains the phone
+  // screen and nothing else — no tray, no browser chrome, no letterboxing.
+  const videoBtn = document.getElementById('videoBtn');
+  let recording = false;
+
+  function flash(btn,msg,ms){
+    const t = btn.dataset.label || btn.textContent;
+    btn.dataset.label = t; btn.textContent = msg;
+    setTimeout(()=>{ btn.textContent = btn.dataset.label; }, ms||1500);
+  }
+
+  // Find the phone inside a captured frame: paint a magenta plate over it,
+  // poll frames until that colour shows up (display capture runs a few frames
+  // behind), and return the bounding box of those pixels — scaled back up
+  // from the downsampled analysis buffer. Magenta can't occur in the design,
+  // so a hit is unambiguous.
+  async function detectPhone(v, vw, vh, phoneEl){
+    const plate = document.createElement('div');
+    plate.style.cssText = 'position:absolute;inset:0;z-index:99999;background:#f0f';
+    phoneEl.appendChild(plate);
+
+    const aw = Math.min(vw, 1280), k = aw/vw;      // analysis scale
+    const ah = Math.max(2, Math.round(vh*k));
+    const cvs = document.createElement('canvas');
+    cvs.width = aw; cvs.height = ah;
+    const ctx = cvs.getContext('2d', { willReadFrequently:true });
+
+    // wait for a genuinely new frame when the browser can tell us about one
+    const nextFrame = ()=> new Promise(r=>{
+      if(v.requestVideoFrameCallback){ v.requestVideoFrameCallback(()=>r()); setTimeout(r,120); }
+      else setTimeout(r,40);
+    });
+
+    let box = null;
+    for(let tries=0; tries<90 && !box; tries++){
+      await nextFrame();
+      try{ ctx.drawImage(v,0,0,aw,ah); }catch(e){ continue; }
+      const d = ctx.getImageData(0,0,aw,ah).data;
+      let x0=1e9,y0=1e9,x1=-1,y1=-1;
+      for(let y=0;y<ah;y++){
+        const row=y*aw*4;
+        for(let x=0;x<aw;x++){
+          const i=row+x*4;
+          if(d[i]>190 && d[i+1]<80 && d[i+2]>190){   // magenta
+            if(x<x0)x0=x; if(x>x1)x1=x;
+            if(y<y0)y0=y; if(y>y1)y1=y;
+          }
+        }
+      }
+      // ignore stray specks — the plate is a large, tall rectangle
+      if(x1>0 && (x1-x0)>20 && (y1-y0)>40) box = {x0:x0,y0:y0,x1:x1,y1:y1};
+    }
+
+    plate.remove();
+    await new Promise(r=>setTimeout(r,200));        // let the plate leave the pipeline
+    if(!box) return null;
+    return {
+      x: Math.round(box.x0/k),
+      y: Math.round(box.y0/k),
+      w: Math.round((box.x1-box.x0+1)/k),
+      h: Math.round((box.y1-box.y0+1)/k)
+    };
+  }
+
+  async function recordLoop(){
+    if(recording) return;
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia ||
+       typeof MediaRecorder === 'undefined'){ flash(videoBtn,'Not supported'); return; }
+
+    let stream;
+    try{
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video:{ frameRate:60, cursor:'never' }, audio:false,
+        preferCurrentTab:true, selfBrowserSurface:'include',
+        surfaceSwitching:'exclude', systemAudio:'exclude'
+      });
+    }catch(e){ flash(videoBtn,'Cancelled'); return; }
+
+    recording = true;
+    videoBtn.dataset.label = 'Download video';
+    videoBtn.textContent = 'Recording…';
+    videoBtn.disabled = true; cloakBtn.disabled = true;
+
+    const phoneEl = document.getElementById('phone');
+    const track = stream.getVideoTracks()[0];
+    let recStream = null, cleanup = ()=>{};
+
+    // Always crop by detection. Element Capture / Region Capture (restrictTo,
+    // cropTo) looked like the elegant route, but they fail silently on
+    // file:// and on targets under a CSS transform — which is exactly this
+    // page — and a silent failure means recording the whole surface. Reading
+    // the phone's position out of the pixels can't fail that way.
+    recFit = true; fit();               // fill the viewport height for max detail
+    {
+      const v = document.createElement('video');
+      v.muted = true; v.playsInline = true;
+      // kept inside the viewport (just invisible) so Chrome never throttles
+      // its decoding — an off-screen video can stop yielding frames
+      v.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1';
+      document.body.appendChild(v);
+      v.srcObject = stream;
+      await new Promise(res=>{ v.onloadedmetadata = res; if(v.readyState>=1) res(); });
+      try{ await v.play(); }catch(e){}
+
+      const vw = v.videoWidth, vh = v.videoHeight;
+      videoBtn.textContent = 'Locating…';
+      let crop = await detectPhone(v, vw, vh, phoneEl);
+      console.log('[export] frame', vw+'×'+vh, 'detected phone', crop);
+
+      if(!crop){                            // never found it — fall back to geometry
+        console.warn('[export] marker not found, falling back to geometry');
+        const chromeH = Math.max(0, window.outerHeight - window.innerHeight);
+        const surfaces = [
+          { w:window.innerWidth, h:window.innerHeight, ox:0, oy:0 },
+          { w:window.outerWidth, h:window.outerHeight, ox:0, oy:chromeH },
+          { w:screen.width, h:screen.height, ox:window.screenX, oy:window.screenY+chromeH }
+        ];
+        let best = null, bestErr = Infinity;
+        for(let i=0;i<surfaces.length;i++){
+          const c = surfaces[i], s = vw/c.w;
+          const err = Math.abs(vh - c.h*s)/Math.max(1,vh);
+          if(err < bestErr){ bestErr = err; best = { c:c, s:s }; }
+        }
+        const r = phoneEl.getBoundingClientRect(), s = best.s, o = best.c;
+        crop = { x:Math.round((o.ox+r.left)*s), y:Math.round((o.oy+r.top)*s),
+                 w:Math.round(r.width*s),       h:Math.round(r.height*s) };
+      }
+      crop.x = clamp(crop.x, 0, vw-2);  crop.y = clamp(crop.y, 0, vh-2);
+      crop.w = clamp(crop.w, 2, vw-crop.x); crop.h = clamp(crop.h, 2, vh-crop.y);
+      videoBtn.textContent = 'Recording…';
+
+      const out = document.createElement('canvas');
+      out.width  = Math.max(2, crop.w - (crop.w % 2));
+      out.height = Math.max(2, crop.h - (crop.h % 2));
+      const octx = out.getContext('2d');
+      const blit = ()=>{
+        try{ octx.drawImage(v, crop.x, crop.y, crop.w, crop.h, 0, 0, out.width, out.height); }catch(e){}
+      };
+      blit();                               // paint once so the stream opens with a frame
+      let alive = true;
+      (function pump(){ if(!alive) return; blit(); requestAnimationFrame(pump); })();
+      recStream = out.captureStream(60);
+      cleanup = ()=>{ alive = false; v.remove(); };
+    }
+
+    // MP4 first: MediaRecorder's WebM carries no duration header, so players
+    // show 0:00 and QuickTime/Keynote won't open it at all. H.264 MP4 plays
+    // everywhere. Fall back to WebM only if MP4 recording isn't available.
+    const mime = ['video/mp4;codecs=avc1.42E01E','video/mp4',
+                  'video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']
+      .filter(m=>MediaRecorder.isTypeSupported(m))[0];
+    let rec;
+    try{
+      rec = new MediaRecorder(recStream, mime ? { mimeType:mime, videoBitsPerSecond:12e6 } : undefined);
+    }catch(e){
+      cleanup(); stream.getTracks().forEach(t=>t.stop());
+      recording = false; videoBtn.disabled = false; cloakBtn.disabled = false;
+      flash(videoBtn,'Recorder failed'); return;
+    }
+    const type = (mime||'video/webm').split(';')[0];
+    const ext  = type.indexOf('mp4')>=0 ? 'mp4' : 'webm';
+
+    const chunks = [];
+    rec.ondataavailable = e=>{ if(e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = ()=>{
+      cleanup();
+      stream.getTracks().forEach(t=>t.stop());
+      recording = false;
+      recFit = false; fit();                // back to the on-screen scale
+      videoBtn.disabled = false; cloakBtn.disabled = false;
+      videoBtn.textContent = 'Download video';
+
+      const blob = new Blob(chunks,{type:type});
+      if(blob.size < 2048){                 // nothing usable — don't hand over a dead file
+        flash(videoBtn,'No frames captured', 2200); return;
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cloaked-identity-loop.'+ext;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+    };
+
+    // if the user kills the share from Chrome's bar, close the file cleanly
+    track.addEventListener('ended', ()=>{ if(rec.state!=='inactive') rec.stop(); });
+
+    // restart so the file holds exactly one clean full loop (all 4 segments)
+    cloakedEmail = genCloaked(); cloakedPhone = genCloakedPhone();
+    sparkSeed = Math.random()*97;
+    segIdx = 0; t = 0; holdT = 0; last = 0; playing = true; playBtn.textContent = 'Pause';
+    applySeg();
+    const CYCLE_MS = (SEGS.length*DUR + SEGS.length*HOLD)*1000;
+    rec.start(500);                         // timeslice — chunks land as we go
+    setTimeout(()=>{ if(rec.state !== 'inactive') rec.stop(); }, CYCLE_MS + 300);
+  }
+  videoBtn.addEventListener('click', recordLoop);
+
+  // ---------- fit phone to viewport ----------
+  const EMBED = (function(){ try{ return window.parent!==window || /(^|[?&])embed=1/.test(location.search); }catch(e){ return true; } })();
+  if(EMBED) document.body.classList.add('embed');
+  // Snap the pinstripe mask to whole device pixels for the scale we're at.
+  // 1px stripes on a 7px period get rasterised unevenly once the phone is
+  // scaled by a fraction — quantising both in device space makes every
+  // stripe identical again.
+  function snapStripes(s){
+    const eff = s * (window.devicePixelRatio || 1);   // device px per CSS px
+    if(!isFinite(eff) || eff <= 0) return;
+    const wDev = Math.max(1, Math.round(1*eff));
+    const pDev = Math.max(wDev+1, Math.round(7*eff));
+    const w = (wDev/eff).toFixed(4), p = (pDev/eff).toFixed(4);
+    const m = `repeating-linear-gradient(90deg, #000 0 ${w}px, transparent ${w}px ${p}px)`;
+    [stripesGray, stripesGold].forEach(el=>{
+      el.style.webkitMaskImage = m; el.style.maskImage = m;
+    });
+  }
+
+  let recFit = false;   // while recording: fill the height, skip the 1.0 cap
+  function fit(){
+    const scaleEl = document.getElementById('phoneScale');
+    if(recFit && !EMBED){
+      const s = window.innerHeight/852;
+      scaleEl.style.transform = `scale(${s})`;
+      scaleEl.style.margin = `${(s-1)*852/2}px 0`;
+      snapStripes(s);
+      return;
+    }
+    if(EMBED){
+      const s = Math.min(window.innerWidth/393, window.innerHeight/852);
+      scaleEl.style.transform = `scale(${s})`;
+      scaleEl.style.margin = '0';
+      snapStripes(s);
+      return;
+    }
+    const s = Math.min(1, (window.innerHeight-64)/852);
+    scaleEl.style.transform = `scale(${s})`;
+    // avoid the scaled phone reserving full 852px of layout width/height gap
+    scaleEl.style.margin = `${(s-1)*852/2}px 0`;
+    snapStripes(s);
+  }
+  window.addEventListener('resize', fit);
+
+  // ---------- boot ----------
+  applySeg();
+  fit(); paintTrack(); renderNow(); playBtn.textContent='Pause';
+  requestAnimationFrame(frame);
+})();
+
+/* ============ pre-stage: one scroll arms a single continuous animation ============
+   logo ring -> logos shrink to dots -> dots link into a line ring -> the ring's
+   background rises and hands straight over to the build. No cuts.            */
+(function(){
+  const pre=document.getElementById('pre'); if(!pre) return;
+  const cv=document.getElementById('preCanvas'), x=cv.getContext('2d');
+  const sc=document.getElementById('preScroll');
+  const copyA=document.getElementById('copyA'), copyB=document.getElementById('copyB');
+  const ringEl=document.getElementById('ring');
+  const centre=document.getElementById('preCentre'), cue=document.getElementById('preCue');
+  const circleEl=document.getElementById('circle');
+  if(circleEl) circleEl.style.opacity='0';        /* dark until the ring welds to it */
+  const BR=[
+    {f:'Google.svg',    d:['Search history','Location']},
+    {f:'Verizon.png',   d:['Phone number']},
+    {f:'ikea.png',      d:['Email','Address']},
+    {f:'Facebook.png',  d:['Name','Email','Phone']},
+    {f:'Apple.svg',inv:1,d:['Name','Email','Payment']},
+    {f:'Spotify.png',   d:['Email','Payment']},
+    {f:'Linkedin.png',  d:['Name','Email','Job title']},
+    {f:'Instagram.svg', d:['Name','Phone','Photos']},
+    {f:'Airbnb.svg',    d:['Name','Payment','ID']},
+    {f:'Target.svg',    d:['Email','Address']},
+    {f:'Zillow.svg',    d:['Name','Address']},
+    {f:'Doordash.svg',  d:['Address','Payment']},
+    {f:'Lyft.svg',      d:['Phone','Payment']},
+    {f:'UPS.svg',       d:['Name','Address','Phone']},
+    {f:'Twitch.png',    d:['Email','Birthday']},
+    {f:'Redfin.png',    d:['Name','Address']},
+    {f:'Twitter.svg',   d:['Email','Phone']},
+    {f:'mcdonald.svg',  d:['Email','Location']},
+    {f:'Nike.svg',inv:1,d:['Name','Address']},
+    {f:'Walmart.svg',   d:['Name','Address','Payment']},
+    {f:'X.png',inv:1,   d:['Email','Phone']}
+  ];
+  BR.forEach(function(b){ const im=new Image(); im.src='assets/Logo/'+b.f.replace(' ','%20'); b.im=im; });
+  const N=BR.length;
+  const MARK_R=11, SEL_R=19;      /* mark radius / selector radius — V1: 24px mark, 7px gap */
+  /* The radius the ring has to land on: the build's disk, read from the token
+     rather than restated as a literal. This used to be a hard 168.5 in frame()
+     and it silently stopped matching the moment --disk changed. */
+  const PRE_R = (parseFloat(getComputedStyle(document.documentElement)
+                   .getPropertyValue('--disk')) || 337) / 2;
+  let W=0,H=0,DPR=1;
+  function resize(){
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    W=cv.clientWidth||393; H=cv.clientHeight||852;
+    cv.width=W*DPR; cv.height=H*DPR; x.setTransform(DPR,0,0,DPR,0,0);
+  }
+  resize(); window.addEventListener('resize',resize);
+
+  /* V1 word rise for the two headlines */
+  function wrapWords(el){
+    const h=el.querySelector('h1'); if(!h||h.dataset.w) return;
+    h.dataset.w='1';
+    h.innerHTML=h.textContent.trim().split(' ').map(function(w){
+      return '<span class="w"><span class="wi">'+w+'</span></span>';
+    }).join(' ');
+    h.querySelectorAll('.wi').forEach(function(el2,i){ el2.style.transitionDelay=(i*55)+'ms'; });
+  }
+  wrapWords(copyA); wrapWords(copyB);
+  copyA.classList.add('on');
+  function swapTo(second){                 /* forward: A rides up, B rises in */
+    copyA.classList.toggle('up', second);  copyA.classList.toggle('on', !second);
+    copyB.classList.toggle('down', !second); copyB.classList.toggle('on', second);
+  }
+  let lastCentre='';
+  function setCentre(kind,idx){
+    const key=kind+idx; if(key===lastCentre) return; lastCentre=key;
+    const rows = kind==='data' ? (BR[((idx%N)+N)%N].d||[])
+               : kind==='mail' ? ['usersmail@gmail.com'] : [];
+    centre.classList.toggle('mail', kind==='mail');
+    if(kind==='mail'){
+      const eEl=document.getElementById('email');
+      centre.style.color=eEl?getComputedStyle(eEl).color:'';
+    } else centre.style.color='';
+    centre.innerHTML=rows.map(function(d){
+      return '<span>'+[...d].map(function(c){return '<i>'+(c===' '?'&nbsp;':c)+'</i>';}).join('')+'</span>';
+    }).join('');
+    const spans=centre.querySelectorAll('span');
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      spans.forEach(function(sp,li){
+        sp.querySelectorAll('i').forEach(function(ch,ci){ ch.style.transitionDelay=(li*140+ci*26)+'ms'; });
+        sp.classList.add('in');
+      });
+    });});
+  }
+  let sel=0, startIdx=0;
+  const selA=new Array(N).fill(0);          /* per-mark selector opacity, .4s ease like V1 */
+  setTimeout(function(){ setInterval(function(){ sel=(sel+1)%N; },2300); },2050);
+
+  /* --- one scroll (or swipe) arms it; p then eases 0 -> 3 by itself --- */
+  const DUR=3.2;                       /* seconds for the whole hand-off  */
+  let armed=false, p=0, rot=0, last=0, handed=false, intro=0, primed=false, settled=false;
+  function arm(){ if(!armed){ armed=true; startIdx=sel; } }   /* the line leaves the lit mark */
+  sc.addEventListener('scroll', function(){ arm(); sc.scrollTop=0; }, {passive:true});
+  sc.addEventListener('wheel',  function(e){ if(e.deltaY>0) arm(); }, {passive:true});
+  sc.addEventListener('touchmove', arm, {passive:true});
+  pre.addEventListener('click', arm);                 /* tapping "Our Solution" (or anywhere) works too */
+  cue.style.cursor='pointer';
+  /* once the build has landed, a scroll takes the user back to the intro —
+     the same gesture that got them here, not just the Restart button */
+  let backLock=0;
+  function backGesture(){
+    if(!settled || performance.now()<backLock) return;
+    backLock=performance.now()+900;
+    window.__preRestart();
+  }
+  window.addEventListener('wheel', function(e){ if(Math.abs(e.deltaY)>2) backGesture(); }, {passive:true});
+  let ty0=null;
+  window.addEventListener('touchstart', function(e){ ty0=e.touches[0].clientY; }, {passive:true});
+  window.addEventListener('touchmove',  function(e){
+    if(ty0!==null && Math.abs(e.touches[0].clientY-ty0)>26){ ty0=null; backGesture(); }
+  }, {passive:true});
+
+  window.__preRestart=function(){                       /* Skip intro / scroll back -> replay */
+    armed=false; p=0; handed=false; intro=-0.45; primed=false; settled=false;   /* let the build clear first */
+    backLock=performance.now()+900;                     /* don't re-trigger off the same flick */
+    pre.classList.remove('done');
+    pre.style.opacity='1'; pre.style.pointerEvents='';
+    document.getElementById('preCopy').style.opacity='1';
+    centre.classList.remove('gone');
+    const ph=document.getElementById('phone'); if(ph){ ph.classList.add('preon'); ph.classList.remove('mailon'); }
+    if(circleEl) circleEl.style.opacity='0';
+    const sb=document.getElementById('skipBtn'); if(sb) sb.textContent='Skip intro';
+    lastCentre=''; setCentre('data',sel);
+  };
+
+  function frame(now){
+    const dt=last?Math.min(0.05,(now-last)/1000):0.016; last=now;
+    rot+=dt*0.055;                                      /* the dots keep the logos' own pace */
+    intro=Math.min(4.0, intro+dt);
+    if(armed && p<3) p=Math.min(3, p+dt*(3/DUR));
+    x.clearRect(0,0,W,H);
+    const TX=W/2, TY=486, TR=PRE_R;                      /* the build's circle, to the pixel */
+    const cx=TX, cy=TY, RR=TR;                          /* the last screen's circle, exactly */
+    const toDots =Math.max(0,Math.min(1,p*2.2));        /* logos -> dots            */
+    const toSmall=Math.max(0,Math.min(1,(p-0.34)/0.46));/* dots shrink slowly       */
+    const fadeDot=Math.max(0,Math.min(1,(p-0.62)/0.30));/* and cross-fade out ...   */
+    const bloom  =Math.max(0,Math.min(1,(p-0.62)/0.32));/* ... as the final circle fades in */
+    const out    =Math.max(0,Math.min(1,(p-1.48)/0.80));/* only after the email has landed */
+
+    swapTo(p>0.02);                                     /* the titles ride the scroll */
+    cue.classList.toggle('gone', p>0.02);               /* up and away / back down on return */
+    centre.classList.toggle('gone', p>0.02);
+    if(p<0.5) setCentre(intro>2.45?'data':'none', sel);   /* threads gone -> selector -> data */
+    else setCentre('none',0);
+    const phEl=document.getElementById('phone');
+    if(phEl) phEl.classList.toggle('mailon', p>0.86);        /* the build's own email rises in */
+    centre.style.top=(cy/H*100).toFixed(2)+'%';
+    const copyOut=Math.max(0,Math.min(1,(p-1.50)/0.30)); /* hands the words to the build */
+    document.getElementById('preCopy').style.opacity=String(1-copyOut);
+    if(armed && !primed){ primed=true;                  /* park the build on frame 0 up front,
+                                                           so every colour we borrow is its own */
+      if(window.__buildReset) window.__buildReset(true);
+    }
+    if(out>0.02 && !handed){                            /* build chrome + stripes ease in */
+      handed=true;
+      const sb=document.getElementById('skipBtn'); if(sb) sb.textContent='Restart';
+      const ph=document.getElementById('phone');
+      if(ph) ph.classList.remove('preon');
+      pre.style.pointerEvents='none';                   /* the build's buttons are live now */
+      if(window.__buildPlay) window.__buildPlay();      /* frame 0 rolls straight on */
+    }
+    pre.classList.toggle('done', p>=2.40);
+    settled = (p>=2.55);                                /* the build owns the screen */
+
+    /* the last shape simply fades in — its own #ring, no drawn stand-in */
+    x.globalAlpha=1;
+    if(circleEl) circleEl.style.opacity=String(handed?1:bloom);
+    for(let i=0;i<N;i++){
+      const a=-Math.PI/2+(i/N)*Math.PI*2+rot;
+      const px=cx+Math.cos(a)*RR, py=cy+Math.sin(a)*RR;
+      const b=BR[i];
+      /* entrance: each mark flies out from the centre along a thread,
+         the thread's tail then chases it and vanishes                */
+      const e=Math.max(0,Math.min(1,(intro-i*0.055)/0.62));
+      const eo=1-Math.pow(1-e,2.6);
+      const tail=Math.max(0,Math.min(1,(intro-i*0.055-0.42)/0.5));
+      const ex=cx+(px-cx)*eo, ey=cy+(py-cy)*eo;
+      if(e<=0.001) continue;
+      if(tail<1 && e>0.02){
+        x.save();
+        x.strokeStyle='rgba(243,241,237,'+(0.30*(1-tail)).toFixed(3)+')';
+        x.lineWidth=1;
+        const sx=cx+(ex-cx)*tail, sy=cy+(ey-cy)*tail;   /* start point chases the mark */
+        x.beginPath(); x.moveTo(sx,sy); x.lineTo(ex,ey); x.stroke();
+        x.restore();
+      }
+      const logoA=(1-toDots)*e*(1-out);
+      /* the dots thin down to the stroke width, then simply become the line */
+      const dotA=Math.min(toDots, 1-fadeDot)*e*(1-out);
+      /* the selector: always a 1px circle, fades in on selection (V1 .ringdot::after) */
+      const selTarget=(i===sel && logoA>0.5 && intro>2.05) ? 1 : 0;
+      selA[i]+=(selTarget-selA[i])*(1-Math.exp(-dt/0.13));
+      if(selA[i]>0.01){
+        x.save();
+        x.globalAlpha=selA[i]*logoA;
+        x.strokeStyle='rgba(255,255,255,.9)'; x.lineWidth=1;
+        x.beginPath(); x.arc(ex,ey,SEL_R,0,6.2832); x.stroke();
+        x.restore();
+      }
+      if(logoA>0.02 && b.im.complete && b.im.naturalWidth>0){
+        const r=MARK_R*(0.35+0.65*logoA);               /* logos shrink as they go */
+        x.save(); x.globalAlpha=logoA;
+        if(b.inv) x.filter='invert(1) brightness(1.6)';
+        x.beginPath(); x.arc(ex,ey,r,0,6.2832); x.clip();
+        x.drawImage(b.im,ex-r,ey-r,r*2,r*2);
+        x.restore(); x.filter='none';
+      }
+      if(dotA>0.02){
+        x.save(); x.globalAlpha=dotA;
+        x.fillStyle='rgba(243,241,237,'+(0.55+(0.30-0.55)*toSmall).toFixed(3)+')';
+        const dr=2.4+(0.7-2.4)*toSmall;                  /* collapse to a speck, then fade */
+        x.beginPath(); x.arc(ex,ey,dr,0,6.2832); x.fill();
+        x.restore();
+      }
+    }
+    x.globalAlpha=1;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
