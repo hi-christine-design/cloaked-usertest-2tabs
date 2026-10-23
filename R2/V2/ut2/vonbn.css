@@ -70,8 +70,9 @@
 .vtn-scroll section { position: relative; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; }
 /* V2.2: the pages scroll by under the bar; words and art travel with their page */
 .vtn.paged .vtn-scroll { z-index: 2;   /* fades under the bar and above Get started, so passing pages never sit on them */
-  -webkit-mask-image: linear-gradient(to bottom, transparent calc(var(--hdr-top, 72px) + 20px), #000 calc(var(--hdr-top, 72px) + 64px), #000 calc(100% - 128px), transparent calc(100% - 92px));
-          mask-image: linear-gradient(to bottom, transparent calc(var(--hdr-top, 72px) + 20px), #000 calc(var(--hdr-top, 72px) + 64px), #000 calc(100% - 128px), transparent calc(100% - 92px)); }
+  -webkit-mask-image: linear-gradient(to bottom, transparent calc(var(--hdr-top, 72px) + 20px), #000 calc(var(--hdr-top, 72px) + 64px), #000 calc(100% - 178px), transparent calc(100% - 150px));
+          mask-image: linear-gradient(to bottom, transparent calc(var(--hdr-top, 72px) + 20px), #000 calc(var(--hdr-top, 72px) + 64px), #000 calc(100% - 178px), transparent calc(100% - 150px)); }
+/* round 53 (Christine: nothing behind "Scroll to explore"): the pages fade out just above the cue (its top is 148px up), not under it */
 .vtn.paged .vtn-t { opacity: 1; transform: none; transition: none; }
 .vtn-cue { position: absolute; z-index: 5; left: 50%; bottom: 110px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; border: 0; padding: 0; background: none; cursor: pointer;
   font: inherit; font-size: 10px; line-height: 1; color: rgba(255, 255, 255, .6); white-space: nowrap; transition: opacity .35s ease; }
@@ -85,17 +86,17 @@
 /* V2.2 cover tray: Yuan's sheet, the story's glow and first beat in place of her ring (9s loop) */
 .vti-tray.vtn-tray { overflow: hidden; background: radial-gradient(ellipse 92% 46% at 50% 0%, #b8781e 0%, #b47621 42%, #a26d33 60%, #806352 72%, #5a6892 83%, #3f5c98 88%, rgba(40, 60, 110, .4) 94%, rgba(20, 20, 16, 0) 100%), #141410; }
 .vtn-tart { position: relative; height: 300px; margin: 0 -20px; }
-.vtn-tin { position: absolute; left: 0; right: 0; top: 50%; height: 380px; margin-top: -190px; transform: scale(.75); }   /* round 47: cards at .75 */
-.vtn-tart .vtn-row { top: calc(28px + var(--i) * 70px); height: 62px; opacity: 0; animation: vtnTRow 6.5s var(--ez, cubic-bezier(.32, .72, 0, 1)) infinite; transform-origin: 50% 50%;
-  --dy: calc((2 - var(--i)) * 70px * .55); background: rgba(20, 20, 16, .35); }
-.vtn-tart .vtn-in.cat { opacity: 0; animation: vtnTCat 6.5s ease infinite; animation-delay: calc(var(--i) * .08s); }
+.vtn-tin { position: absolute; left: 0; right: 0; top: 50%; height: 380px; margin-top: -189.5px; transform: scale(.75); }   /* round 53: -189.5 so the scaled rows land on whole pixels */   /* round 47: cards at .75 */
+.vtn-tart .vtn-row { top: calc(28px + var(--i) * 68px); height: 60px; opacity: 0; animation: vtnTRow 4.82s var(--ez, cubic-bezier(.32, .72, 0, 1)) infinite; transform-origin: 50% 50%;
+  --dy: calc((2 - var(--i)) * 68px * .55);   /* round 53: 68/60 → 51/45px at .75, every gap exactly 6px */ background: rgba(20, 20, 16, .35); }
+.vtn-tart .vtn-in.cat { opacity: 0; animation: vtnTCat 4.82s ease infinite; animation-delay: calc(var(--i) * .08s); }
 .vtn-tart .vtn-in.item { display: none; }
-.vtn-tfab { position: absolute; left: 50%; top: 171px; width: 56px; height: 56px; margin-left: -28px; opacity: 1; animation: vtnTFab 6.5s ease infinite; }
+.vtn-tfab { position: absolute; left: 50%; top: 166px; width: 56px; height: 56px; margin-left: -28px; opacity: 1; animation: vtnTFab 4.82s ease infinite; }
 .vtn-tfab svg { display: block; width: 56px; height: 56px; }
 /* round 47 loop: the + is pressed → the rows open → the kinds → they fold back into the + → pressed again */
-@keyframes vtnTFab { 0%, 5.8% { opacity: 1; transform: scale(1); } 7.5% { opacity: 1; transform: scale(.88); } 9.8% { opacity: 1; transform: scale(1); } 13.9% { opacity: 0; transform: scale(.5); } 80.8% { opacity: 0; transform: scale(.5); } 90%, 100% { opacity: 1; transform: scale(1); } }   /* round 49: the + waits half as long (≈1s) */
-@keyframes vtnTRow { 0%, 11.5% { opacity: 0; transform: translateY(var(--dy)) scaleY(.4); } 23.1%, 76.2% { opacity: 1; transform: none; } 90%, 100% { opacity: 0; transform: translateY(var(--dy)) scaleY(.4); } }
-@keyframes vtnTCat { 0%, 23.1% { opacity: 0; } 27.7%, 72.7% { opacity: 1; } 77.3%, 100% { opacity: 0; } }   /* the tray stops at the kinds — no flip to your real info */
+@keyframes vtnTFab { 0%, 7.9% { opacity: 1; transform: scale(1); } 10.2% { opacity: 1; transform: scale(.88); } 13.3% { opacity: 1; transform: scale(1); } 18.7% { opacity: 0; transform: scale(.5); } 74.1% { opacity: 0; transform: scale(.5); } 86.5%, 100% { opacity: 1; transform: scale(1); } }   /* round 49: the + waits half as long (≈1s) */
+@keyframes vtnTRow { 0%, 15.6% { opacity: 0; transform: translateY(var(--dy)) scaleY(.4); } 31.1%, 67.8% { opacity: 1; transform: none; } 86.5%, 100% { opacity: 0; transform: translateY(var(--dy)) scaleY(.4); } }
+@keyframes vtnTCat { 0%, 31.1% { opacity: 0; } 37.3%, 63.3% { opacity: 1; } 69.3%, 100% { opacity: 0; } }   /* round 53: the kinds hold 1.25s; the loop is 4.82s */   /* the tray stops at the kinds — no flip to your real info */
 @media (prefers-reduced-motion: reduce) { .vtn-tart .vtn-row, .vtn-tart .vtn-in.cat { animation: none; opacity: 1; transform: none; } .vtn-tfab { display: none; } }
 .vtn-tart * { box-sizing: border-box; }
 
@@ -120,9 +121,10 @@
 .vtn-sweep { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; transform: translateY(-100%); filter: blur(2.5px);
   background: radial-gradient(circle at 50% 22%, rgba(255, 255, 255, .22) 0 18%, rgba(255, 255, 255, 0) 46%),
               linear-gradient(180deg, #b8781e 0%, #b47621 22%, #a26d33 40%, #806352 54%, #5a6892 68%, #3f5c98 78%, rgba(63, 92, 152, .35) 90%, rgba(63, 92, 152, 0) 100%); }
-.vtn-fab .vtn-sweep.go { animation: vtnSweepP 1.25s cubic-bezier(.32, .72, 0, 1) forwards; }
-@keyframes vtnSweepP { 0% { transform: translateY(-100%); } 100% { transform: translateY(-38%); } }
-/* the tray's + (6.5s loop): it fills as it comes back, holds while it is pressed, and empties as it goes */
-.vtn-tfab .vtn-sweep { animation: vtnSweepT 6.5s cubic-bezier(.32, .72, 0, 1) infinite; }
-@keyframes vtnSweepT { 0%, 6% { transform: translateY(-38%); } 13.9%, 82% { transform: translateY(-100%); } 96%, 100% { transform: translateY(-38%); } }
-@media (prefers-reduced-motion: reduce) { .vtn-sweep, .vtn-fab .vtn-sweep.go, .vtn-tfab .vtn-sweep { animation: none; transform: translateY(-38%); } }
+.vtn-fab .vtn-sweep.go { animation: vtnSweepP .5s cubic-bezier(.32, .72, 0, 1) forwards; }   /* round 53: on the press, filling as the rows open */
+@keyframes vtnSweepP { 0% { transform: translateY(-100%); } 100% { transform: translateY(-18%); } }
+/* the tray's + (4.82s loop, round 53): it fills as it comes back, holds while it is pressed, and empties as it goes */
+.vtn-tfab .vtn-sweep { animation: vtnSweepT 4.82s cubic-bezier(.32, .72, 0, 1) infinite; }
+/* round 53 (Christine): white while it waits; the press (7.5%) brings the colour in as the rows open; it empties only once the + is gone */
+@keyframes vtnSweepT { 0%, 9.7% { transform: translateY(-100%); } 16.8%, 20.2% { transform: translateY(-18%); } 21.6%, 100% { transform: translateY(-100%); } }
+@media (prefers-reduced-motion: reduce) { .vtn-sweep, .vtn-fab .vtn-sweep.go, .vtn-tfab .vtn-sweep { animation: none; transform: translateY(-100%); } }

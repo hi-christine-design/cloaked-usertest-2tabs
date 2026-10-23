@@ -242,7 +242,7 @@
   function pKinds(A) {   /* + → five rows → the kinds */
     poseK(A, 0);
     var sw = A.fab.querySelector('.vtn-sweep'); sw.classList.remove('go'); void sw.offsetWidth;
-    at(150, function () { sw.classList.add('go'); });
+    at(950, function () { sw.classList.add('go'); });   /* round 53: the colour comes with the press, and the rows open out of it */
     at(150, function () { to(A.fab, { opacity: 1, transform: 'scale(1)' }, 520); });
     at(950, function () { to(A.fab, { transform: 'scale(.9)' }, 120, 'ease-out'); });
     at(1080, function () { to(A.fab, { transform: 'scale(1)' }, 220, 'ease-out'); });
