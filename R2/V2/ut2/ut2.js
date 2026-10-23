@@ -55,7 +55,7 @@
     document.documentElement.classList.add('ut2-vonb2');
     document.write('<link rel="stylesheet" href="' + VNF + '.css' + (VNV ? '?' + VNV : '') + '"><script src="' + VNF + '.js' + (VNV ? '?' + VNV : '') + '"></scr' + 'ipt>');
     /* Christine, 23 Oct: Vault onboarding V2 (Figma 9890:138727) — Yuan's tray, then our scroll page (&ut2vonb=n = V2.1, n2 = V2.2) */
-    if (/^n2?$/.test(Q.get('ut2vonb') || '')) document.write('<link rel="stylesheet" href="../ut2/vonbn.css' + (VNV ? '?' + VNV : '') + '"><script src="../ut2/vonbn.js' + (VNV ? '?' + VNV : '') + '"></scr' + 'ipt>');
+    if (/^n[23]?$/.test(Q.get('ut2vonb') || '')) document.write('<link rel="stylesheet" href="../ut2/vonbn.css' + (VNV ? '?' + VNV : '') + '"><script src="../ut2/vonbn.js' + (VNV ? '?' + VNV : '') + '"></scr' + 'ipt>');
   }
   /* the launcher's Vault onboarding rows land on the Vault with its tray already up */
   if (AFTER && Q.get('ut2vonbgo') === '1') window.addEventListener('load', function () {

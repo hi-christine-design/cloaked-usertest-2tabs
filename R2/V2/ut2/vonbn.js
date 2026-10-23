@@ -26,7 +26,9 @@
   var GMAIL = '<span class="vtn-av"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M5.35752 28.9023H10V17.6271L3.36865 12.6528V26.9121C3.36865 28.0104 4.25917 28.9023 5.35752 28.9023Z" fill="#4285F4"/><path d="M25.9185 28.9023H30.561C31.6593 28.9023 32.5512 28.0118 32.5512 26.9121V12.6528L25.9185 17.6271V28.9023Z" fill="#34A853"/><path d="M25.9185 9.00684V17.6271L32.5512 12.6529V10.0006C32.5498 8.35306 31.2134 7.0166 29.5659 7.0166C28.9203 7.0166 28.2927 7.22581 27.7752 7.61395L25.9185 9.00684Z" fill="#FBBC04"/><path d="M10.002 17.6266V9.00635L17.9602 14.9743L25.9184 9.00635V17.6266L17.9602 23.5946L10.002 17.6266Z" fill="#EA4335"/><path d="M3.36865 10.0004V12.6527L10.0014 17.6269V9.00667L8.14468 7.61378C6.82473 6.62417 4.95424 6.89118 3.966 8.20975C3.57786 8.72727 3.36865 9.3549 3.36865 10.0004Z" fill="#C5221F"/></svg></span>';
   var X_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.0607 11.9999L16.773 15.7122L15.7123 16.7729L12 13.0606L8.28769 16.7729L7.22703 15.7122L10.9393 11.9999L7.22703 8.28762L8.28769 7.22696L12 10.9393L15.7123 7.22696L16.773 8.28762L13.0607 11.9999Z" fill="#F3F1ED"/></svg>';
   var CHEV = '<svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 4.5L6 7.5L9 4.5" stroke="white" stroke-opacity=".6" stroke-width=".75" stroke-linejoin="round"/></svg>';
-  var FAB = '<svg viewBox="0 0 56 56" fill="none" aria-hidden="true"><circle cx="28" cy="28" r="27.5" fill="white" stroke="#535353"/><path d="M28.75 27.25H34V28.75H28.75V34H27.25V28.75H22V27.25H27.25V22H28.75V27.25Z" fill="#141410"/></svg>';
+  /* round 51 (Christine's reference: colour sweeping through the dots): the + is no longer plain white — the page's own glow
+     (amber → blue) washes down into it from the top; the white disc is the button's background, the svg only its ring and + */
+  var FAB = '<span class="vtn-sweep"></span><svg viewBox="0 0 56 56" fill="none" aria-hidden="true"><circle cx="28" cy="28" r="27.5" fill="none" stroke="#535353"/><path d="M28.75 27.25H34V28.75H28.75V34H27.25V28.75H22V27.25H27.25V22H28.75V27.25Z" fill="#141410"/></svg>';
   var SMS = '<svg viewBox="0 0 22 22" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M18.0397 2.64014C19.0113 2.64014 19.7998 3.42739 19.7999 4.39971V13.9001C19.7997 14.8722 19.0113 15.6597 18.0397 15.6597H5.26641L2.48075 18.9094L1.31995 18.4801V4.39971C1.32007 3.42739 2.10861 2.64014 3.08016 2.64014H18.0397ZM3.08016 3.96014C2.83681 3.96014 2.64002 4.15716 2.63995 4.39971V16.6967L4.46268 14.5704L4.96348 14.3397H18.0397C18.2526 14.3397 18.4299 14.1887 18.4709 13.9884L18.4799 13.9001V4.39971C18.4799 4.15716 18.2831 3.96014 18.0397 3.96014H3.08016Z" fill="#F3F1ED"/></svg>';
   var IN = '<svg viewBox="0 0 15 15" aria-hidden="true"><path d="M9.96825 9.58939L9.08851 9.55486L9.25148 5.49314L4.23889 10.5057L3.61672 9.88356L8.63 4.87028L4.56759 5.03394L4.53306 4.1542L10.1941 3.9277L9.96825 9.58939Z" fill="white" fill-opacity=".6"/></svg>';
   var ALIAS = { phone: ['Phone', '281-380-9123'], email: ['Email', 'newyork@cloaked.id'], card: ['Card', '.3802'] };
@@ -92,7 +94,11 @@
               '<h1>Share an alias, not your real info</h1>',
               '<h1>Calls, messages, emails, transactions all happen here</h1>'];
   /* V2.2's storyline (Figma 9896:138728): four pages — the vault's kinds, your things in it, the alias, where it all lands */
-  if (PAGED) COPY = [COPY[0], '<h1>Save them here and use them when you need</h1>', COPY[1], COPY[2]];
+  /* round 51 (Christine): V2.2 = &ut2vonb=n3 — no + and no kinds: the list of your things with their logos from the start,
+     and no "Save them here" page (straight on to the alias). The four-page story above is now V2.1 (&ut2vonb=n2). */
+  var LOGOS = (location.search.match(/[?&]ut2vonb=([^&]*)/) || [])[1] === 'n3';
+  if (PAGED) COPY = LOGOS ? [COPY[0], COPY[1], COPY[2]] : [COPY[0], '<h1>Save them here and use them when you need</h1>', COPY[1], COPY[2]];
+  var KIND = LOGOS ? [1, 2, 3] : [0, 1, 2, 3];   /* page → its art's pose */
   var NS = COPY.length, LAST = NS - 1;
   var ART = '<div class="vtn-art">' +
       '<div class="vtn-fab">' + FAB + '</div>' +
@@ -109,7 +115,7 @@
   var page = document.createElement('div');
   page.className = 'vtn' + (PAGED ? ' paged' : ''); page.id = 'vtnPage'; page.setAttribute('aria-hidden', 'true');
   page.innerHTML =
-    '<div class="vtn-bg"></div><i class="vtn-glint"></i>' +
+    '<div class="vtn-bg"></div><canvas class="vtn-orb" aria-hidden="true"></canvas><i class="vtn-glint"></i>' +
     (PAGED
       ? '<div class="vtn-scroll">' + COPY.map(function (c) { return '<section><div class="vtn-copy"><div class="vtn-t on">' + c + '</div></div>' + ART + '</section>'; }).join('') + FAQ + '</div>'
       : '<div class="vtn-copy">' + COPY.map(function (c, i) { return '<div class="vtn-t' + (i ? '' : ' on') + '">' + c + '</div>'; }).join('') + '</div>' + ART +
@@ -223,7 +229,8 @@
     at(1100 + d, function () { next(3200); });
   }
   /* V2.2 poses and the two halves of the first scene */
-  function poseP(A, k, rest) {
+  function poseP(A, j, rest) { poseK(A, KIND[j], rest); }
+  function poseK(A, k, rest) {
     set(A.el, { opacity: 1 });
     reset(A, -1);
     if (k === 0 && rest) set(A.fab, { opacity: 1, transform: 'none' });
@@ -233,7 +240,9 @@
     flush();
   }
   function pKinds(A) {   /* + → five rows → the kinds */
-    poseP(A, 0);
+    poseK(A, 0);
+    var sw = A.fab.querySelector('.vtn-sweep'); sw.classList.remove('go'); void sw.offsetWidth;
+    at(150, function () { sw.classList.add('go'); });
     at(150, function () { to(A.fab, { opacity: 1, transform: 'scale(1)' }, 520); });
     at(950, function () { to(A.fab, { transform: 'scale(.9)' }, 120, 'ease-out'); });
     at(1080, function () { to(A.fab, { transform: 'scale(1)' }, 220, 'ease-out'); });
@@ -264,13 +273,18 @@
     });
   }
   function pItems(A) {   /* your things, stepping by one at a time */
-    poseP(A, 1);
+    poseK(A, 1);
     var f = 2; carPose(A, f, false); flush();
     function step() { if (cur !== 1 || !page.classList.contains('open')) return; f++; carPose(A, f, true); at(1600, step); }
     at(1200, step);
   }
-  function pAlias(A) { poseP(A, 2); A.alias.forEach(function (r) { set(r, { opacity: 0, transform: 'translateY(40px)' }); }); play1body(A); }
-  function pCalls(A) { poseP(A, 3); play2(A, true); }
+  function pLogos(A) {   /* round 51 · V2.2: your things, logos and all, rise in one after another, then stay */
+    poseK(A, 1);
+    A.rows5.forEach(function (r) { set(r, { opacity: 0, transform: 'translateY(18px)' }); }); flush();
+    A.rows5.forEach(function (r, i) { at(150 + i * 90, function () { to(r, { opacity: 1, transform: 'none' }, 640); }); });
+  }
+  function pAlias(A) { poseK(A, 2); A.alias.forEach(function (r) { set(r, { opacity: 0, transform: 'translateY(40px)' }); }); play1body(A); }
+  function pCalls(A) { poseK(A, 3); play2(A, true); }
 
   /* V2.2 (Christine 23 Oct: "asset 모션이 loop 되게"): while you stay on a page its art plays,
      holds, dips out and plays again (the calls page already cycles on its own) */
@@ -295,7 +309,7 @@
     page.classList.toggle('s2', k === LAST);
     /* V2.2: the pages you are not on wait in their starting pose, so scrolling to one shows it ready */
     if (PAGED) ARTS.forEach(function (A, j) { if (j !== k) poseP(A, j, true); });
-    (PAGED ? [pKinds, pItems, loopP(2, pAlias, 4400), pCalls] : [play0, play1, play2])[k](artOf(k));
+    (PAGED ? (LOGOS ? [pLogos, loopP(1, pAlias, 4400), pCalls] : [pKinds, pItems, loopP(2, pAlias, 4400), pCalls]) : [play0, play1, play2])[k](artOf(k));
   }
   scroller.addEventListener('scroll', function () {
     clearTimeout(settle);
@@ -310,7 +324,13 @@
     page.classList.add('open'); page.setAttribute('aria-hidden', 'false'); navOut(true);
     scroller.scrollTop = 0; cur = -1; ARTS.forEach(function (A, j) { if (PAGED) poseP(A, j, j > 0); else reset(A, j); });
     setTimeout(function () { scene(0); }, 320);
+    orbGo();
   }
+  /* round 51 (Christine: "V1 에는 배경이 움직이는데 V2 는 안 움직여"): V1's breathing orb (Yuan's drawOrb, via
+     window.vtiOrbDraw) paints this page's ground too, while the page is open */
+  var orbCv = Q('.vtn-orb'), orbId = 0;
+  function orbF(ts) { orbId = 0; if (!page.classList.contains('open') || typeof window.vtiOrbDraw !== 'function') return; window.vtiOrbDraw(orbCv, ts); if (!still) orbId = requestAnimationFrame(orbF); }
+  function orbGo() { if (typeof window.vtiOrbDraw !== 'function') return; page.classList.add('orb'); if (!orbId) orbId = requestAnimationFrame(orbF); }
   function close(keepNav) {
     clear(); cur = -1;
     page.classList.remove('open'); page.setAttribute('aria-hidden', 'true');
@@ -335,6 +355,7 @@
     tray.classList.add('vtn-tray');
     var ring = tray.querySelector('.vti-ring'); if (ring) ring.style.display = 'none';
     var art = document.createElement('div'); art.className = 'vtn-tart'; art.setAttribute('aria-hidden', 'true');
+    if (LOGOS) tray.classList.add('logos');
     art.innerHTML = '<div class="vtn-tin"><div class="vtn-tfab">' + FAB + '</div>' + KINDS.map(function (k, i) {
       return '<div class="vtn-row t' + i + '" style="--i:' + i + '">' + inner(glyph(k[0], '#fff'), k[1], null, 'cat') + inner(k[2], k[3], k[4], 'item') + '</div>';
     }).join('') + '</div>';   /* round 47: the whole beat at .75 */

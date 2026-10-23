@@ -102,3 +102,27 @@
 /* round 48: the FAQ page at the end (V1's cards, from Yuan's sheet) */
 .vtn-faqsec .vtn-faq { position: absolute; left: 0; right: 0; top: calc(152px + var(--o)); display: block; padding: 0; }
 .vtn-faqsec .vti-faq-h { margin: 0 20px 24px; }
+
+/* round 51: V1's breathing orb behind the page (drawn by Yuan's drawOrb); the still glow is the fallback */
+.vtn-orb { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; filter: blur(14px); transform: scale(1.06); display: none; }
+.vtn.orb .vtn-orb { display: block; }
+.vtn.orb .vtn-bg { display: none; }
+/* round 51 · V2.2 (&ut2vonb=n3) tray: no +, no kinds — your things with their logos rise one by one, hold, fade, again */
+.vtn-tray.logos .vtn-tfab, .vtn-tray.logos .vtn-in.cat { display: none; }
+.vtn-tray.logos .vtn-in.item { display: flex; }
+.vtn-tray.logos .vtn-tart .vtn-row { animation: vtnTLogo 5s var(--ez, cubic-bezier(.32, .72, 0, 1)) infinite; animation-delay: calc(var(--i) * .09s); }
+@keyframes vtnTLogo { 0%, 4% { opacity: 0; transform: translateY(16px); } 18%, 80% { opacity: 1; transform: none; } 92%, 100% { opacity: 0; transform: translateY(-8px); } }
+@media (prefers-reduced-motion: reduce) { .vtn-tray.logos .vtn-tart .vtn-row { animation: none; opacity: 1; transform: none; } }
+/* round 51 (Christine: the + alone looked sad — "gradient 처럼 살짝씩", in the background's own colours):
+   the glow's amber → blue washes down into the white disc from the top, as in her reference */
+.vtn-fab, .vtn-tfab { border-radius: 50%; overflow: hidden; background: #fff; }
+.vtn-fab svg, .vtn-tfab svg { position: relative; z-index: 1; }
+.vtn-sweep { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; transform: translateY(-100%); filter: blur(2.5px);
+  background: radial-gradient(circle at 50% 22%, rgba(255, 255, 255, .22) 0 18%, rgba(255, 255, 255, 0) 46%),
+              linear-gradient(180deg, #b8781e 0%, #b47621 22%, #a26d33 40%, #806352 54%, #5a6892 68%, #3f5c98 78%, rgba(63, 92, 152, .35) 90%, rgba(63, 92, 152, 0) 100%); }
+.vtn-fab .vtn-sweep.go { animation: vtnSweepP 1.25s cubic-bezier(.32, .72, 0, 1) forwards; }
+@keyframes vtnSweepP { 0% { transform: translateY(-100%); } 100% { transform: translateY(-38%); } }
+/* the tray's + (6.5s loop): it fills as it comes back, holds while it is pressed, and empties as it goes */
+.vtn-tfab .vtn-sweep { animation: vtnSweepT 6.5s cubic-bezier(.32, .72, 0, 1) infinite; }
+@keyframes vtnSweepT { 0%, 6% { transform: translateY(-38%); } 13.9%, 82% { transform: translateY(-100%); } 96%, 100% { transform: translateY(-38%); } }
+@media (prefers-reduced-motion: reduce) { .vtn-sweep, .vtn-fab .vtn-sweep.go, .vtn-tfab .vtn-sweep { animation: none; transform: translateY(-38%); } }
