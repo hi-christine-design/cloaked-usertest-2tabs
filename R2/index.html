@@ -416,7 +416,7 @@ $('rtabs').addEventListener('click', function (e) {
 /* the Vault, its onboarding raised at once (ut2vonbgo) */
 function loadVonb() {
   frame.src = 'V2/' + S.day + '/app.html?skip=1&tab=vaults' + (S.day === 'DayOne' ? '&intro=0' : '') +
-    '&ut2=after&ut2name=' + UT2_NAME + '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO + '&ut2vonb=' + S.vonb + '&ut2vonbgo=1&v=20261023-ut140';
+    '&ut2=after&ut2name=' + UT2_NAME + '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO + '&ut2vonb=' + S.vonb + '&ut2vonbgo=1&v=20261023-ut141';
   loading.textContent = 'Opening the Vault onboarding…';
   loading.classList.add('on');
   clearTimeout(hideT); hideT = setTimeout(function () { loading.classList.remove('on'); }, 2500);
@@ -492,7 +492,7 @@ function load() {
   var s = curS();
   if (!s) {   /* nothing picked: the plain prototype, home, no ring */
     frame.src = 'V2/' + S.day + '/app.html?skip=1&tab=home' + introQ(S.day) +
-      '&ut2=after&ut2name=' + UT2_NAME + '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO + '&ut2vonb=' + S.vonb + '&v=20261023-ut140';
+      '&ut2=after&ut2name=' + UT2_NAME + '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO + '&ut2vonb=' + S.vonb + '&v=20261023-ut141';
     loading.textContent = 'Opening the prototype…';
     loading.classList.add('on');
     clearTimeout(hideT); hideT = setTimeout(function () { loading.classList.remove('on'); }, 2500);
@@ -503,7 +503,7 @@ function load() {
     introQ(day) +
     '&ut2=' + (s.done ? S.mode : 'after') + '&ut2name=' + UT2_NAME +
     '&ut2cards=' + UT2_CARDS + '&ut2intro=' + UT2_INTRO +
-    (s.done ? '&ut2go=' + s.id : '') + '&ut2vonb=' + S.vonb + '&v=20261023-ut140';
+    (s.done ? '&ut2go=' + s.id : '') + '&ut2vonb=' + S.vonb + '&v=20261023-ut141';
   loading.textContent = (s.id === 'c7' || (s.id === 'v09' && (s.day || S.day) === 'DayOne')) ? 'Playing the flow…' : 'Opening the screen…';
   loading.classList.add('on');
   clearTimeout(hideT); hideT = setTimeout(function () { loading.classList.remove('on'); }, s.id === 'c7' ? 16000 : 2500);

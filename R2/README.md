@@ -300,3 +300,5 @@ A copy of UserTest_V2 that keeps only 2 Tabs: the launcher has no Tabs or Tab na
 **23 Oct, round 50:** V2.2 page 1 plays once and stays: + pressed → the rows → the kinds, then still (the cover tray still loops). Page 2's carousel: the row in focus no longer gets a grey fill (it still grows and brightens).
 
 **23 Oct, round 51:** Vault onboarding: the four-page scroll story is now **V2.1** (`&ut2vonb=n2`); new **V2.2 · Logos first** (`&ut2vonb=n3`) drops the + and the kinds — the tray shows your things with their logos straight away (rising one by one on a 5s loop), and the page has three stops: the logo list · *Share an alias* · *Calls, messages…* (no *Save them here* page), then FAQs. Both V2s now paint V1's breathing orb behind the page (the still glow is the fallback). V2.1's + gets a wash of the glow's own colours (amber → blue) sweeping down into it. Launcher: V1 label no longer names a person.
+
+**23 Oct, round 52:** V2.2's first page (the logo list) keeps moving: it runs V2.1's vertical carousel (one row up every 1.6s, the middle row in focus, wrapping round) instead of rising once and stopping.

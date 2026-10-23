@@ -274,11 +274,12 @@
   }
   function pItems(A) {   /* your things, stepping by one at a time */
     poseK(A, 1);
-    var f = 2; carPose(A, f, false); flush();
-    function step() { if (cur !== 1 || !page.classList.contains('open')) return; f++; carPose(A, f, true); at(1600, step); }
+    var f = 2, me = cur; carPose(A, f, false); flush();   /* round 52: V2.2 runs it on page 0 */
+    function step() { if (cur !== me || !page.classList.contains('open')) return; f++; carPose(A, f, true); at(1600, step); }
     at(1200, step);
   }
-  function pLogos(A) {   /* round 51 · V2.2: your things, logos and all, rise in one after another, then stay */
+  /* round 52 (Christine: "여기 모션은 계속 들어가 있어야해 V2.1 처럼"): V2.2's logo page runs V2.1's carousel (pItems) instead */
+  function pLogos(A) {   /* round 51, unused since 52 · V2.2: your things, logos and all, rise in one after another, then stay */
     poseK(A, 1);
     A.rows5.forEach(function (r) { set(r, { opacity: 0, transform: 'translateY(18px)' }); }); flush();
     A.rows5.forEach(function (r, i) { at(150 + i * 90, function () { to(r, { opacity: 1, transform: 'none' }, 640); }); });
@@ -309,7 +310,7 @@
     page.classList.toggle('s2', k === LAST);
     /* V2.2: the pages you are not on wait in their starting pose, so scrolling to one shows it ready */
     if (PAGED) ARTS.forEach(function (A, j) { if (j !== k) poseP(A, j, true); });
-    (PAGED ? (LOGOS ? [pLogos, loopP(1, pAlias, 4400), pCalls] : [pKinds, pItems, loopP(2, pAlias, 4400), pCalls]) : [play0, play1, play2])[k](artOf(k));
+    (PAGED ? (LOGOS ? [pItems, loopP(1, pAlias, 4400), pCalls] : [pKinds, pItems, loopP(2, pAlias, 4400), pCalls]) : [play0, play1, play2])[k](artOf(k));
   }
   scroller.addEventListener('scroll', function () {
     clearTimeout(settle);
